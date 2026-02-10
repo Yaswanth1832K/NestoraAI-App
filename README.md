@@ -13,7 +13,7 @@ A next-generation house rental platform built with Flutter, powered by AI for sm
 - **Secure Authentication**: Email/Password and Google Sign-In via Firebase.
 
 ## 📸 Screenshots
-*(Add screenshots here)*
+
 
 ## 🛠️ Setup & Installation
 
