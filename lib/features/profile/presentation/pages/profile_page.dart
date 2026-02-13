@@ -11,6 +11,8 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.value;
+    final isOwnerAsync = ref.watch(isOwnerProvider);
+    final isOwner = isOwnerAsync.value ?? false;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F), // Dark background
@@ -77,23 +79,27 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 40),
             
             // Menu Items
-            _buildMenuItem(
-              icon: Icons.home_work_outlined,
-              title: "My Listings",
-              onTap: () {
-                // Future: Navigate to My Listings
-              },
-            ),
+            if (isOwner) ...[
+              _buildMenuItem(
+                icon: Icons.home_work_outlined,
+                title: "My Listings",
+                onTap: () {
+                  // This is accessible via bottom nav, but good to have here too
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.event_note_outlined,
+                title: "Visit Requests (Owner)",
+                onTap: () => context.push(AppRouter.ownerRequests),
+              ),
+            ],
+            
             _buildMenuItem(
               icon: Icons.calendar_month_outlined,
               title: "My Visits",
               onTap: () => context.push(AppRouter.myVisits),
             ),
-            _buildMenuItem(
-              icon: Icons.event_note_outlined,
-              title: "Visit Requests (Owner)",
-              onTap: () => context.push(AppRouter.ownerRequests),
-            ),
+            
             _buildMenuItem(
               icon: Icons.chat_bubble_outline_rounded,
               title: "Chat Inbox",
