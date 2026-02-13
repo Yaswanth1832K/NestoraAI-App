@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/failures.dart';
-import '../repositories/auth_repository.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/auth/domain/repositories/auth_repository.dart';
 
 class SignOutUseCase {
   final AuthRepository _repository;

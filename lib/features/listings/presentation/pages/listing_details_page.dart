@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/features/listings/presentation/providers/favorites_notifier.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
+import 'package:house_rental/features/ai_services/presentation/ai_assistant_sheet.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -115,6 +116,15 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
           ),
         );
       },
+    );
+  }
+
+  void _showAIAssistant() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AIAssistantSheet(listing: widget.listing),
     );
   }
 
@@ -232,10 +242,9 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
     );
   }
 
-  void _scheduleVisit() async {
+  void _scheduleVisit() {
     final user = ref.read(authStateProvider).value;
     if (user == null) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please log in to schedule a visit')),
       );
@@ -249,36 +258,196 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
       return;
     }
 
-    final DateTime? pickedDate = await showDatePicker(
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 10, minute: 0);
+    final TextEditingController messageController = TextEditingController();
+
+    showModalBottomSheet(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Schedule a Visit',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              
+              // Date Picker Trigger
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.calendar_today, color: Colors.blueAccent),
+                ),
+                title: const Text('Select Date', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: Text(
+                  DateFormat('EEEE, MMM dd, yyyy').format(selectedDate),
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                onTap: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 90)),
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.dark(
+                            primary: Colors.blueAccent,
+                            onPrimary: Colors.white,
+                            surface: Color(0xFF1A1A1A),
+                            onSurface: Colors.white,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null) {
+                    setModalState(() => selectedDate = picked);
+                  }
+                },
+              ),
+              const Divider(color: Color(0xFF2A2A2A)),
+              
+              // Time Picker Trigger
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.access_time, color: Colors.blueAccent),
+                ),
+                title: const Text('Select Time', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: Text(
+                  selectedTime.format(context),
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                onTap: () async {
+                  final TimeOfDay? picked = await showTimePicker(
+                    context: context,
+                    initialTime: selectedTime,
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.dark(
+                            primary: Colors.blueAccent,
+                            onPrimary: Colors.white,
+                            surface: Color(0xFF1A1A1A),
+                            onSurface: Colors.white,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null) {
+                    setModalState(() => selectedTime = picked);
+                  }
+                },
+              ),
+              const SizedBox(height: 24),
+              
+              const Text(
+                'Message (Optional)',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextField(
+                  controller: messageController,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: 'Any specific questions or requirements?',
+                    hintStyle: TextStyle(color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => _confirmVisit(
+                    selectedDate, 
+                    selectedTime, 
+                    messageController.text
+                  ),
+                  child: const Text(
+                    'Confirm Schedule',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
     );
+  }
 
-    if (pickedDate == null || !mounted) return;
+  void _confirmVisit(DateTime date, TimeOfDay time, String message) async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null || !mounted) return;
 
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 10, minute: 0),
-    );
-
-    if (pickedTime == null || !mounted) return;
-
-    final String timeString = "${pickedTime.hour}:${pickedTime.minute.toString().padLeft(2, '0')}";
+    final String timeString = "${time.hour}:${time.minute.toString().padLeft(2, '0')}";
 
     final request = VisitRequestEntity(
       id: const Uuid().v4(),
       listingId: widget.listing.id,
       listingTitle: widget.listing.title,
+      listingImage: widget.listing.allImages.isNotEmpty ? widget.listing.allImages.first : '',
       ownerId: widget.listing.ownerId,
       tenantId: user.uid,
       tenantName: user.displayName ?? 'Interested Tenant',
-      date: pickedDate,
+      date: date,
       time: timeString,
+      message: message,
       status: 'pending',
       createdAt: DateTime.now(),
     );
+
+    // Close the modal
+    Navigator.pop(context);
 
     final result = await ref.read(createVisitRequestUseCaseProvider)(request);
 
@@ -286,9 +455,8 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
 
     result.fold(
       (failure) {
-        final errorMessage = failure is Failure ? failure.message : 'Unknown error';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to schedule visit: $errorMessage')),
+          SnackBar(content: Text('Failed to schedule visit: ${failure.message}')),
         );
       },
       (_) {
@@ -382,7 +550,7 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                       );
                       return;
                     }
-                    ref.read(favoritesNotifierProvider.notifier).toggleFavorite(widget.listing.id).then((result) {
+                    ref.read(favoritesNotifierProvider.notifier).toggleFavorite(widget.listing).then((result) {
                       result.fold(
                         (failure) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -858,6 +1026,24 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                         'Schedule Visit',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.smart_toy, size: 18),
+                      label: const Text(
+                        'Ask AI',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.purple.shade300),
+                        foregroundColor: Colors.purple,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _showAIAssistant,
                     ),
                   ),
                   const SizedBox(height: 8),

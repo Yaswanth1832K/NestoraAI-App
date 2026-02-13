@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../../../core/errors/failures.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../datasources/auth_remote_datasource.dart';
+import 'package:house_rental/core/errors/exceptions.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/auth/domain/entities/user_entity.dart';
+import 'package:house_rental/features/auth/domain/repositories/auth_repository.dart';
+import 'package:house_rental/features/auth/data/datasources/auth_remote_datasource.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
@@ -29,9 +29,10 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, UserEntity>> signUpWithEmailAndPassword({
     required String email,
     required String password,
+    String? role,
   }) async {
     try {
-      final user = await _remoteDataSource.signUpWithEmailAndPassword(email, password);
+      final user = await _remoteDataSource.signUpWithEmailAndPassword(email, password, role: role);
       return Right(user);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));

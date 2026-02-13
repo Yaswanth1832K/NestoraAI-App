@@ -1,8 +1,9 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/failures.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../domain/repositories/favorites_repository.dart';
-import '../datasources/favorites_remote_datasource.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/core/errors/exceptions.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/repositories/favorites_repository.dart';
+import 'package:house_rental/features/listings/data/datasources/favorites_remote_datasource.dart';
 
 class FavoritesRepositoryImpl implements FavoritesRepository {
   final FavoritesRemoteDataSource _remoteDataSource;
@@ -10,9 +11,9 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   FavoritesRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<Either<Failure, bool>> toggleFavorite(String userId, String listingId) async {
+  Future<Either<Failure, bool>> toggleFavorite(String userId, ListingEntity listing) async {
     try {
-      final result = await _remoteDataSource.toggleFavorite(userId, listingId);
+      final result = await _remoteDataSource.toggleFavorite(userId, listing);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -22,26 +23,12 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   }
 
   @override
-  Future<Either<Failure, List<String>>> getFavoriteIds(String userId) async {
-    try {
-      final result = await _remoteDataSource.getFavoriteIds(userId);
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Stream<Set<String>> watchFavoriteIds(String userId) {
+    return _remoteDataSource.watchFavoriteIds(userId);
   }
 
   @override
-  Future<Either<Failure, bool>> isFavorite(String userId, String listingId) async {
-    try {
-      final result = await _remoteDataSource.isFavorite(userId, listingId);
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Stream<List<ListingEntity>> watchFavoriteListings(String userId) {
+    return _remoteDataSource.watchFavoriteListings(userId);
   }
 }

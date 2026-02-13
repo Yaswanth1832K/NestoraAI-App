@@ -11,76 +11,190 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.value;
+    final isOwnerAsync = ref.watch(isOwnerProvider);
+    final isOwner = isOwnerAsync.value ?? false;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F), // Dark background
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text(
+          "Profile",
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 24),
+            
+            // Profile Header
             Center(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.blue.shade100,
-                    child: const Icon(Icons.person, size: 50, color: Colors.blue),
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 56,
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        backgroundImage: user?.photoURL != null 
+                            ? NetworkImage(user!.photoURL!) 
+                            : null,
+                        child: user?.photoURL == null 
+                            ? const Icon(Icons.person, size: 56, color: Colors.blue) 
+                            : null,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.blueAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   Text(
                     user?.displayName ?? "Guest User",
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 22, 
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    user?.email ?? "Log in to access all features",
-                    style: TextStyle(color: Colors.grey.shade600),
+                    user?.email ?? "Sign in to your account",
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.calendar_today, color: Colors.blue),
-              title: const Text("Visit Requests (Owner)"),
-              subtitle: const Text("Manage requests for your properties"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push(AppRouter.ownerRequests),
+            
+            const SizedBox(height: 40),
+            
+            // Menu Items
+            if (isOwner) ...[
+              _buildMenuItem(
+                icon: Icons.home_work_outlined,
+                title: "My Listings",
+                onTap: () {
+                  // This is accessible via bottom nav, but good to have here too
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.event_note_outlined,
+                title: "Visit Requests (Owner)",
+                onTap: () => context.push(AppRouter.ownerRequests),
+              ),
+            ],
+            
+            _buildMenuItem(
+              icon: Icons.calendar_month_outlined,
+              title: "My Visits",
+              onTap: () => context.push(AppRouter.myVisits),
             ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.home_outlined, color: Colors.blue),
-              title: const Text("My Listings"),
-              trailing: const Icon(Icons.chevron_right),
+            
+            _buildMenuItem(
+              icon: Icons.chat_bubble_outline_rounded,
+              title: "Chat Inbox",
+              onTap: () => context.push(AppRouter.chat),
+            ),
+            _buildMenuItem(
+              icon: Icons.settings_outlined,
+              title: "Settings",
               onTap: () {
-                // Future implementation
+                // Future: Navigate to Settings
               },
             ),
-            const Divider(),
-            const SizedBox(height: 24),
+            
+            const SizedBox(height: 32),
+            
+            // Logout Button
             if (user != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E1E1E),
+                      foregroundColor: Colors.redAccent,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: Colors.redAccent.withOpacity(0.2)),
+                      ),
                     ),
-                    onPressed: () => ref.read(authRepositoryProvider).signOut(),
-                    child: const Text("Sign Out"),
+                    onPressed: () => _handleLogout(context, ref),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.logout_rounded, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          "Log Out",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
+            
+            const SizedBox(height: 40),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.blueAccent, size: 22),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    final signOutResult = await ref.read(signOutUseCaseProvider).call();
+    signOutResult.fold(
+      (failure) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Logout failed: ${failure.message}")),
+      ),
+      (_) {
+        // Redirection is handled by GoRouter refreshListenable
+      },
     );
   }
 }

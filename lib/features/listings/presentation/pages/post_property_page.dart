@@ -10,9 +10,12 @@ import 'package:uuid/uuid.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
+import 'package:dartz/dartz.dart';
+import 'package:house_rental/core/errors/failures.dart';
 
 class PostPropertyPage extends ConsumerStatefulWidget {
-  const PostPropertyPage({super.key});
+  final ListingEntity? existingListing;
+  const PostPropertyPage({super.key, this.existingListing});
 
   @override
   ConsumerState<PostPropertyPage> createState() => _PostPropertyPageState();
@@ -34,9 +37,31 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
   final _latController = TextEditingController(text: '11.0168');
   final _lngController = TextEditingController(text: '76.9558');
 
+  List<String> _existingImageUrls = [];
   List<XFile> _images = [];
+  List<DateTime> _availableDates = [];
   bool _isLoading = false;
   String? _uploadStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingListing != null) {
+      final listing = widget.existingListing!;
+      _titleController.text = listing.title;
+      _descController.text = listing.description;
+      _priceController.text = listing.price.toStringAsFixed(0);
+      _cityController.text = listing.city;
+      _bedrooms = listing.bedrooms;
+      _bathrooms = listing.bathrooms;
+      _sqftController.text = listing.sqft.toStringAsFixed(0);
+      _amenitiesController.text = listing.amenities.join(', ');
+      _latController.text = listing.latitude.toString();
+      _lngController.text = listing.longitude.toString();
+      _existingImageUrls = List.from(listing.imageUrls);
+      _availableDates = List.from(listing.availableDates);
+    }
+  }
 
   @override
   void dispose() {
@@ -52,11 +77,12 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
   }
 
   Future<void> _pickImages() async {
-    if (_images.length >= 5) return;
+    final totalImages = _images.length + _existingImageUrls.length;
+    if (totalImages >= 5) return;
     
     try {
       final List<XFile> pickedFiles = await _picker.pickMultiImage(
-        limit: 5 - _images.length,
+        limit: 5 - totalImages,
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 80,
@@ -157,10 +183,26 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 180)),
+    );
+
+    if (picked != null && !_availableDates.contains(picked)) {
+      setState(() {
+        _availableDates.add(picked);
+        _availableDates.sort();
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_images.isEmpty) {
+    if (_images.isEmpty && _existingImageUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please upload at least 1 image')),
       );
@@ -170,7 +212,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
     final user = ref.read(authStateProvider).value;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to post a property')),
+        const SnackBar(content: Text('Please log in to post/update a property')),
       );
       return;
     }
@@ -181,20 +223,20 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
     });
 
     try {
-      final listingId = const Uuid().v4();
+      final isEditing = widget.existingListing != null;
+      final listingId = isEditing ? widget.existingListing!.id : const Uuid().v4();
       
-      // 1. Upload Images
-      final imageUrls = await _uploadImages(listingId);
+      // 1. Upload New Images
+      final newImageUrls = await _uploadImages(listingId);
+      final finalImageUrls = [..._existingImageUrls, ...newImageUrls];
 
       // 2. Create Listing Entity
       final double lat = double.tryParse(_latController.text.trim()) ?? 11.0168;
       final double lng = double.tryParse(_lngController.text.trim()) ?? 76.9558;
       
-      debugPrint('Saving listing with coordinates: Lat: $lat, Lng: $lng');
-
       final listing = ListingEntity(
         id: listingId,
-        ownerId: user.uid,
+        ownerId: isEditing ? widget.existingListing!.ownerId : user.uid,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         price: double.parse(_priceController.text.trim()),
@@ -212,30 +254,36 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
             .where((e) => e.isNotEmpty)
             .toList(),
         propertyType: 'apartment', // Default
-        images: imageUrls,
-        imageUrls: imageUrls,
-        searchTokens: [], // Logic handled elsewhere or backend
+        images: finalImageUrls,
+        imageUrls: finalImageUrls,
+        searchTokens: [], 
         latitude: lat,
         longitude: lng,
         status: 'active',
-        createdAt: DateTime.now(),
+        createdAt: isEditing ? widget.existingListing!.createdAt : DateTime.now(),
         updatedAt: DateTime.now(),
+        availableDates: _availableDates,
       );
 
-      // 3. Save to Firestore
-      final result = await ref.read(createListingUseCaseProvider)(listing);
+      // 3. Save/Update to Firestore
+      Either<Failure, void> result;
+      if (isEditing) {
+        result = await ref.read(updateListingUseCaseProvider)(listing);
+      } else {
+        result = await ref.read(createListingUseCaseProvider)(listing);
+      }
 
       if (!mounted) return;
 
       result.fold(
         (failure) {
            ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to post: ${failure.message}')),
+            SnackBar(content: Text('Failed to ${isEditing ? 'update' : 'post'}: ${failure.message}')),
           );
         },
         (_) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Property posted successfully!')),
+            SnackBar(content: Text('Property ${isEditing ? 'updated' : 'posted'} successfully!')),
           );
           Navigator.of(context).pop();
         },
@@ -251,8 +299,9 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.existingListing != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Post Your Property')),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Property' : 'Post Your Property')),
       body: _isLoading 
         ? Center(
             child: Column(
@@ -278,11 +327,36 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
+                      // Existing Images
+                      ...List.generate(_existingImageUrls.length, (index) => Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(_existingImageUrls[index], width: 80, height: 80, fit: BoxFit.cover),
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: GestureDetector(
+                                onTap: () => setState(() => _existingImageUrls.removeAt(index)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                      // New Images
                       ...List.generate(_images.length, (index) => _ImageThumbnail(
                         file: _images[index],
                         onRemove: () => setState(() => _images.removeAt(index)),
                       )),
-                      if (_images.length < 5)
+                      if (_images.length + _existingImageUrls.length < 5)
                         GestureDetector(
                           onTap: _pickImages,
                           child: Container(
@@ -368,6 +442,27 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Set Availability (Renter Visit Dates)',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ..._availableDates.map((date) => Chip(
+                        label: Text('${date.day}/${date.month}/${date.year}'),
+                        onDeleted: () => setState(() => _availableDates.remove(date)),
+                        deleteIcon: const Icon(Icons.close, size: 14),
+                      )),
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 18),
+                        label: const Text('Add Date'),
+                        onPressed: _pickDate,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
@@ -377,7 +472,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: _submit,
-                      child: const Text('Publish Property', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: Text(isEditing ? 'Update Property' : 'Publish Property', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

@@ -1,1 +1,38 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"flutter-project-35253","appId":"1:879648049504:android:e327d85d81a291a535f605","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"flutter-project-35253","configurations":{"android":"1:879648049504:android:e327d85d81a291a535f605","ios":"1:879648049504:ios:b5fcd6c6f3c5117c35f605","macos":"1:879648049504:ios:b5fcd6c6f3c5117c35f605","web":"1:879648049504:web:6622dc39e2121e6735f605","windows":"1:879648049504:web:255dfd41b9ac912035f605"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "house-rental-ai",
+          "appId": "1:319176540267:android:e41557497b3617bfc7b12e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "house-rental-ai",
+          "configurations": {
+            "android": "1:319176540267:android:e41557497b3617bfc7b12e",
+            "ios": "1:319176540267:ios:ba1fca2225184913c7b12e",
+            "web": "1:319176540267:web:9452aa1ee0662ad7c7b12e",
+            "windows": "1:319176540267:web:3e578fe9d68f97fec7b12e"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}

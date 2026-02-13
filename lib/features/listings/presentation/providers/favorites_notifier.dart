@@ -4,67 +4,56 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/listings/presentation/providers/favorites_providers.dart';
-import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 
 /// Notifier to manage the set of favorite listing IDs.
-/// Uses AsyncNotifier to handle asynchronous loading from Firestore.
-class FavoritesNotifier extends AsyncNotifier<Set<String>> {
+/// Uses StreamNotifier to handle real-time updates from Firestore.
+class FavoritesNotifier extends StreamNotifier<Set<String>> {
   @override
-  Future<Set<String>> build() async {
+  Stream<Set<String>> build() {
     // Automatically watch authState. If user logs in/out, build() re-runs.
     final authState = ref.watch(authStateProvider);
     final user = authState.value;
     
     if (user == null) {
-      return {};
+      return Stream.value({});
     }
 
-    // Fetch initial IDs from Firestore via UseCase
-    final result = await ref.read(getFavoriteIdsUseCaseProvider)(user.uid);
-    return result.fold(
-      (failure) => {},
-      (ids) => ids.toSet(),
-    );
+    // Subscribe to real-time updates from Firestore
+    return ref.read(watchFavoriteIdsUseCaseProvider).call(user.uid);
   }
 
   /// Toggles the favorite status of a listing.
   /// Implements optimistic updates for a snappy UI.
-  Future<Either<Failure, bool>> toggleFavorite(String listingId) async {
+  Future<Either<Failure, bool>> toggleFavorite(ListingEntity listing) async {
     final user = ref.read(authStateProvider).value;
     if (user == null) {
       debugPrint('FavoritesNotifier: Toggle failed - User is null');
       return Left(ServerFailure(message: 'User must be logged in'));
     }
 
-    final previousState = state.value ?? {};
-    final isFavorite = previousState.contains(listingId);
+    final listingId = listing.id;
+    // We can't easily do optimistic updates with StreamNotifier + Firestore 
+    // because the stream will emit the new state shortly after.
+    // However, for immediate UI feedback, the local state change is usually enough for simple toggles
+    // if we weren't depending solely on the stream.
+    // Given the speed of Firestore listeners, we'll rely on the stream for the "source of truth"
+    // but the UI (heart icon) can toggle visually while awaiting the future if needed.
     
-    debugPrint('FavoritesNotifier: Toggling $listingId. Current isFavorite: $isFavorite');
+    debugPrint('FavoritesNotifier: Toggling ${listing.title} ($listingId)');
 
-    // 1. Optimistic Update: Update UI immediately
-    if (isFavorite) {
-      state = AsyncValue.data(previousState.where((id) => id != listingId).toSet());
-    } else {
-      state = AsyncValue.data({...previousState, listingId}.toSet());
-    }
-
-    // 2. Persist to Firestore
     final result = await ref.read(toggleFavoriteUseCaseProvider)(
       userId: user.uid,
-      listingId: listingId,
+      listing: listing,
     );
 
-    // 3. Rollback if the network request fails
     return result.fold(
       (failure) {
-        debugPrint('FavoritesNotifier: Permanent failure: ${failure.message}');
-        state = AsyncValue.data(previousState);
+        debugPrint('FavoritesNotifier: Toggle failure: ${failure.message}');
         return Left(failure);
       },
       (isNowFavorite) {
         debugPrint('FavoritesNotifier: Successfully toggled to $isNowFavorite');
-        // Success - state is already updated optimistically
         return Right(isNowFavorite);
       },
     );
@@ -77,33 +66,18 @@ class FavoritesNotifier extends AsyncNotifier<Set<String>> {
 }
 
 /// Provider for the FavoritesNotifier.
-final favoritesNotifierProvider = AsyncNotifierProvider<FavoritesNotifier, Set<String>>(() {
+final favoritesNotifierProvider = StreamNotifierProvider<FavoritesNotifier, Set<String>>(() {
   return FavoritesNotifier();
 });
 
-final favoriteListingsProvider = FutureProvider<List<ListingEntity>>((ref) async {
-  final favoriteIds = ref.watch(favoritesNotifierProvider).value ?? {};
-  debugPrint('favoriteListingsProvider: Fetching details for ${favoriteIds.length} IDs: $favoriteIds');
-  
-  if (favoriteIds.isEmpty) return [];
+/// Provider to stream the list of favorite listings (summaries) for the Favorites Page.
+final favoriteListingsProvider = StreamProvider<List<ListingEntity>>((ref) {
+  final authState = ref.watch(authStateProvider);
+  final user = authState.value;
 
-  final repo = ref.read(listingRepositoryProvider);
-  final listings = <ListingEntity>[];
-
-  for (final id in favoriteIds) {
-    debugPrint('favoriteListingsProvider: Fetching listing with ID: $id');
-    final result = await repo.getListingById(id);
-    result.fold(
-      (failure) {
-        debugPrint('favoriteListingsProvider: Failed to fetch listing $id: ${failure.message}');
-      },
-      (listing) {
-        debugPrint('favoriteListingsProvider: Successfully fetched listing: ${listing.title}');
-        listings.add(listing);
-      },
-    );
+  if (user == null) {
+    return Stream.value([]);
   }
 
-  debugPrint('favoriteListingsProvider: Returning ${listings.length} listings');
-  return listings;
+  return ref.read(watchFavoriteListingsUseCaseProvider).call(user.uid);
 });

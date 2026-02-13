@@ -25,6 +25,11 @@ class VisitRequestRepositoryImpl implements VisitRequestRepository {
   }
 
   @override
+  Stream<List<VisitRequestEntity>> getTenantVisitRequests(String tenantId) {
+    return _remoteDataSource.getTenantVisitRequests(tenantId);
+  }
+
+  @override
   Future<Either<Failure, void>> updateVisitRequestStatus(String requestId, String status) async {
     try {
       await _remoteDataSource.updateVisitRequestStatus(requestId, status);

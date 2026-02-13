@@ -9,11 +9,12 @@ import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/features/search/presentation/providers/search_providers.dart';
 import 'package:house_rental/features/search/presentation/providers/search_history_providers.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
-import 'package:house_rental/features/listings/presentation/widgets/listing_card.dart';
+import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
 import 'package:house_rental/features/listings/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
 import 'package:house_rental/main.dart';
+import 'package:house_rental/core/providers/firebase_provider.dart';
 import 'package:house_rental/features/listings/presentation/pages/post_property_page.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -95,11 +96,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final recommendationsState = ref.watch(recommendationsProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F), // Dark background
       appBar: AppBar(
-        title: const Text('Search Homes'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Search Homes',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
             tooltip: 'Filters',
             onPressed: () {
               showModalBottomSheet(
@@ -111,7 +118,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.add_home),
+            icon: const Icon(Icons.add_home, color: Colors.white),
             tooltip: 'Post Property',
             onPressed: () {
               rootNavigatorKey.currentState!.push(
@@ -125,8 +132,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               return authState.maybeWhen(
                 data: (user) => IconButton(
                   icon: Icon(user == null ? Icons.account_circle_outlined : Icons.account_circle, 
-                    color: user == null ? null : Colors.blue),
-                  tooltip: user == null ? 'Quick Login' : 'Logout (${user.isAnonymous ? 'Guest' : user.email})',
+                    color: user == null ? Colors.white : Colors.blueAccent),
+                  tooltip: user == null ? 'Quick Login' : 'Logout',
                   onPressed: () async {
                     if (user == null) {
                       try {
@@ -171,9 +178,20 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
+                        style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: _isListening ? 'Listening...' : 'Try: 2bhk near college under 15000',
-                          border: const OutlineInputBorder(),
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                          ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           prefixIcon: Icon(
                             _isListening ? Icons.mic : Icons.search,
@@ -184,7 +202,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             children: [
                               if (_searchController.text.isNotEmpty)
                                 IconButton(
-                                  icon: const Icon(Icons.clear),
+                                  icon: const Icon(Icons.clear, color: Colors.grey),
                                   onPressed: () {
                                     _searchController.clear();
                                     ref.read(searchProvider.notifier).clearResults();
@@ -194,7 +212,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                               IconButton(
                                 icon: Icon(
                                   _isListening ? Icons.mic : Icons.mic_none,
-                                  color: _isListening ? Colors.red : Colors.blue,
+                                  color: _isListening ? Colors.red : Colors.blueAccent,
                                 ),
                                 onPressed: _listen,
                               ),
@@ -208,6 +226,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     if (!_isListening) ...[
                       const SizedBox(width: 10),
                       IconButton.filled(
+                        style: IconButton.styleFrom(backgroundColor: Colors.blueAccent),
                         onPressed: searchState.isLoading ? null : _performSearch,
                         icon: searchState.isLoading 
                           ? const SizedBox(
@@ -215,17 +234,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                               height: 20, 
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
-                          : const Icon(Icons.search),
+                          : const Icon(Icons.search, color: Colors.white),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'You can search in natural language instead of filters.',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
                 const SizedBox(height: 12),
+                const Text(
+                  'Search in natural language (AI powered)',
+                  style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 16),
                 // Recent Searches UI
                 ref.watch(searchHistoryProvider).maybeWhen(
                   data: (history) {
@@ -235,17 +254,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       children: [
                         const Text(
                           'Recent Searches',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         Wrap(
                           spacing: 8,
+                          runSpacing: 8,
                           children: history.map((query) => ActionChip(
                             label: Text(query),
                             onPressed: () => _performSearch(query: query),
-                            avatar: const Icon(Icons.history, size: 16),
-                            padding: EdgeInsets.zero,
-                            labelStyle: const TextStyle(fontSize: 12),
+                            avatar: const Icon(Icons.history, size: 16, color: Colors.blueAccent),
+                            backgroundColor: const Color(0xFF1A1A1A),
+                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            labelStyle: const TextStyle(fontSize: 12, color: Colors.white),
                           )).toList(),
                         ),
                       ],

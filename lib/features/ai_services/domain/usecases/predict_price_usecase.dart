@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/failures.dart';
-import '../../data/datasources/ai_remote_datasource.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/ai_services/data/datasources/ai_remote_datasource.dart';
 
 class PredictPriceUseCase {
   final AIRemoteDataSource _aiRemoteDataSource;

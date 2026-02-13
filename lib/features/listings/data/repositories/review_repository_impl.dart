@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 import 'package:house_rental/core/errors/failures.dart';
 import 'package:house_rental/features/listings/data/models/review_model.dart';
 import 'package:house_rental/features/listings/domain/entities/review_entity.dart';
@@ -62,7 +63,11 @@ class ReviewRepositoryImpl implements ReviewRepository {
         .where('listingId', isEqualTo: listingId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
+        .handleError((error) {
+      debugPrint("================================================================");
+      debugPrint("FIRESTORE INDEX ERROR: $error");
+      debugPrint("================================================================");
+    }).map((snapshot) {
       return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList();
     });
   }

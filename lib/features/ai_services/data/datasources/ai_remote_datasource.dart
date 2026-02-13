@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../../../../core/errors/exceptions.dart';
+import 'package:house_rental/core/errors/exceptions.dart';
 
 abstract interface class AIRemoteDataSource {
   Future<Map<String, dynamic>> naturalLanguageSearch({
@@ -23,7 +23,7 @@ class AIRemoteDataSourceImpl implements AIRemoteDataSource {
 
   String get _baseUrl {
     if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:8000';
     } else if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000';
     } else {

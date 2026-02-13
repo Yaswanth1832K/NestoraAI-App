@@ -6,7 +6,7 @@ import 'package:house_rental/main.dart';
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
-import 'package:house_rental/features/listings/presentation/widgets/listing_card.dart';
+import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
 import 'package:house_rental/features/listings/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 
