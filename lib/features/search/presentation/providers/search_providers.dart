@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../features/listings/domain/entities/listing_entity.dart';
-import '../../../../features/ai_services/presentation/providers/ai_providers.dart';
-import '../../../../features/listings/presentation/providers/listings_providers.dart';
-import '../../../../features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
+import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
 
 // Class to store user search preferences in memory
 class UserSearchPreferences {

@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../../../core/errors/failures.dart';
-import '../../domain/entities/listing_entity.dart';
-import '../../domain/repositories/listing_repository.dart';
-import '../datasources/listing_remote_datasource.dart';
-import '../models/listing_model.dart';
+import 'package:house_rental/core/errors/exceptions.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/features/listings/data/datasources/listing_remote_datasource.dart';
+import 'package:house_rental/features/listings/data/models/listing_model.dart';
 
 class ListingRepositoryImpl implements ListingRepository {
   final ListingRemoteDataSource _remoteDataSource;
@@ -99,6 +99,18 @@ class ListingRepositoryImpl implements ListingRepository {
     try {
       final listings = await _remoteDataSource.getListingsInBounds(
           minLat, maxLat, minLng, maxLng);
+      return Right(listings);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ListingEntity>>> getMyListings(String userId) async {
+    try {
+      final listings = await _remoteDataSource.getMyListings(userId);
       return Right(listings);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));

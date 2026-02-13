@@ -1,9 +1,10 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/failures.dart';
-import '../entities/listing_entity.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 
 
 class ListingFilter {
+  final String? searchQuery;
   final String? city;
   final double? minPrice;
   final double? maxPrice;
@@ -14,6 +15,7 @@ class ListingFilter {
   final String? propertyType;
 
   ListingFilter({
+    this.searchQuery,
     this.city,
     this.minPrice,
     this.maxPrice,
@@ -23,6 +25,30 @@ class ListingFilter {
     this.amenities,
     this.propertyType,
   });
+
+  ListingFilter copyWith({
+    String? searchQuery,
+    String? city,
+    double? minPrice,
+    double? maxPrice,
+    int? bedrooms,
+    int? bathrooms,
+    String? furnishing,
+    List<String>? amenities,
+    String? propertyType,
+  }) {
+    return ListingFilter(
+      searchQuery: searchQuery ?? this.searchQuery,
+      city: city ?? this.city,
+      minPrice: minPrice ?? this.minPrice,
+      maxPrice: maxPrice ?? this.maxPrice,
+      bedrooms: bedrooms ?? this.bedrooms,
+      bathrooms: bathrooms ?? this.bathrooms,
+      furnishing: furnishing ?? this.furnishing,
+      amenities: amenities ?? this.amenities,
+      propertyType: propertyType ?? this.propertyType,
+    );
+  }
 }
 
 abstract interface class ListingRepository {
@@ -51,4 +77,7 @@ abstract interface class ListingRepository {
   /// Get listings within geographical bounds
   Future<Either<Failure, List<ListingEntity>>> getListingsInBounds(
       double minLat, double maxLat, double minLng, double maxLng);
+
+  /// Get listings created by a specific user
+  Future<Either<Failure, List<ListingEntity>>> getMyListings(String userId);
 }

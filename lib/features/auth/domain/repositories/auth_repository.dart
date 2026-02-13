@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/failures.dart';
-import '../entities/user_entity.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/auth/domain/entities/user_entity.dart';
 
 abstract interface class AuthRepository {
   /// Sign in with email and password
@@ -13,6 +13,7 @@ abstract interface class AuthRepository {
   Future<Either<Failure, UserEntity>> signUpWithEmailAndPassword({
     required String email,
     required String password,
+    String? role,
   });
 
   /// Sign out the current user

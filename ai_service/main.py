@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
 import re
+import google.generativeai as genai
+import traceback
+from notifications import start_notification_service
 
 app = FastAPI()
 app.add_middleware(
@@ -12,6 +15,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Start the real-time notification watcher
+start_notification_service()
+
+import os
+
+# Configure Gemini API
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+genai.configure(api_key=GEMINI_API_KEY)
 
 class SearchQuery(BaseModel):
     query: str
@@ -52,6 +64,7 @@ def natural_language_search(data: SearchQuery):
             "keywords": keywords
         }
     }
+
 class PriceRequest(BaseModel):
     city: str
     sqft: float
@@ -87,3 +100,59 @@ def predict_price(data: PriceRequest):
     return {
         "predicted_price": int(predicted)
     }
+
+class PropertyChatRequest(BaseModel):
+    question: str
+    title: str
+    description: str
+    price: float
+    city: str
+    bedrooms: int
+    bathrooms: int
+    sqft: float
+
+@app.post("/chat/property")
+def chat_about_property(data: PropertyChatRequest):
+    """
+    AI-powered property Q&A using Google Gemini
+    """
+    try:
+        print(f"🤖 Received chat request: {data.question}")
+        print(f"Property: {data.title} in {data.city}")
+        
+        # Use gemini-2.5-flash (latest and fastest model)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""You are an AI real estate assistant helping renters make informed decisions.
+
+Property Details:
+- Title: {data.title}
+- Location: {data.city}
+- Price: ₹{data.price}/month
+- Size: {data.sqft} sqft
+- Bedrooms: {data.bedrooms}
+- Bathrooms: {data.bathrooms}
+- Description: {data.description}
+
+User Question: {data.question}
+
+Provide a helpful, concise, and practical answer (2-3 sentences max). Focus on being actionable and honest."""
+
+        print("📤 Sending request to Gemini...")
+        response = model.generate_content(prompt)
+        print(f"✅ Got response from Gemini: {response.text[:100]}...")
+        
+        return {
+            "success": True,
+            "reply": response.text
+        }
+    
+    except Exception as e:
+        error_details = traceback.format_exc()
+        print(f"❌ Error in chat endpoint: {str(e)}")
+        print(f"Full traceback:\n{error_details}")
+        return {
+            "success": False,
+            "error": str(e),
+            "reply": f"Sorry, I could not process your question. Error: {str(e)}"
+        }

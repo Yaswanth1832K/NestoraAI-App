@@ -27,6 +27,7 @@ class ListingEntity extends Equatable {
   final int reviewCount;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<DateTime> availableDates;
 
   List<String> get allImages => imageUrls.isNotEmpty ? imageUrls : images;
 
@@ -59,6 +60,7 @@ class ListingEntity extends Equatable {
     this.reviewCount = 0,
     required this.createdAt,
     required this.updatedAt,
+    this.availableDates = const [],
   });
 
   ListingEntity copyWith({
@@ -88,6 +90,7 @@ class ListingEntity extends Equatable {
     int? reviewCount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<DateTime>? availableDates,
   }) {
     return ListingEntity(
       id: id ?? this.id,
@@ -116,6 +119,7 @@ class ListingEntity extends Equatable {
       reviewCount: reviewCount ?? this.reviewCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      availableDates: availableDates ?? this.availableDates,
     );
   }
 
@@ -147,5 +151,6 @@ class ListingEntity extends Equatable {
         reviewCount,
         createdAt,
         updatedAt,
+        availableDates,
       ];
 }

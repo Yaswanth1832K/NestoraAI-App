@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import '../../../../core/errors/failures.dart';
-import '../entities/listing_entity.dart';
-import '../repositories/listing_repository.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
 
 class UpdateListingUseCase {
   final ListingRepository _repository;

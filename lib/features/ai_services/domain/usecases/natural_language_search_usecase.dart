@@ -1,9 +1,8 @@
 import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
-import '../../../../features/listings/domain/entities/listing_entity.dart';
-import '../../../../features/listings/domain/repositories/listing_repository.dart';
-import '../../data/datasources/ai_remote_datasource.dart';
+import 'package:house_rental/core/errors/failures.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/features/ai_services/data/datasources/ai_remote_datasource.dart';
 
 class SearchResult {
   final List<ListingEntity> listings;

@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../domain/repositories/listing_repository.dart';
-import '../models/listing_model.dart';
-import '../../domain/entities/listing_entity.dart'; // Add this import
+import 'package:house_rental/core/errors/exceptions.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/features/listings/data/models/listing_model.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 
 abstract interface class ListingRemoteDataSource {
   Future<List<ListingModel>> getListings({
@@ -18,12 +18,32 @@ abstract interface class ListingRemoteDataSource {
   Future<List<ListingModel>> getNearbyListings(ListingEntity baseListing);
   Future<List<ListingModel>> getListingsInBounds(
       double minLat, double maxLat, double minLng, double maxLng);
+  Future<List<ListingModel>> getMyListings(String userId);
 }
 
 class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
   final FirebaseFirestore _firestore;
 
   ListingRemoteDataSourceImpl(this._firestore);
+
+  @override
+  Future<List<ListingModel>> getMyListings(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('listings')
+          .where('ownerId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return ListingModel.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
 
   @override
   Future<List<ListingModel>> getListings({

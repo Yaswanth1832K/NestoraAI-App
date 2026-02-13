@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 
 class ListingModel extends ListingEntity {
   const ListingModel({
@@ -29,40 +29,60 @@ class ListingModel extends ListingEntity {
     super.reviewCount,
     required super.createdAt,
     required super.updatedAt,
+    super.availableDates,
   });
 
   factory ListingModel.fromJson(Map<String, dynamic> json) {
     return ListingModel(
-      id: json['id'] as String,
-      ownerId: json['ownerId'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      price: (json['price'] as num).toDouble(),
+      id: json['id'] as String? ?? '',
+      ownerId: json['ownerId'] as String? ?? '',
+      title: json['title'] as String? ?? 'Untitled Property',
+      description: json['description'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'INR',
-      propertyType: json['propertyType'] as String,
+      propertyType: json['propertyType'] as String? ?? 'Apartment',
       furnishing: json['furnishing'] as String? ?? 'Unfurnished',
-      bedrooms: json['bedrooms'] as int,
-      bathrooms: json['bathrooms'] as int,
-      sqft: (json['sqft'] as num).toDouble(),
+      bedrooms: (json['bedrooms'] as num?)?.toInt() ?? 0,
+      bathrooms: (json['bathrooms'] as num?)?.toInt() ?? 0,
+      sqft: (json['sqft'] as num?)?.toDouble() ?? 0.0,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: (json['reviewCount'] as int?) ?? 0,
-      address: Map<String, dynamic>.from(json['address'] as Map),
-      amenities: List<String>.from(json['amenities'] as List),
-      images: List<String>.from(json['images'] as List),
-      imageUrls: List<String>.from(json['imageUrls'] as List? ?? []),
-      searchTokens: List<String>.from(json['searchTokens'] as List),
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+      address: json['address'] != null 
+          ? Map<String, dynamic>.from(json['address'] as Map) 
+          : {},
+      amenities: json['amenities'] != null 
+          ? List<String>.from(json['amenities'] as List) 
+          : [],
+      images: json['images'] != null 
+          ? List<String>.from(json['images'] as List) 
+          : [],
+      imageUrls: json['imageUrls'] != null 
+          ? List<String>.from(json['imageUrls'] as List) 
+          : [],
+      searchTokens: json['searchTokens'] != null 
+          ? List<String>.from(json['searchTokens'] as List) 
+          : [],
       latitude: _safeParseDouble(json['latitude'], 11.0168),
       longitude: _safeParseDouble(json['longitude'], 76.9558),
       embedding: json['embedding'] != null
           ? List<double>.from(json['embedding'] as List)
           : null,
-      status: json['status'] as String,
+      status: json['status'] as String? ?? 'active',
       fraudRiskScore: (json['fraudRiskScore'] as num?)?.toDouble(),
       fraudSignals: json['fraudSignals'] != null
           ? List<String>.from(json['fraudSignals'] as List)
           : null,
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
-      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      createdAt: json['createdAt'] != null 
+          ? (json['createdAt'] as Timestamp).toDate() 
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null 
+          ? (json['updatedAt'] as Timestamp).toDate() 
+          : DateTime.now(),
+      availableDates: json['availableDates'] != null
+          ? (json['availableDates'] as List)
+              .map((d) => (d as Timestamp).toDate())
+              .toList()
+          : [],
     );
   }
 
@@ -94,6 +114,7 @@ class ListingModel extends ListingEntity {
       reviewCount: entity.reviewCount,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      availableDates: entity.availableDates,
     );
   }
 
@@ -125,6 +146,9 @@ class ListingModel extends ListingEntity {
       'fraudSignals': fraudSignals,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'availableDates': availableDates
+          .map((d) => Timestamp.fromDate(d))
+          .toList(),
     };
   }
 

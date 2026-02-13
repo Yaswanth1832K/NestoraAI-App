@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../providers/ai_providers.dart';
+import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
 
 class AISearchDebugRunner {
   static Future<void> run(ProviderContainer container) async {
@@ -28,10 +27,10 @@ class AISearchDebugRunner {
 
     result.fold(
       (failure) => debugPrint('❌ Search failed: ${failure.message}'),
-      (listings) {
+      (searchResult) {
         debugPrint('✅ Google AI Extraction Successful!');
-        debugPrint('🏠 Found ${listings.length} matching listings in Firestore.');
-        for (final listing in listings) {
+        debugPrint('🏠 Found ${searchResult.listings.length} matching listings in Firestore.');
+        for (final listing in searchResult.listings) {
           debugPrint(' - ${listing.title} (₹${listing.price})');
         }
       },

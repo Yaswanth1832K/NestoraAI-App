@@ -1,7 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:house_rental/app.dart';
 import 'package:house_rental/firebase_options.dart';
@@ -15,15 +16,24 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // AUTO ANONYMOUS LOGIN
-  if (FirebaseAuth.instance.currentUser == null) {
-    try {
-      await FirebaseAuth.instance.signInAnonymously();
-      debugPrint("Signed in anonymously: ${FirebaseAuth.instance.currentUser!.uid}");
-    } catch (e) {
-      debugPrint("Anonymous sign-in error: $e");
+  // Initialize FCM
+  final messaging = FirebaseMessaging.instance;
+  
+  // Request permissions (important for iOS/Web)
+  await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  // Handle background/terminated notifications when app is opened via tap
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    if (message.data.containsKey('chatId')) {
+      final chatId = message.data['chatId'];
+      // Navigate to chat (requires rootNavigatorKey and proper route)
+      rootNavigatorKey.currentContext?.push('/chat/$chatId');
     }
-  }
+  });
 
   runApp(
     const ProviderScope(
