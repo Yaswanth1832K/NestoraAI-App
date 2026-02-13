@@ -31,5 +31,20 @@ The Flutter app uses `lib/firebase_options.dart`. If this file is missing or you
 1. Install the Flutterfire CLI.
 2. Run `flutterfire configure` in the root directory.
 
+## 4. Google Maps API Key
+The Flutter app uses Google Maps for property location visualization.
+
+- **File Path**: `android/app/src/main/AndroidManifest.xml`
+- **How to Set It**:
+  1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+  2. Create a project and enable the **Maps SDK for Android**.
+  3. Generate an API Key in **APIs & Services > Credentials**.
+  4. Open `android/app/src/main/AndroidManifest.xml` and replace `"Enter your API Key here"` with your actual key:
+     ```xml
+     <meta-data
+         android:name="com.google.android.geo.API_KEY"
+         android:value="YOUR_ACTUAL_API_KEY" />
+     ```
+
 ---
 **Security Note**: Never commit your `serviceAccountKey.json` or actual API keys to GitHub!
