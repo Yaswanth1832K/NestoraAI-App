@@ -31,13 +31,13 @@ class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
       status: request.status,
       createdAt: request.createdAt,
     );
-    await _firestore.collection('visit_requests').doc(request.id).set(model.toFirestore());
+    await _firestore.collection('bookings').doc(request.id).set(model.toFirestore());
   }
 
   @override
   Stream<List<VisitRequestEntity>> getOwnerVisitRequests(String ownerId) {
     return _firestore
-        .collection('visit_requests')
+        .collection('bookings')
         .where('ownerId', isEqualTo: ownerId)
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -53,8 +53,8 @@ class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
   @override
   Stream<List<VisitRequestEntity>> getTenantVisitRequests(String tenantId) {
     return _firestore
-        .collection('visit_requests')
-        .where('tenantId', isEqualTo: tenantId)
+        .collection('bookings')
+        .where('renterId', isEqualTo: tenantId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .handleError((error) {
@@ -68,6 +68,6 @@ class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
 
   @override
   Future<void> updateVisitRequestStatus(String requestId, String status) async {
-    await _firestore.collection('visit_requests').doc(requestId).update({'status': status});
+    await _firestore.collection('bookings').doc(requestId).update({'status': status});
   }
 }

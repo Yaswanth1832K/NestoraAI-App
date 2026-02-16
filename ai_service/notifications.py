@@ -136,8 +136,8 @@ class NotificationWatcher:
     def process_booking_created(self, booking):
         try:
             owner_id = booking.get('ownerId')
-            if not owner_id:
-                print(f"⚠️ Warning: Booking missing ownerId. Data: {booking}")
+            if not owner_id or owner_id.strip() == "":
+                print(f"⚠️ Warning: Booking missing valid ownerId. Data: {booking}")
                 return
 
             user_doc = self.db.collection('users').document(owner_id).get()
@@ -159,9 +159,10 @@ class NotificationWatcher:
             if status not in ['approved', 'rejected']:
                 return
 
-            renter_id = booking.get('renterId')
-            if not renter_id:
-                print(f"⚠️ Warning: Updated booking missing renterId. Data: {booking}")
+            # Note: Renter receives the update
+            renter_id = booking.get('renterId') or booking.get('tenantId')
+            if not renter_id or renter_id.strip() == "":
+                print(f"⚠️ Warning: Updated booking missing valid renterId. Data: {booking}")
                 return
 
             user_doc = self.db.collection('users').document(renter_id).get()

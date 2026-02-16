@@ -23,6 +23,12 @@ import os
 
 # Configure Gemini API
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+
+if "YOUR_GEMINI_API_KEY" in GEMINI_API_KEY:
+    print("⚠️ WARNING: GEMINI_API_KEY is using a placeholder. AI Chat Features will fail.")
+else:
+    print(f"✅ Gemini API Key configured: {GEMINI_API_KEY[:4]}...{GEMINI_API_KEY[-4:]}")
+
 genai.configure(api_key=GEMINI_API_KEY)
 
 class SearchQuery(BaseModel):
@@ -120,8 +126,8 @@ def chat_about_property(data: PropertyChatRequest):
         print(f"🤖 Received chat request: {data.question}")
         print(f"Property: {data.title} in {data.city}")
         
-        # Use gemini-2.5-flash (latest and fastest model)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        # Use gemini-2.0-flash (confirmed available in this environment)
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         prompt = f"""You are an AI real estate assistant helping renters make informed decisions.
 

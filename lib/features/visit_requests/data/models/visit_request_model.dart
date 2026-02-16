@@ -25,9 +25,9 @@ class VisitRequestModel extends VisitRequestEntity {
       listingTitle: data['listingTitle'] ?? '',
       listingImage: data['listingImage'] ?? '',
       ownerId: data['ownerId'] ?? '',
-      tenantId: data['tenantId'] ?? '',
+      tenantId: data['renterId'] ?? data['tenantId'] ?? '', // Handle both for safety
       tenantName: data['tenantName'] ?? '',
-      date: (data['date'] as Timestamp).toDate(),
+      date: ((data['visitDate'] ?? data['date']) as Timestamp).toDate(),
       time: data['time'] ?? '',
       message: data['message'] ?? '',
       status: data['status'] ?? 'pending',
@@ -41,13 +41,13 @@ class VisitRequestModel extends VisitRequestEntity {
       'listingTitle': listingTitle,
       'listingImage': listingImage,
       'ownerId': ownerId,
-      'tenantId': tenantId,
-      'tenantName': tenantName,
-      'date': Timestamp.fromDate(date),
+      'renterId': tenantId,
+      'visitDate': Timestamp.fromDate(date),
       'time': time,
       'message': message,
       'status': status,
       'createdAt': FieldValue.serverTimestamp(),
+      'participants': [ownerId, tenantId], // Important for security rules
     };
   }
 }
