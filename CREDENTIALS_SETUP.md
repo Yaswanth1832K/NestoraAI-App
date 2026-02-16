@@ -92,4 +92,26 @@ The Python server handles real-time notifications and AI chat.
     ```
 
 ---
+
+## 6. Mobile Testing & Network Setup
+If you want to view AI analysis on a physical mobile device, follow these steps:
+
+### 1. Bind Backend to Network
+By default, the backend only listens to your computer. Run it like this to make it visible to your WiFi:
+```bash
+cd ai_service
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### 2. Configure Flutter to use your IP
+Find your computer's local IP address (run `ipconfig` on Windows or `ifconfig` on Mac). Then, run Flutter with that IP:
+```bash
+# Example if your IP is 192.168.1.10
+flutter run --dart-define=AI_SERVICE_URL=http://192.168.1.10:8000
+```
+
+### 3. Clone Repository Setup
+If you just cloned this repo, you **MUST** complete sections 1, 2, and 4 above (especially creating `serviceAccountKey.json` and setting your `GEMINI_API_KEY`) or the AI features will be invisible.
+
+---
 **Security Reminder**: Never commit your `serviceAccountKey.json`, `firebase_options.dart`, or actual API keys to GitHub!

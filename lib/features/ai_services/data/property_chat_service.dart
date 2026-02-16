@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
+import 'package:house_rental/core/constants/api_constants.dart';
+
 class PropertyChatService {
-  // Update this URL if your backend is running on a different port
-  static const String baseUrl = 'http://localhost:8000';
+  String get baseUrl => ApiConstants.baseUrl;
 
   Future<String> askAboutProperty({
     required String question,

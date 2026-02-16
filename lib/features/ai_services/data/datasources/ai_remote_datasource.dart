@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:house_rental/core/errors/exceptions.dart';
+import 'package:house_rental/core/constants/api_constants.dart';
 
 abstract interface class AIRemoteDataSource {
   Future<Map<String, dynamic>> naturalLanguageSearch({
@@ -22,13 +23,14 @@ class AIRemoteDataSourceImpl implements AIRemoteDataSource {
   AIRemoteDataSourceImpl(this._client);
 
   String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:8000';
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000';
-    } else {
-      return 'http://127.0.0.1:8000'; // iOS/Desktop
+    String base = ApiConstants.baseUrl;
+    // Android emulator special case for localhost
+    if (!kIsWeb && 
+        defaultTargetPlatform == TargetPlatform.android && 
+        (base.contains('localhost') || base.contains('127.0.0.1'))) {
+      return base.replaceFirst('localhost', '10.0.2.2').replaceFirst('127.0.0.1', '10.0.2.2');
     }
+    return base;
   }
 
   @override

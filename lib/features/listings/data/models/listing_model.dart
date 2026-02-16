@@ -86,6 +86,12 @@ class ListingModel extends ListingEntity {
     );
   }
 
+  factory ListingModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    data['id'] = doc.id;
+    return ListingModel.fromJson(data);
+  }
+
   factory ListingModel.fromEntity(ListingEntity entity) {
     return ListingModel(
       id: entity.id,

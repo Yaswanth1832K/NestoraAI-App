@@ -14,6 +14,7 @@ class ListingCard extends ConsumerStatefulWidget {
   final EdgeInsetsGeometry? margin;
   final bool showFavoriteButton;
   final Widget? actionButton;
+  final VoidCallback? onTap;
 
   const ListingCard({
     super.key,
@@ -23,6 +24,7 @@ class ListingCard extends ConsumerStatefulWidget {
     this.margin,
     this.showFavoriteButton = true,
     this.actionButton,
+    this.onTap,
   });
 
   @override
@@ -58,7 +60,7 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
     final isFavorite = favorites.value?.contains(widget.listing.id) ?? false;
 
     return GestureDetector(
-      onTap: () {
+      onTap: widget.onTap ?? () {
         rootNavigatorKey.currentState!.push(
           MaterialPageRoute(
             builder: (_) => ListingDetailsPage(listing: widget.listing),

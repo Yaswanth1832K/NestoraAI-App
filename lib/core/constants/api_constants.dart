@@ -8,12 +8,9 @@ abstract final class ApiConstants {
     defaultValue: 'http://localhost:8000',
   );
 
-  static const String apiVersion = 'v1';
-  static const String apiPath = '/api/$apiVersion';
-
   // Endpoints
-  static const String naturalLanguageSearch = '$apiPath/search/natural-language';
-  static const String recommendations = '$apiPath/recommendations';
-  static const String pricePrediction = '$apiPath/price/predict';
-  static const String fraudAnalysis = '$apiPath/fraud/analyze';
+  static const String naturalLanguageSearch = '/search/natural-language';
+  static const String recommendations = '/recommendations';
+  static const String pricePrediction = '/price/predict';
+  static const String propertyChat = '/chat/property';
 }
