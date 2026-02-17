@@ -38,4 +38,14 @@ class VisitRequestRepositoryImpl implements VisitRequestRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> rescheduleVisitRequest(String requestId, DateTime date, String time) async {
+    try {
+      await _remoteDataSource.rescheduleVisitRequest(requestId, date, time);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 }

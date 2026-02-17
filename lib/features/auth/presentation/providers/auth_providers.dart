@@ -11,6 +11,10 @@ import 'package:house_rental/features/auth/domain/usecases/sign_in_usecase.dart'
 import 'package:house_rental/features/auth/domain/usecases/sign_out_usecase.dart';
 import 'package:house_rental/features/auth/domain/usecases/sign_up_usecase.dart';
 import 'package:house_rental/features/auth/domain/entities/user_entity.dart';
+import 'package:house_rental/features/auth/domain/usecases/update_password_usecase.dart';
+import 'package:house_rental/features/auth/domain/usecases/update_user_role_usecase.dart';
+import 'package:house_rental/features/auth/domain/usecases/update_profile_usecase.dart';
+import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 
 // Data Layer Providers
 final authStateProvider = StreamProvider<User?>((ref) {
@@ -25,7 +29,10 @@ final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepositoryImpl(ref.read(authRemoteDataSourceProvider));
+  return AuthRepositoryImpl(
+    ref.read(authRemoteDataSourceProvider),
+    ref.read(notificationRepositoryProvider),
+  );
 });
 
 // Domain Layer Providers (UseCases)
@@ -44,6 +51,18 @@ final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
 
 final getCurrentUserUseCaseProvider = Provider<GetCurrentUserUseCase>((ref) {
   return GetCurrentUserUseCase(ref.read(authRepositoryProvider));
+});
+
+final updatePasswordUseCaseProvider = Provider<UpdatePasswordUseCase>((ref) {
+  return UpdatePasswordUseCase(ref.read(authRepositoryProvider));
+});
+
+final updateProfileUseCaseProvider = Provider<UpdateProfileUseCase>((ref) {
+  return UpdateProfileUseCase(ref.read(authRepositoryProvider));
+});
+
+final updateUserRoleUseCaseProvider = Provider<UpdateUserRoleUseCase>((ref) {
+  return UpdateUserRoleUseCase(ref.read(authRepositoryProvider));
 });
 
 // Role-based Providers (Real-time)

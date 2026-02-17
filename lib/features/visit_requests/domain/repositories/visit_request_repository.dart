@@ -7,4 +7,5 @@ abstract class VisitRequestRepository {
   Stream<List<VisitRequestEntity>> getOwnerVisitRequests(String ownerId);
   Stream<List<VisitRequestEntity>> getTenantVisitRequests(String tenantId);
   Future<Either<Failure, void>> updateVisitRequestStatus(String requestId, String status);
+  Future<Either<Failure, void>> rescheduleVisitRequest(String requestId, DateTime date, String time);
 }

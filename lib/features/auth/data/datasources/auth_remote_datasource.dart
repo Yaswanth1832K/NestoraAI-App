@@ -8,6 +8,13 @@ abstract interface class AuthRemoteDataSource {
   Future<UserModel> signUpWithEmailAndPassword(String email, String password, {String? role});
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
+  Future<void> updatePassword(String newPassword);
+  Future<void> updateProfile({
+    String? displayName,
+    String? phoneNumber,
+    String? photoURL,
+  });
+  Future<void> updateUserRole(String uid, String newRole);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -85,6 +92,63 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return await _ensureUserDocument(user);
       }
       return null;
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw const ServerException(message: 'User is not signed in');
+      }
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(message: e.message ?? 'Password update failed');
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateUserRole(String uid, String newRole) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({'role': newRole});
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateProfile({
+    String? displayName,
+    String? phoneNumber,
+    String? photoURL,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) throw const ServerException(message: 'User not logged in');
+
+      // Update Firebase Auth profile
+      if (displayName != null || photoURL != null) {
+        await user.updateDisplayName(displayName);
+        await user.updatePhotoURL(photoURL);
+      }
+
+      // Update Firestore user document
+      final Map<String, dynamic> updates = {};
+      if (displayName != null) updates['name'] = displayName;
+      if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
+      if (photoURL != null) updates['photoURL'] = photoURL;
+      // Add 'bio' if needed, though strictly not in interface yet, we will stick to interface params for now
+      
+      if (updates.isNotEmpty) {
+        await _firestore.collection('users').doc(user.uid).update(updates);
+      }
+      
+      await user.reload(); // Refresh user data
     } catch (e) {
       throw ServerException(message: e.toString());
     }

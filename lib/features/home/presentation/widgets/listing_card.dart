@@ -6,6 +6,7 @@ import 'package:house_rental/features/listings/presentation/providers/favorites_
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
 import 'package:house_rental/main.dart';
+import 'package:house_rental/core/theme/theme_provider.dart';
 
 class ListingCard extends ConsumerStatefulWidget {
   final ListingEntity listing;
@@ -58,6 +59,11 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
   Widget build(BuildContext context) {
     final favorites = ref.watch(favoritesNotifierProvider);
     final isFavorite = favorites.value?.contains(widget.listing.id) ?? false;
+    
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF222222);
+    final subTextColor = isDark ? Colors.grey.shade400 : const Color(0xFF717171);
 
     return GestureDetector(
       onTap: widget.onTap ?? () {
@@ -68,18 +74,8 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
         );
       },
       child: Container(
-        margin: widget.margin ?? EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: widget.isVerticalFeed ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
+        margin: widget.margin ?? const EdgeInsets.only(bottom: 24),
+        color: Colors.transparent, // Flat design
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -87,14 +83,14 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.circular(12),
                   child: AspectRatio(
-                    aspectRatio: widget.isVerticalFeed ? 1.4 : (widget.isCompact ? 1.3 : 1.6),
+                    aspectRatio: 1.05, // 20:19 aspect ratio (standard listing)
                     child: Image.network(
                       widget.listing.allImages.isNotEmpty ? widget.listing.allImages.first : 'https://placeholder.com/400x300',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade900,
+                        color: Colors.grey.shade200,
                         child: const Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     ),
@@ -108,8 +104,8 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                   )
                 else if (widget.showFavoriteButton)
                   Positioned(
-                    top: 16,
-                    right: 16,
+                    top: 12,
+                    right: 12,
                     child: GestureDetector(
                       onTap: _isToggling ? null : () => _toggleFavorite(context),
                       child: AnimatedBuilder(
@@ -117,130 +113,121 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                         builder: (context, child) {
                           return Transform.scale(
                             scale: _scaleAnimation.value,
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white.withOpacity(0.2)),
-                              ),
-                              child: _isToggling
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
-                                  : Icon(
-                                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                                      color: isFavorite ? Colors.red : Colors.white,
-                                      size: 22,
-                                    ),
+                            child: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: isFavorite ? const Color(0xFFFF385C) : Colors.white, // Airbnb Red or White
+                              size: 26,
+                              shadows: const [
+                                Shadow(blurRadius: 2, color: Colors.black26),
+                              ],
                             ),
                           );
                         },
                       ),
                     ),
                   ),
-                if (widget.listing.averageRating > 0)
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.star, size: 14, color: Colors.amber),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.listing.averageRating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                Positioned(
+                   top: 12,
+                   left: 12,
+                   child: Container(
+                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                     decoration: const BoxDecoration(
+                       color: Colors.white,
+                       borderRadius: BorderRadius.all(Radius.circular(4)),
+                     ),
+                     child: const Text(
+                       'Guest favourite',
+                       style: TextStyle(
+                         fontSize: 12,
+                         fontWeight: FontWeight.bold,
+                         color: Colors.black,
+                       ),
+                     ),
+                   ),
+                ),
               ],
             ),
             
+            const SizedBox(height: 12),
+            
             // Text Details
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          widget.listing.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                      Text(
+                        widget.listing.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        '₹${widget.listing.price.toInt()}/mo',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CAF50), // Nice green for price
+                        '${widget.listing.city} • ${widget.listing.bedrooms} Beds', // simplified location
+                        style: TextStyle(
+                          color: subTextColor,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Mar 1 - 6', // Date range placeholder
+                        style: TextStyle(
+                          color: subTextColor,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '£${widget.listing.price.toInt()}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' night',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                ),
+                // Rating
+                if (widget.listing.averageRating > 0)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      Icon(Icons.star, size: 14, color: textColor),
                       const SizedBox(width: 4),
                       Text(
-                        widget.listing.city,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(Icons.king_bed_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${widget.listing.bedrooms} Beds',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(Icons.bathtub_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${widget.listing.bathrooms} Baths',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
+                        widget.listing.averageRating.toStringAsFixed(1),
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 15,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+              ],
             ),
           ],
         ),

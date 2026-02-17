@@ -61,14 +61,16 @@ class ReviewRepositoryImpl implements ReviewRepository {
     return _firestore
         .collection('reviews')
         .where('listingId', isEqualTo: listingId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .handleError((error) {
       debugPrint("================================================================");
       debugPrint("FIRESTORE INDEX ERROR: $error");
       debugPrint("================================================================");
     }).map((snapshot) {
-      return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList();
+      final reviews = snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList();
+      // Sort in-memory to avoid index requirement
+      reviews.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return reviews;
     });
   }
 }

@@ -25,14 +25,21 @@ class VisitRequestModel extends VisitRequestEntity {
       listingTitle: data['listingTitle'] ?? '',
       listingImage: data['listingImage'] ?? '',
       ownerId: data['ownerId'] ?? '',
-      tenantId: data['renterId'] ?? data['tenantId'] ?? '', // Handle both for safety
+      tenantId: data['tenantId'] ?? data['renterId'] ?? '', 
       tenantName: data['tenantName'] ?? '',
-      date: ((data['visitDate'] ?? data['date']) as Timestamp).toDate(),
+      date: _parseDate(data['date'] ?? data['visitDate']), 
       time: data['time'] ?? '',
       message: data['message'] ?? '',
       status: data['status'] ?? 'pending',
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: _parseDate(data['createdAt']),
     );
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
   }
 
   Map<String, dynamic> toFirestore() {

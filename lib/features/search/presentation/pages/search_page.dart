@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/notifications/domain/entities/notification_entity.dart';
+import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/features/search/presentation/providers/search_providers.dart';
@@ -81,6 +84,27 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       }
       await ref.read(searchProvider.notifier).search(searchText);
       await ref.read(searchHistoryProvider.notifier).addQuery(searchText);
+
+      // Send Notification for Search Activity (Non-blocking)
+      final user = ref.read(authStateProvider).value;
+      if (user != null) {
+        try {
+          final uuid = const Uuid();
+          await ref.read(addNotificationUseCaseProvider)(
+            user.uid,
+            NotificationEntity(
+              id: uuid.v4(),
+              title: "Search Activity",
+              body: "You searched for: '$searchText'",
+              timestamp: DateTime.now(),
+              type: 'system',
+              isRead: false,
+            ),
+          );
+        } catch (e) {
+          debugPrint("Notification Error (Search): $e");
+        }
+      }
     }
   }
 

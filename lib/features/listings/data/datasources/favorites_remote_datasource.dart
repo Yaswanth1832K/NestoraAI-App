@@ -72,13 +72,13 @@ class FavoritesRemoteDataSourceImpl implements FavoritesRemoteDataSource {
     return _firestore
         .collection('favorites')
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final favorites = snapshot.docs.map((doc) {
         final data = doc.data();
-        // Reconstruct a partial ListingEntity from the summary data
-        // We use safe defaults for missing fields since this is a summary
+        // Use either server timestamp or current date if pending
+        final createdAt = (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+        
         return ListingModel(
           id: data['listingId'] as String? ?? '',
           ownerId: '', // Not stored in favorite summary
@@ -99,10 +99,14 @@ class FavoritesRemoteDataSourceImpl implements FavoritesRemoteDataSource {
           imageUrls: [if (data['image'] != null && data['image'].toString().isNotEmpty) data['image']],
           searchTokens: [],
           status: 'active',
-          createdAt: DateTime.now(),
+          createdAt: createdAt,
           updatedAt: DateTime.now(),
         );
       }).toList();
+
+      // Sort in-memory to avoid index requirement
+      favorites.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return favorites;
     });
   }
 }

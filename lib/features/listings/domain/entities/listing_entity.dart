@@ -33,6 +33,10 @@ class ListingEntity extends Equatable {
 
   String get city => address['city'] ?? 'Unknown City';
 
+  static const String statusAvailable = 'available';
+  static const String statusRented = 'rented';
+  static const String statusInactive = 'inactive';
+
   const ListingEntity({
     required this.id,
     required this.ownerId,

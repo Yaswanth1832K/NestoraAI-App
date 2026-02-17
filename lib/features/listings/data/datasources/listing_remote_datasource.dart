@@ -32,14 +32,17 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
       final querySnapshot = await _firestore
           .collection('listings')
           .where('ownerId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .get();
 
-      return querySnapshot.docs.map((doc) {
+      final listings = querySnapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return ListingModel.fromJson(data);
       }).toList();
+
+      // Sort in-memory
+      listings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return listings;
     } catch (e) {
       throw ServerException(message: e.toString());
     }

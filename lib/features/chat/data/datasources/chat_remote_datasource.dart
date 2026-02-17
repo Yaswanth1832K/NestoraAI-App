@@ -102,10 +102,12 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         .collection('chats')
         .doc(chatId)
         .collection('messages')
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => MessageModel.fromFirestore(doc)).toList();
+      final messages = snapshot.docs.map((doc) => MessageModel.fromFirestore(doc)).toList();
+      // Sort in memory to avoid index requirements
+      messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return messages;
     });
   }
 
@@ -114,10 +116,16 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     return _firestore
         .collection('chats')
         .where('participants', arrayContains: userId)
-        .orderBy('lastTimestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => ChatRoomModel.fromFirestore(doc)).toList();
+      final rooms = snapshot.docs.map((doc) => ChatRoomModel.fromFirestore(doc)).toList();
+      // Sort in memory to avoid index requirements
+      rooms.sort((a, b) {
+        final aTime = a.lastTimestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.lastTimestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+      return rooms;
     });
   }
 }

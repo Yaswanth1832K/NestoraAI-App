@@ -5,6 +5,9 @@ import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/core/services/notification_service.dart';
 import 'package:house_rental/features/auth/domain/entities/user_entity.dart';
+import 'package:uuid/uuid.dart';
+import 'package:house_rental/features/notifications/domain/entities/notification_entity.dart';
+import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
@@ -57,7 +60,24 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
       setState(() => _isLoading = false);
       result.fold(
         (failure) => setState(() => _errorMessage = failure.message),
-        (user) => context.go(AppRouter.home),
+        (user) {
+          // Send Login Notification
+          if (user != null) {
+            final uuid = const Uuid();
+            ref.read(addNotificationUseCaseProvider)(
+              user.uid,
+              NotificationEntity(
+                id: uuid.v4(),
+                title: "New Login",
+                body: "A new login was detected on your account.",
+                timestamp: DateTime.now(),
+                type: 'alert',
+                isRead: false,
+              ),
+            );
+          }
+          context.go(AppRouter.home);
+        },
       );
     }
   }
@@ -78,7 +98,24 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
       setState(() => _isLoading = false);
       result.fold(
         (failure) => setState(() => _errorMessage = failure.message),
-        (user) => context.go(AppRouter.home),
+        (user) {
+          // Send Welcome Notification
+          if (user != null) {
+             final uuid = const Uuid();
+             ref.read(addNotificationUseCaseProvider)(
+              user.uid,
+              NotificationEntity(
+                id: uuid.v4(),
+                title: "Welcome to Nestora!",
+                body: "We're excited to have you on board. Explore properties or list your own today!",
+                timestamp: DateTime.now(),
+                type: 'system',
+                isRead: false,
+              ),
+            );
+          }
+          context.go(AppRouter.home);
+        },
       );
     }
   }

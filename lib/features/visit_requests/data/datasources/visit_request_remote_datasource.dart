@@ -8,6 +8,7 @@ abstract class VisitRequestRemoteDataSource {
   Stream<List<VisitRequestEntity>> getOwnerVisitRequests(String ownerId);
   Stream<List<VisitRequestEntity>> getTenantVisitRequests(String tenantId);
   Future<void> updateVisitRequestStatus(String requestId, String status);
+  Future<void> rescheduleVisitRequest(String requestId, DateTime date, String time);
 }
 
 class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
@@ -38,15 +39,17 @@ class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
   Stream<List<VisitRequestEntity>> getOwnerVisitRequests(String ownerId) {
     return _firestore
         .collection('bookings')
-        .where('ownerId', isEqualTo: ownerId)
-        .orderBy('createdAt', descending: true)
+        .where('participants', arrayContains: ownerId)
         .snapshots()
         .handleError((error) {
       debugPrint("================================================================");
-      debugPrint("FIRESTORE INDEX ERROR (OWNER VISITS): $error");
+      debugPrint("FIRESTORE PERMISSION/INDEX ERROR (OWNER VISITS): $error");
       debugPrint("================================================================");
     }).map((snapshot) {
-      return snapshot.docs.map((doc) => VisitRequestModel.fromFirestore(doc)).toList();
+      final docs = snapshot.docs.map((doc) => VisitRequestModel.fromFirestore(doc)).toList();
+      // Sort in memory to avoid index requirements
+      docs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return docs;
     });
   }
 
@@ -54,20 +57,31 @@ class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
   Stream<List<VisitRequestEntity>> getTenantVisitRequests(String tenantId) {
     return _firestore
         .collection('bookings')
-        .where('renterId', isEqualTo: tenantId)
-        .orderBy('createdAt', descending: true)
+        .where('participants', arrayContains: tenantId)
         .snapshots()
         .handleError((error) {
       debugPrint("================================================================");
-      debugPrint("FIRESTORE INDEX ERROR (TENANT VISITS): $error");
+      debugPrint("FIRESTORE PERMISSION/INDEX ERROR (TENANT VISITS): $error");
       debugPrint("================================================================");
     }).map((snapshot) {
-      return snapshot.docs.map((doc) => VisitRequestModel.fromFirestore(doc)).toList();
+      final docs = snapshot.docs.map((doc) => VisitRequestModel.fromFirestore(doc)).toList();
+      // Sort in memory to avoid index requirements
+      docs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return docs;
     });
   }
 
   @override
   Future<void> updateVisitRequestStatus(String requestId, String status) async {
     await _firestore.collection('bookings').doc(requestId).update({'status': status});
+  }
+
+  @override
+  Future<void> rescheduleVisitRequest(String requestId, DateTime date, String time) async {
+    await _firestore.collection('bookings').doc(requestId).update({
+      'date': Timestamp.fromDate(date),
+      'time': time,
+      'status': 'pending', // Reset to pending when rescheduled
+    });
   }
 }

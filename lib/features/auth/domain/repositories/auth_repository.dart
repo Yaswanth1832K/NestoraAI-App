@@ -21,4 +21,16 @@ abstract interface class AuthRepository {
 
   /// Get the currently signed-in user
   Future<Either<Failure, UserEntity?>> getCurrentUser();
+
+  /// Update the user's password
+  Future<Either<Failure, void>> updatePassword(String newPassword);
+
+  Future<Either<Failure, void>> updateProfile({
+    String? displayName,
+    String? phoneNumber,
+    String? photoURL,
+  });
+
+  /// Update the user's role
+  Future<Either<Failure, void>> updateUserRole(String uid, String newRole);
 }

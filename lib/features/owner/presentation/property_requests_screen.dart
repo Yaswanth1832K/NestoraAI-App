@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:house_rental/core/theme/theme_provider.dart';
+import 'package:house_rental/features/visit_requests/data/models/visit_request_model.dart';
 
-class PropertyRequestsScreen extends StatelessWidget {
+class PropertyRequestsScreen extends ConsumerWidget {
   final String listingId;
   final String title;
 
@@ -12,15 +15,14 @@ class PropertyRequestsScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
       appBar: AppBar(
-        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -40,13 +42,13 @@ class PropertyRequestsScreen extends StatelessWidget {
           final bookings = snapshot.data!.docs;
 
           if (bookings.isEmpty) {
-            return const Center(
+            return Center(
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                        Icon(Icons.assignment_late_outlined, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text("No requests yet", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                        Icon(Icons.assignment_late_outlined, size: 80, color: isDark ? Colors.grey : Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        const Text("No requests yet", style: TextStyle(color: Colors.grey, fontSize: 16)),
                     ],
                 )
             );
@@ -56,15 +58,14 @@ class PropertyRequestsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: bookings.length,
             itemBuilder: (context, index) {
-
-              final booking = bookings[index];
-              final data = booking.data() as Map<String, dynamic>;
-              final status = data['status'] ?? 'pending';
-
-              final date = (data['visitDate'] as Timestamp).toDate();
+              final doc = bookings[index];
+              final request = VisitRequestModel.fromFirestore(doc);
+              final status = request.status;
+              final date = request.date;
 
               return Card(
-                color: const Color(0xFF1A1A1A),
+                elevation: isDark ? 0 : 2,
+                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                 margin: const EdgeInsets.only(bottom: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
@@ -89,11 +90,26 @@ class PropertyRequestsScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       Row(
                           children: [
+                              const Icon(Icons.person_outline, color: Colors.grey, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                request.tenantName,
+                                style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                              ),
+                          ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                          children: [
                               const Icon(Icons.calendar_today_rounded, color: Colors.grey, size: 16),
                               const SizedBox(width: 8),
                               Text(
                                 "Date: ${date.day}/${date.month}/${date.year}",
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87, 
+                                  fontWeight: FontWeight.bold, 
+                                  fontSize: 16
+                                )
                               ),
                           ],
                       ),
@@ -110,7 +126,7 @@ class PropertyRequestsScreen extends StatelessWidget {
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                     onPressed: () {
-                                        booking.reference.update({'status': 'approved'});
+                                        doc.reference.update({'status': 'approved'});
                                     },
                                     child: const Text("Approve"),
                                 ),
@@ -125,7 +141,7 @@ class PropertyRequestsScreen extends StatelessWidget {
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                     onPressed: () {
-                                        booking.reference.update({'status': 'rejected'});
+                                        doc.reference.update({'status': 'rejected'});
                                     },
                                     child: const Text("Reject"),
                                 ),
@@ -133,11 +149,11 @@ class PropertyRequestsScreen extends StatelessWidget {
                           ],
                         )
                       else if (status == 'approved')
-                         const Row(
+                         Row(
                              children: [
-                                 Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 20),
-                                 SizedBox(width: 8),
-                                 Text("This visit is confirmed", style: TextStyle(color: Colors.greenAccent)),
+                                 const Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 20),
+                                 const SizedBox(width: 8),
+                                 Text("This visit is confirmed", style: TextStyle(color: isDark ? Colors.greenAccent : Colors.green.shade700)),
                              ],
                          )
                     ],

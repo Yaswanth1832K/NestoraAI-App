@@ -2,7 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
+import 'package:house_rental/features/listings/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/core/theme/theme_provider.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
+import 'package:house_rental/features/notifications/domain/entities/notification_entity.dart';
+import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:uuid/uuid.dart';
+import 'package:go_router/go_router.dart';
+
+// Mapping categories to Icons (using Standard Icons for now)
+final List<Map<String, dynamic>> categories = [
+  {'name': 'Apartments', 'icon': Icons.apartment},
+  {'name': 'Villas', 'icon': Icons.house},
+  {'name': 'PG', 'icon': Icons.bedroom_parent},
+  {'name': 'Near College', 'icon': Icons.school},
+  {'name': 'Budget', 'icon': Icons.savings},
+  {'name': 'Luxury', 'icon': Icons.diamond},
+  {'name': 'Trending', 'icon': Icons.local_fire_department},
+  {'name': 'New', 'icon': Icons.new_releases},
+];
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -12,93 +33,184 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  String selectedCategory = 'Apartments';
-  final List<String> categories = ['Apartments', 'Villas', 'PG', 'Near College', 'Budget', 'Luxury'];
+  @override
+  void initState() {
+    super.initState();
+    _categoryFilter = 'Apartments';
+    
+    // Trigger "Home Page Access" Notification once per session/visit (Non-blocking)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = ref.read(authStateProvider).value;
+      if (user != null) {
+        try {
+          final uuid = const Uuid();
+          await ref.read(addNotificationUseCaseProvider)(
+            user.uid,
+            NotificationEntity(
+              id: uuid.v4(),
+              title: "Exploring Properties",
+              body: "You've accessed the main property feed. Happy hunting!",
+              timestamp: DateTime.now(),
+              type: 'system',
+              isRead: false,
+            ),
+          );
+        } catch (e) {
+          debugPrint("Notification Error (Home Access): $e");
+        }
+      }
+    });
+  }
 
+  String _categoryFilter = 'Apartments';
+  
   @override
   Widget build(BuildContext context) {
     final listingsAsync = ref.watch(filteredListingsProvider);
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F), // Dark modern background
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leadingWidth: 200,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20, top: 12),
-          child: InkWell(
-            onTap: () {
-              // Location selection logic
-            },
-            child: Row(
-              children: [
-                const Text(
-                  'Coimbatore',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 ),
-                const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-              ],
+                child: Row(
+                  children: [
+                    Icon(Icons.search, size: 24, color: isDark ? Colors.white : Colors.black),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => context.push(AppRouter.search),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Where to?',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            Text(
+                              'Anywhere • Any week • Add guests',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Theme Toggle Button
+                    InkWell(
+                      onTap: () {
+                        ref.read(themeProvider.notifier).toggleTheme();
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                        ),
+                        child: Icon(
+                          isDark ? Icons.light_mode : Icons.dark_mode,
+                          size: 16,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Filter Button
+                    InkWell(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const FilterBottomSheet(),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                        ),
+                        child: Icon(Icons.tune, size: 16, color: isDark ? Colors.white : Colors.black),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.white),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 10),
-        ],
-      ),
-      body: CustomScrollView(
-        slivers: [
-          // Category Selector
-          SliverToBoxAdapter(
-            child: Container(
-              height: 60,
-              padding: const EdgeInsets.symmetric(vertical: 10),
+            
+            // Categories
+            Container(
+              height: 80,
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200)),
+              ),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final category = categories[index];
-                  final isSelected = selectedCategory == category;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          selectedCategory = category;
-                        });
-                        _applyCategoryFilter(category);
-                      },
+                  final isSelected = _categoryFilter == category['name'];
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _categoryFilter = category['name'];
+                      });
+                      _applyCategoryFilter(category['name']);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Icon(
+                            category['icon'] as IconData,
+                            size: 28,
+                            color: isSelected ? (isDark ? Colors.white : Colors.black) : Colors.grey,
+                          ),
+                          const SizedBox(height: 8),
                           Text(
-                            category,
+                            category['name'] as String,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.grey,
+                              color: isSelected ? (isDark ? Colors.white : Colors.black) : Colors.grey,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 15,
+                              fontSize: 12,
                             ),
                           ),
-                          if (isSelected)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              height: 2,
-                              width: 20,
-                              color: Colors.white,
-                            ),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 2,
+                            width: 30, // Approximate width
+                            color: isSelected ? (isDark ? Colors.white : Colors.black) : Colors.transparent,
+                          ),
                         ],
                       ),
                     ),
@@ -106,102 +218,49 @@ class _HomePageState extends ConsumerState<HomePage> {
                 },
               ),
             ),
-          ),
 
-          // Featured Banner
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                height: 180,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.1),
-                            Colors.black.withOpacity(0.6),
-                          ],
-                        ),
+            // Listings Feed
+            Expanded(
+              child: listingsAsync.when(
+                data: (listings) {
+                  if (listings.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No properties found',
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Positioned(
-                      bottom: 24,
-                      left: 24,
-                      child: Text(
-                        'Recommended\nfor you',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Property Cards Feed
-          listingsAsync.when(
-            data: (listings) {
-              if (listings.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: Text(
-                      'No properties found',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                );
-              }
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 24.0),
-                        child: ListingCard(
-                          listing: listings[index],
-                          isVerticalFeed: true,
-                        ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    itemCount: listings.length,
+                    itemBuilder: (context, index) {
+                      return ListingCard(
+                        listing: listings[index],
+                        isVerticalFeed: true,
+                        margin: const EdgeInsets.only(bottom: 32),
                       );
                     },
-                    childCount: listings.length,
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                error: (err, stack) => Center(
+                  child: Text(
+                    'Error loading listings',
+                    style: TextStyle(color: Colors.red.shade300),
                   ),
-                ),
-              );
-            },
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (err, stack) => SliverFillRemaining(
-              child: Center(
-                child: Text(
-                  'Error loading listings',
-                  style: TextStyle(color: Colors.red.shade300),
                 ),
               ),
             ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
+          ],
+        ),
       ),
     );
   }
