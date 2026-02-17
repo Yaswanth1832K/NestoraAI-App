@@ -40,6 +40,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
   List<String> _existingImageUrls = [];
   List<XFile> _images = [];
   List<DateTime> _availableDates = [];
+  String _status = ListingEntity.statusAvailable;
   bool _isLoading = false;
   String? _uploadStatus;
 
@@ -60,6 +61,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
       _lngController.text = listing.longitude.toString();
       _existingImageUrls = List.from(listing.imageUrls);
       _availableDates = List.from(listing.availableDates);
+      _status = listing.status;
     }
   }
 
@@ -189,6 +191,20 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 180)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              surface: const Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF1E1E1E),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null && !_availableDates.contains(picked)) {
@@ -259,7 +275,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
         searchTokens: [], 
         latitude: lat,
         longitude: lng,
-        status: 'active',
+        status: _status,
         createdAt: isEditing ? widget.existingListing!.createdAt : DateTime.now(),
         updatedAt: DateTime.now(),
         availableDates: _availableDates,
@@ -301,7 +317,10 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
   Widget build(BuildContext context) {
     final isEditing = widget.existingListing != null;
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Property' : 'Post Your Property')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit Property' : 'Post Your Property', style: const TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
+      ),
       body: _isLoading 
         ? Center(
             child: Column(
@@ -309,7 +328,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                Text(_uploadStatus ?? 'Processing...'),
+                Text(_uploadStatus ?? 'Processing...', style: const TextStyle(fontWeight: FontWeight.w500)),
               ],
             ),
           )
@@ -321,164 +340,230 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                    const Text(
-                    'Property Images (Add at least 1)',
+                    'Property Images (Max 5)',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      // Existing Images
-                      ...List.generate(_existingImageUrls.length, (index) => Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(_existingImageUrls[index], width: 80, height: 80, fit: BoxFit.cover),
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: GestureDetector(
-                                onTap: () => setState(() => _existingImageUrls.removeAt(index)),
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
-                      // New Images
-                      ...List.generate(_images.length, (index) => _ImageThumbnail(
-                        file: _images[index],
-                        onRemove: () => setState(() => _images.removeAt(index)),
-                      )),
-                      if (_images.length + _existingImageUrls.length < 5)
+                  SizedBox(
+                    height: 100,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        // New Add Button (First)
+                         if (_images.length + _existingImageUrls.length < 5)
                         GestureDetector(
                           onTap: _pickImages,
                           child: Container(
-                            width: 80,
-                            height: 80,
+                            width: 100,
+                            height: 100,
+                            margin: const EdgeInsets.only(right: 12),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade400),
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.withOpacity(0.4), width: 1, style: BorderStyle.solid),
                             ),
-                            child: const Icon(Icons.add_a_photo, color: Colors.grey),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_a_photo, color: Colors.blue, size: 30),
+                                SizedBox(height: 8),
+                                Text("Add Photo", style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
                         ),
-                    ],
+
+                        // Existing Images
+                        ...List.generate(_existingImageUrls.length, (index) => Padding(
+                          padding: const EdgeInsets.only(right: 12.0),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(_existingImageUrls[index], width: 100, height: 100, fit: BoxFit.cover),
+                              ),
+                              Positioned(
+                                right: 4,
+                                top: 4,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _existingImageUrls.removeAt(index)),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                        // New Images
+                        ...List.generate(_images.length, (index) => _ImageThumbnail(
+                          file: _images[index],
+                          onRemove: () => setState(() => _images.removeAt(index)),
+                        )),
+                      ],
+                    ),
                   ),
+                  
                   const SizedBox(height: 24),
-                  _buildTextField(_titleController, 'Title', 'e.g. Luxury 2BHK in Indiranagar'),
-                  _buildTextField(_descController, 'Description', 'Describe the property...', maxLines: 3),
+                  _buildSectionHeader("Basic Details"),
+                  const SizedBox(height: 12),
+                  _buildTextField(_titleController, 'Title', 'e.g. Spacious 2BHK in Indiranagar'),
+                  _buildTextField(_descController, 'Description', 'Describe the key features...', maxLines: 4),
+                  
                   Row(
                     children: [
-                      Expanded(child: _buildTextField(_priceController, 'Price (₹)', '0', keyboardType: TextInputType.number)),
-                      const SizedBox(width: 16),
+                      Expanded(flex: 2, child: _buildTextField(_priceController, 'Price (₹)', '0', keyboardType: TextInputType.number, prefixText: '₹ ')),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Stack(
-                          alignment: Alignment.centerRight,
-                          children: [
-                            _buildTextField(_cityController, 'City', 'e.g. Bangalore'),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16, right: 8),
-                              child: IconButton(
-                                icon: const Icon(Icons.location_searching, color: Colors.blue),
-                                tooltip: 'Fetch Coordinates',
-                                onPressed: _fetchCoordinatesFromCity,
-                              ),
-                            ),
-                          ],
+                        flex: 3,
+                        child: _buildTextField(
+                          _cityController, 
+                          'City', 
+                          'e.g. Bangalore',
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.my_location, color: Colors.blue),
+                            onPressed: _fetchCoordinatesFromCity,
+                            tooltip: "Auto-fill Lat/Lng",
+                          ),
                         ),
                       ),
                     ],
                   ),
+
                   Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<int>(
+                        child: _buildDropdown<int>(
+                          label: 'Bedrooms',
                           value: _bedrooms,
-                          decoration: InputDecoration(
-                            labelText: 'Bedrooms',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          items: List.generate(10, (index) => index + 1)
-                              .map((e) => DropdownMenuItem(value: e, child: Text('$e BHK')))
-                              .toList(),
+                          items: List.generate(8, (i) => i + 1),
+                          itemLabel: (i) => '$i BHK',
                           onChanged: (v) => setState(() => _bedrooms = v!),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: DropdownButtonFormField<int>(
+                         child: _buildDropdown<int>(
+                          label: 'Bathrooms',
                           value: _bathrooms,
-                          decoration: InputDecoration(
-                            labelText: 'Bathrooms',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          items: List.generate(10, (index) => index + 1)
-                              .map((e) => DropdownMenuItem(value: e, child: Text('$e Bath')))
-                              .toList(),
+                          items: List.generate(8, (i) => i + 1),
+                          itemLabel: (i) => '$i Bath',
                           onChanged: (v) => setState(() => _bathrooms = v!),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                   _buildTextField(_sqftController, 'Area (Sqft)', '0', keyboardType: TextInputType.number),
-                   _buildTextField(_amenitiesController, 'Amenities', 'Wifi, Parking, Lift (comma separated)'),
+                  
+                  _buildTextField(_sqftController, 'Area (Sqft)', '0', keyboardType: TextInputType.number),
+                  _buildTextField(_amenitiesController, 'Amenities', 'Wifi, Parking, Gym, Pool'),
+                   
+                  const SizedBox(height: 8),
+                  _buildSectionHeader("Property Status"),
+                  const SizedBox(height: 12),
+                   DropdownButtonFormField<String>(
+                    value: _status,
+                    decoration: InputDecoration(
+                       labelText: 'Status',
+                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: ListingEntity.statusAvailable, child: Text('Available')),
+                      DropdownMenuItem(value: ListingEntity.statusRented, child: Text('Rented')),
+                      DropdownMenuItem(value: ListingEntity.statusInactive, child: Text('Inactive')),
+                    ],
+                    onChanged: (v) => setState(() => _status = v!),
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader("Location Coordinates"),
+                   const SizedBox(height: 12),
                    Row(
                     children: [
                       Expanded(
                         child: _buildTextField(_latController, 'Latitude', '11.0168', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _buildTextField(_lngController, 'Longitude', '76.9558', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Set Availability (Renter Visit Dates)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  
+                  _buildSectionHeader("Set Availability (Renter Visit Dates)"),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      ..._availableDates.map((date) => Chip(
-                        label: Text('${date.day}/${date.month}/${date.year}'),
-                        onDeleted: () => setState(() => _availableDates.remove(date)),
-                        deleteIcon: const Icon(Icons.close, size: 14),
-                      )),
-                      ActionChip(
-                        avatar: const Icon(Icons.add, size: 18),
-                        label: const Text('Add Date'),
-                        onPressed: _pickDate,
-                      ),
-                    ],
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                         Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ..._availableDates.map((date) => Chip(
+                              label: Text('${date.day}/${date.month}/${date.year}'),
+                              backgroundColor: Colors.blue.withOpacity(0.1),
+                              labelStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                              onDeleted: () => setState(() => _availableDates.remove(date)),
+                              deleteIcon: const Icon(Icons.close, size: 14, color: Colors.blue),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: BorderSide.none,
+                            )),
+                            
+                          ],
+                        ),
+                        if (_availableDates.isNotEmpty) const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                              onPressed: _pickDate,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add Date'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.redAccent,
+                                side: const BorderSide(color: Colors.redAccent),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 32),
+
+                  const SizedBox(height: 40),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 54,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
                       ),
                       onPressed: _submit,
-                      child: Text(isEditing ? 'Update Property' : 'Publish Property', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: Text(isEditing ? 'Update Property' : 'Publish Property', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
     );
   }
 
@@ -488,6 +573,8 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
     String hint, {
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
+    Widget? suffixIcon,
+    String? prefixText,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -498,7 +585,18 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixText: prefixText,
+          suffixIcon: suffixIcon,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(12),
+             borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          floatingLabelBehavior: FloatingLabelBehavior.always,
         ),
         validator: (v) {
           if (v == null || v.isEmpty) return 'Required';
@@ -511,6 +609,29 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
       ),
     );
   }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<T> items,
+    required String Function(T) itemLabel,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(12),
+             borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        items: items.map((e) => DropdownMenuItem(value: e, child: Text(itemLabel(e)))).toList(),
+        onChanged: onChanged,
+      );
+  }
 }
 
 class _ImageThumbnail extends StatelessWidget {
@@ -522,23 +643,23 @@ class _ImageThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
+      padding: const EdgeInsets.only(right: 12.0),
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: kIsWeb
-                ? Image.network(file.path, width: 80, height: 80, fit: BoxFit.cover)
-                : Image.file(File(file.path), width: 80, height: 80, fit: BoxFit.cover),
+                ? Image.network(file.path, width: 100, height: 100, fit: BoxFit.cover)
+                : Image.file(File(file.path), width: 100, height: 100, fit: BoxFit.cover),
           ),
           Positioned(
-            right: 0,
-            top: 0,
+            right: 4,
+            top: 4,
             child: GestureDetector(
               onTap: onRemove,
               child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle),
                 child: const Icon(Icons.close, size: 14, color: Colors.white),
               ),
             ),
