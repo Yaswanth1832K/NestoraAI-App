@@ -91,3 +91,9 @@ final isOwnerProvider = Provider<AsyncValue<bool>>((ref) {
   final roleSnapshot = ref.watch(userRoleProvider);
   return roleSnapshot.whenData((role) => role == 'owner');
 });
+
+final userProfileProvider = FutureProvider.family<UserEntity?, String>((ref, uid) async {
+  final doc = await ref.watch(firestoreProvider).collection('users').doc(uid).get();
+  if (!doc.exists) return null;
+  return UserModel.fromFirestore(doc);
+});

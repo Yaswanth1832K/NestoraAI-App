@@ -8,6 +8,7 @@ class UserModel extends UserEntity {
     required super.email,
     super.displayName,
     super.photoUrl,
+    super.destination,
     super.role = 'renter',
   });
 
@@ -17,6 +18,7 @@ class UserModel extends UserEntity {
       email: user.email ?? '',
       displayName: user.displayName,
       photoUrl: user.photoURL,
+      destination: null,
       role: role,
     );
   }
@@ -28,6 +30,7 @@ class UserModel extends UserEntity {
       email: data['email'] ?? '',
       displayName: data['displayName'],
       photoUrl: data['photoUrl'],
+      destination: data['destination'],
       role: data['role'] ?? 'renter',
     );
   }
@@ -37,6 +40,7 @@ class UserModel extends UserEntity {
       'email': email,
       'displayName': displayName,
       'photoUrl': photoUrl,
+      'destination': destination,
       'role': role,
       'createdAt': FieldValue.serverTimestamp(),
     };

@@ -22,7 +22,8 @@ start_notification_service()
 import os
 
 # Configure Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAXtq9pTAFk9WKDm0chDq2y-4F7KTgqaas")
+
 
 if "YOUR_GEMINI_API_KEY" in GEMINI_API_KEY:
     print("⚠️ WARNING: GEMINI_API_KEY is using a placeholder. AI Chat Features will fail.")
@@ -126,8 +127,8 @@ def chat_about_property(data: PropertyChatRequest):
         print(f"🤖 Received chat request: {data.question}")
         print(f"Property: {data.title} in {data.city}")
         
-        # Use gemini-2.0-flash (confirmed available in this environment)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        # Use gemini-flash-latest (verified from list_models)
+        model = genai.GenerativeModel('gemini-flash-latest')
         
         prompt = f"""You are an AI real estate assistant helping renters make informed decisions.
 

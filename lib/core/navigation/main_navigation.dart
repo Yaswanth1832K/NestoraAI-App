@@ -7,6 +7,7 @@ import 'package:house_rental/features/map/presentation/pages/map_page.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_inbox_page.dart';
 import 'package:house_rental/features/owner/presentation/owner_properties_screen.dart';
 import 'package:house_rental/features/profile/presentation/pages/profile_page.dart';
+import 'package:house_rental/features/roommate/presentation/pages/roommate_feed_screen.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 
 import 'package:house_rental/core/notifications/notification_service.dart';
@@ -44,6 +45,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
       const HomePage(),
       const SearchPage(),
       const MapPage(),
+      const RoommateFeedScreen(),
       const FavoritesPage(),
       const ChatInboxPage(),
       if (isOwner) const OwnerPropertiesScreen(),
@@ -63,6 +65,10 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
       const BottomNavigationBarItem(
         icon: Icon(Icons.map_rounded),
         label: 'Map',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.people_rounded),
+        label: 'Roommate',
       ),
       const BottomNavigationBarItem(
         icon: Icon(Icons.favorite_rounded),

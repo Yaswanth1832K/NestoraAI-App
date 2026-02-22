@@ -7,6 +7,7 @@ class ReviewEntity extends Equatable {
   final String ownerId;
   final String reviewerId;
   final String reviewerName;
+  final String bookingId;
   final double rating;
   final String comment;
   final DateTime createdAt;
@@ -18,6 +19,7 @@ class ReviewEntity extends Equatable {
     required this.ownerId,
     required this.reviewerId,
     required this.reviewerName,
+    required this.bookingId,
     required this.rating,
     required this.comment,
     required this.createdAt,
@@ -31,6 +33,7 @@ class ReviewEntity extends Equatable {
         ownerId,
         reviewerId,
         reviewerName,
+        bookingId,
         rating,
         comment,
         createdAt,

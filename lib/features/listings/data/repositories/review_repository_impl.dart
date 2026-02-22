@@ -21,6 +21,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
         ownerId: review.ownerId,
         reviewerId: review.reviewerId,
         reviewerName: review.reviewerName,
+        bookingId: review.bookingId,
         rating: review.rating,
         comment: review.comment,
         createdAt: review.createdAt,

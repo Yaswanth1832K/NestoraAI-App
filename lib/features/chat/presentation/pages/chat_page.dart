@@ -6,6 +6,7 @@ import 'package:house_rental/features/auth/presentation/providers/auth_providers
 import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
 import 'package:house_rental/features/chat/domain/entities/message_entity.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
+import 'package:house_rental/features/reviews/presentation/review_screen.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   final String chatRoomId;
@@ -137,45 +138,88 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           );
         }
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          color: status == 'approved' 
-              ? Colors.green.withOpacity(0.1) 
-              : status == 'rejected' 
-                  ? Colors.red.withOpacity(0.1) 
-                  : Colors.blue.withOpacity(0.1),
-          child: Column(
-            children: [
-              Text(
-                "Visit Status: ${status.toString().toUpperCase()}",
-                style: TextStyle(
-                  color: status == 'approved' 
-                      ? Colors.greenAccent 
-                      : status == 'rejected' 
-                          ? Colors.redAccent 
-                          : Colors.blueAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-              if (data['visitDate'] != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  "Visit Date: ${DateFormat('dd/MM/yyyy').format((data['visitDate'] as Timestamp).toDate())}",
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+        return Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              color: status == 'approved' 
+                  ? Colors.green.withOpacity(0.1) 
+                  : status == 'rejected' 
+                      ? Colors.red.withOpacity(0.1) 
+                      : Colors.blue.withOpacity(0.1),
+              child: Column(
+                children: [
+                  Text(
+                    "Visit Status: ${status.toString().toUpperCase()}",
+                    style: TextStyle(
+                      color: status == 'approved' 
+                          ? Colors.greenAccent 
+                          : status == 'rejected' 
+                              ? Colors.redAccent 
+                              : Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-              ],
-            ],
-          ),
+                  if (data['visitDate'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      "Visit Date: ${DateFormat('dd/MM/yyyy').format((data['visitDate'] as Timestamp).toDate())}",
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            _buildReviewButton(data, booking.id),
+          ],
         );
       },
       loading: () => const SizedBox(),
       error: (_, __) => const SizedBox(),
+    );
+  }
+
+  Widget _buildReviewButton(Map<String, dynamic> bookingData, String bookingId) {
+    final currentUser = ref.watch(authStateProvider).value;
+    final isRenter = currentUser?.uid == bookingData['renterId'];
+    final status = bookingData['status'];
+
+    if (status != 'approved' || !isRenter) return const SizedBox();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReviewScreen(
+                  listingId: bookingData['listingId'],
+                  listingTitle: "this property", // We could fetch actual title if needed
+                  ownerId: bookingData['ownerId'],
+                  bookingId: bookingId,
+                ),
+              ),
+            );
+          },
+          icon: const Icon(Icons.rate_review_outlined, size: 18),
+          label: const Text("Leave a Review"),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.amber,
+            side: const BorderSide(color: Colors.amber),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
     );
   }
 
@@ -197,10 +241,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                final listingAsync = ref.read(listingProvider(chatRoom.listingId));
-                final listing = listingAsync.value;
-
-                if (listing == null) return;
+                // Ensure listing data is loaded (Fix Race Condition)
+                final listing = await ref.read(listingProvider(chatRoom.listingId).future);
+                if (listing == null) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Error: Property details not fully loaded yet.")),
+                    );
+                  }
+                  return;
+                }
 
                 // Pick Date
                 final DateTime? date = await showDatePicker(
@@ -209,7 +259,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       ? listing.availableDates.first 
                       : DateTime.now().add(const Duration(days: 1)),
                   firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 180)),
+                  lastDate: DateTime.now().add(const Duration(days: 365)), // Increased range
                   selectableDayPredicate: (DateTime day) {
                     // Only allow dates defined by the owner
                     if (listing.availableDates.isEmpty) return true;
@@ -220,7 +270,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
                 if (date == null) return;
 
-                // Double Booking Check
+                // Double Booking Check (Permission check fixed in firestore.rules)
                 final bookingTimestamp = Timestamp.fromDate(DateTime(date.year, date.month, date.day));
                 final existing = await FirebaseFirestore.instance
                     .collection('bookings')
