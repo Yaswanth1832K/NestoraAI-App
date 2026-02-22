@@ -55,9 +55,10 @@ dependencies:
   image_picker: ^1.2.1
   cached_network_image: ^3.4.1
   intl: any
-  google_maps_flutter: ^2.14.0
   shimmer: ^3.0.0
   url_launcher: ^6.3.1
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
 
 
