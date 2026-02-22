@@ -52,5 +52,3 @@ app.*.map.json
 .env
 secret.py
 
-# Generated localization files
-lib/l10n/app_localizations*.dart

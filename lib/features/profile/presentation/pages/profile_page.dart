@@ -336,13 +336,4 @@ class ProfilePage extends ConsumerWidget {
       );
     }
   }
-
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("This feature is coming soon!"),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:house_rental/main.dart';
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
-import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
 import 'package:house_rental/features/listings/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -18,7 +18,7 @@ class MapPage extends ConsumerStatefulWidget {
 }
 
 class _MapPageState extends ConsumerState<MapPage> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   ListingEntity? _selectedListing;
   bool _isLoading = false;
   
@@ -28,7 +28,6 @@ class _MapPageState extends ConsumerState<MapPage> {
   @override
   void initState() {
     super.initState();
-    // Initial fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchInitialListings();
     });
@@ -54,11 +53,10 @@ class _MapPageState extends ConsumerState<MapPage> {
     final listings = ref.watch(mapSearchResultsProvider);
     
     // Auto-refresh when filters change
-    ref.listen(searchFilterProvider, (_, __) {
+    ref.listen(searchFilterProvider, (_, _) {
       _fetchInitialListings();
     });
 
-    // Group listings by coordinate to detect overlaps
     final Map<String, int> coordinateCounts = {};
     
     final markers = listings.map<Marker>((listing) {
@@ -66,31 +64,51 @@ class _MapPageState extends ConsumerState<MapPage> {
       final int count = coordinateCounts[coordKey] ?? 0;
       coordinateCounts[coordKey] = count + 1;
 
-      // Apply a tiny offset (jitter) for overlapping markers
-      // 0.00008 is roughly 8-10 meters, enough to separate them at high zoom
       double jitterLat = listing.latitude;
       double jitterLng = listing.longitude;
       
       if (count > 0) {
-        // Spiral-like offset based on how many share the point
         jitterLat += 0.0001 * (count % 2 == 0 ? 1 : -1) * (count / 2).ceil();
         jitterLng += 0.0001 * (count % 3 == 0 ? 1 : -1) * (count / 3).ceil();
       }
 
       return Marker(
-        markerId: MarkerId(listing.id),
-        position: LatLng(jitterLat, jitterLng),
-        infoWindow: InfoWindow(
-          title: listing.title,
-          snippet: '₹${listing.price.toStringAsFixed(0)}',
+        point: LatLng(jitterLat, jitterLng),
+        width: 80,
+        height: 80,
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedListing = listing;
+            });
+            _mapController.move(LatLng(jitterLat, jitterLng), 14);
+          },
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                  ],
+                ),
+                child: Text(
+                  '₹${listing.price.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const Icon(Icons.location_on, color: Colors.blue, size: 30),
+            ],
+          ),
         ),
-        onTap: () {
-          setState(() {
-            _selectedListing = listing;
-          });
-        },
       );
-    }).toSet();
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -116,22 +134,35 @@ class _MapPageState extends ConsumerState<MapPage> {
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            onMapCreated: (controller) => _mapController = controller,
-            initialCameraPosition: const CameraPosition(
-              target: _coimbatoreCenter,
-              zoom: 12,
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _coimbatoreCenter,
+              initialZoom: 12,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
+              onTap: (tapPosition, point) {
+                setState(() {
+                  _selectedListing = null;
+                });
+              },
             ),
-            markers: markers,
-            onTap: (_) {
-              setState(() {
-                _selectedListing = null;
-              });
-            },
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.nestora.app',
+              ),
+              MarkerLayer(markers: markers),
+              RichAttributionWidget(
+                attributions: [
+                  TextSourceAttribution(
+                    'OpenStreetMap contributors',
+                    onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
+                  ),
+                ],
+              ),
+            ],
           ),
           
           if (_isLoading)
@@ -170,6 +201,33 @@ class _MapPageState extends ConsumerState<MapPage> {
                 child: _buildListingPreviewCard(_selectedListing!),
               ),
             ),
+
+          // Zoom Controls
+          Positioned(
+            right: 16,
+            bottom: _selectedListing != null ? 150 : 16,
+            child: Column(
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'zoom_in',
+                  onPressed: () {
+                    final zoom = _mapController.camera.zoom + 1;
+                    _mapController.move(_mapController.camera.center, zoom);
+                  },
+                  child: const Icon(Icons.add),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: 'zoom_out',
+                  onPressed: () {
+                    final zoom = _mapController.camera.zoom - 1;
+                    _mapController.move(_mapController.camera.center, zoom);
+                  },
+                  child: const Icon(Icons.remove),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -194,7 +252,6 @@ class _MapPageState extends ConsumerState<MapPage> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
@@ -224,7 +281,6 @@ class _MapPageState extends ConsumerState<MapPage> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,22 +318,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                   ],
                 ),
               ),
-              // Action
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      rootNavigatorKey.currentState!.push(
-                        MaterialPageRoute(
-                          builder: (_) => ListingDetailsPage(listing: listing),
-                        ),
-                      );
-                    },
-                    child: const Text('View Details'),
-                  ),
-                ],
-              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
             ],
           ),
         ),
