@@ -40,7 +40,7 @@ class OwnerRequestsPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.event_note_outlined, size: 64, color: Colors.grey.shade400),
+                  Icon(Icons.event_note_outlined, size: 64, color: Theme.of(context).colorScheme.outline.withOpacity(0.4)),
                   const SizedBox(height: 16),
                   Text(
                     'No visit requests yet',
@@ -102,13 +102,14 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isDark ? [] : [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
+        border: isDark ? Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)) : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -123,10 +124,10 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
                   child: CachedNetworkImage(
                     imageUrl: request.listingImage,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Colors.grey.shade200),
+                    placeholder: (context, url) => Container(color: Theme.of(context).colorScheme.surfaceVariant),
                     errorWidget: (context, url, error) => Container(
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.home_work, color: Colors.grey),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      child: Icon(Icons.home_work, color: Theme.of(context).colorScheme.outline),
                     ),
                   ),
                 ),
@@ -194,20 +195,18 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                color: Theme.of(context).brightness == Brightness.light 
-                    ? Colors.grey.shade50 
-                    : Colors.white.withOpacity(0.05),
+                color: isDark ? Colors.white.withOpacity(0.03) : Colors.grey.shade50,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Tenant Message:',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.outline),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       request.message,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
                     ),
                   ],
                 ),
@@ -233,8 +232,8 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.blue.shade700),
-                          foregroundColor: Colors.blue.shade700,
+                          side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                          foregroundColor: Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () => _rescheduleRequest(context, ref),

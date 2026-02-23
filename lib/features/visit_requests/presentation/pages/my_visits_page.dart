@@ -37,11 +37,11 @@ class MyVisitsPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey.shade400),
+                   Icon(Icons.calendar_today_outlined, size: 64, color: Theme.of(context).colorScheme.outline.withOpacity(0.4)),
                   const SizedBox(height: 16),
                   Text(
                     'No scheduled visits yet',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 18),
+                    style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 18),
                   ),
                 ],
               ),
@@ -100,10 +100,10 @@ class _VisitRequestCard extends ConsumerWidget {
                   child: CachedNetworkImage(
                     imageUrl: request.listingImage,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Colors.grey.shade200),
+                    placeholder: (context, url) => Container(color: Theme.of(context).colorScheme.surfaceVariant),
                     errorWidget: (context, url, error) => Container(
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.home_work, color: Colors.grey),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      child: Icon(Icons.home_work, color: Theme.of(context).colorScheme.outline),
                     ),
                   ),
                 ),
@@ -124,7 +124,7 @@ class _VisitRequestCard extends ConsumerWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                            Icon(Icons.calendar_today, size: 14, color: Theme.of(context).colorScheme.outline),
                             const SizedBox(width: 4),
                             Text(
                               DateFormat('MMM dd, yyyy').format(request.date),
@@ -179,20 +179,18 @@ class _VisitRequestCard extends ConsumerWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                color: Theme.of(context).brightness == Brightness.light 
-                    ? Colors.grey.shade50 
-                    : Colors.white.withOpacity(0.05),
+                color: isDark ? Colors.white.withOpacity(0.03) : Colors.grey.shade50,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Your Message:',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.outline),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       request.message,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
                     ),
                   ],
                 ),
@@ -234,9 +232,10 @@ class _VisitRequestCard extends ConsumerWidget {
                           icon: const Icon(Icons.chat_bubble_outline, size: 18),
                           label: const Text("Chat"),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
                           ),
                         ),
                       ),

@@ -137,17 +137,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final recommendationsState = ref.watch(recommendationsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F), // Dark background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Search Homes',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.white),
+            icon: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.onSurface),
             tooltip: 'Filters',
             onPressed: () {
               showModalBottomSheet(
@@ -159,7 +159,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.add_home, color: Colors.white),
+            icon: Icon(Icons.add_home, color: Theme.of(context).colorScheme.onSurface),
             tooltip: 'Post Property',
             onPressed: () {
               rootNavigatorKey.currentState!.push(
@@ -173,7 +173,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               return authState.maybeWhen(
                 data: (user) => IconButton(
                   icon: Icon(user == null ? Icons.account_circle_outlined : Icons.account_circle, 
-                    color: user == null ? Colors.white : Colors.blueAccent),
+                    color: user == null ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.primary),
                   tooltip: user == null ? 'Quick Login' : 'Logout',
                   onPressed: () async {
                     if (user == null) {
@@ -219,24 +219,24 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: _isListening ? 'Listening...' : 'Try: 2bhk near college under 15000',
-                          hintStyle: const TextStyle(color: Colors.grey),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.outline),
                           filled: true,
-                          fillColor: const Color(0xFF1A1A1A),
+                          fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           prefixIcon: Icon(
                             _isListening ? Icons.mic : Icons.search,
-                            color: _isListening ? Colors.red : Colors.grey,
+                            color: _isListening ? Colors.red : Theme.of(context).colorScheme.outline,
                           ),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -253,7 +253,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                               IconButton(
                                 icon: Icon(
                                   _isListening ? Icons.mic : Icons.mic_none,
-                                  color: _isListening ? Colors.red : Colors.blueAccent,
+                                  color: _isListening ? Colors.red : Theme.of(context).primaryColor,
                                 ),
                                 onPressed: _listen,
                               ),
@@ -267,7 +267,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     if (!_isListening) ...[
                       const SizedBox(width: 10),
                       IconButton.filled(
-                        style: IconButton.styleFrom(backgroundColor: Colors.blueAccent),
+                        style: IconButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
                         onPressed: searchState.isLoading ? null : _performSearch,
                         icon: searchState.isLoading 
                           ? const SizedBox(
@@ -283,7 +283,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 const SizedBox(height: 12),
                 const Text(
                   'Search in natural language (AI powered)',
-                  style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 16),
                 // Recent Searches UI
@@ -293,9 +293,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Recent Searches',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                         ),
                         const SizedBox(height: 12),
                         Wrap(
@@ -304,10 +304,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           children: history.map((query) => ActionChip(
                             label: Text(query),
                             onPressed: () => _performSearch(query: query),
-                            avatar: const Icon(Icons.history, size: 16, color: Colors.blueAccent),
-                            backgroundColor: const Color(0xFF1A1A1A),
-                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            labelStyle: const TextStyle(fontSize: 12, color: Colors.white),
+                            avatar: Icon(Icons.history, size: 16, color: Theme.of(context).primaryColor),
+                            backgroundColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                            side: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                            labelStyle: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface),
                           )).toList(),
                         ),
                       ],
