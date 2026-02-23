@@ -38,6 +38,7 @@ import 'package:house_rental/features/home/presentation/pages/home_page.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
 import 'package:house_rental/features/owner/presentation/owner_properties_screen.dart';
 import 'package:house_rental/features/auth/presentation/pages/auth_page.dart';
+import 'package:house_rental/features/map/presentation/pages/map_page.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/core/router/router_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';

@@ -7,7 +7,7 @@ import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:house_rental/features/auth/domain/usecases/update_user_role_usecase.dart';
 import 'package:house_rental/features/profile/presentation/widgets/profile_widgets.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:house_rental/l10n/generated/app_localizations.dart';
 
 final notificationsProvider = StateProvider<bool>((ref) => true);
 
@@ -57,7 +57,7 @@ class ProfilePage extends ConsumerWidget {
               
               // Profile Header Card
               GlassContainer.standard(
-                isDark: isDark,
+                context: context,
                 child: Row(
                   children: [
                     CircleAvatar(
@@ -315,6 +315,11 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
+  /*
+   * Phase 7: Post-Merge Stability Fixes [x]
+   * - [x] Fix compilation errors (L10n, Imports, Const expressions)
+   * - [x] Verify build with `flutter analyze`
+   */
   Future<void> _handleBecomeHost(BuildContext context, WidgetRef ref, String? uid) async {
     if (uid == null) return;
 

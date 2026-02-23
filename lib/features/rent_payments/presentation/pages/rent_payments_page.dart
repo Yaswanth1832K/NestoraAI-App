@@ -174,7 +174,7 @@ class RentPaymentsPage extends ConsumerWidget {
 
   Widget _buildNoActiveRentalCard(BuildContext context, bool isDark) {
     return GlassContainer.standard(
-      isDark: isDark,
+      context: context,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
       child: Column(
         children: [
@@ -198,7 +198,7 @@ class RentPaymentsPage extends ConsumerWidget {
     final isOverdue = now.isAfter(dueDate);
 
     return GlassContainer.standard(
-      isDark: isDark,
+      context: context,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
