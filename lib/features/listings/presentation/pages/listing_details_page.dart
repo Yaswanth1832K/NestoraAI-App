@@ -23,6 +23,7 @@ import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 
 class ListingDetailsPage extends ConsumerStatefulWidget {
   final ListingEntity listing;
@@ -173,7 +174,7 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                       color: Colors.amber,
                       size: 32,
                     ),
-                    onPressed: () => setModalState(() => selectedRating = index + 1.0),
+                    onPressed: () => setState(() => selectedRating = index + 1.0),
                   );
                 }),
               ),

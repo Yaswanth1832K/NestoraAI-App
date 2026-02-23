@@ -95,6 +95,7 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusColor = _getStatusColor(request.status);
 
     return Container(

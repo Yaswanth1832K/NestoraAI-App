@@ -6,7 +6,8 @@ import 'package:house_rental/features/auth/presentation/providers/auth_providers
 import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:house_rental/features/auth/domain/usecases/update_user_role_usecase.dart';
 import 'package:house_rental/features/profile/presentation/widgets/profile_widgets.dart';
-import 'package:house_rental/l10n/app_localizations.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 final notificationsProvider = StateProvider<bool>((ref) => true);
 

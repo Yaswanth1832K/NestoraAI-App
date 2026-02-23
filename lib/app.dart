@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/core/theme/app_theme.dart';
 import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
-import 'package:house_rental/l10n/app_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:house_rental/core/providers/locale_provider.dart';
 import 'package:house_rental/features/auth/presentation/providers/fcm_token_provider.dart';
 

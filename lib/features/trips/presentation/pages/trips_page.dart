@@ -24,11 +24,11 @@ class TripsPage extends StatelessWidget {
              Icon(Icons.flight_takeoff, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
              const SizedBox(height: 16),
              const Text(
-               'No trips yet', 
+               'No trips yet',
                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
              ),
              const SizedBox(height: 8),
-             const Text(
+             Text(
                'Time to dust off your bags and start planning your next adventure',
                textAlign: TextAlign.center,
                style: TextStyle(color: Theme.of(context).colorScheme.outline),

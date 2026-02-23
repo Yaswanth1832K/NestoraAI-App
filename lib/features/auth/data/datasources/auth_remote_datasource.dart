@@ -150,6 +150,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       
       await user.reload(); // Refresh user data
+    } catch (e) {
+      throw ServerException(message: e.toString());
     }
   }
 

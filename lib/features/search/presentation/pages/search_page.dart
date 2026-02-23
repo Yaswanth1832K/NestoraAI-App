@@ -281,7 +281,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Search in natural language (AI powered)',
                   style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 13, fontWeight: FontWeight.w500),
                 ),

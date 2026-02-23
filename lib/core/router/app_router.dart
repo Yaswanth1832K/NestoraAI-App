@@ -33,7 +33,8 @@ import 'package:house_rental/features/favorites/presentation/pages/favorites_pag
 import 'package:house_rental/features/ai_services/presentation/recommendations_view.dart';
 import 'package:house_rental/core/navigation/main_navigation.dart';
 // import 'package:house_rental/features/chat/presentation/pages/inbox_page.dart'; // Removed old import to avoid conflict
-import 'package:house_rental/features/map/presentation/pages/map_page.dart';
+import 'package:flutter/material.dart';
+import 'package:house_rental/features/home/presentation/pages/home_page.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
 import 'package:house_rental/features/owner/presentation/owner_properties_screen.dart';
 import 'package:house_rental/features/auth/presentation/pages/auth_page.dart';

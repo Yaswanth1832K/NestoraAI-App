@@ -300,7 +300,7 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
     final primaryColor = Theme.of(context).primaryColor;
 
     return GlassContainer.standard(
-      isDark: isDark,
+      context: context,
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
       child: Column(

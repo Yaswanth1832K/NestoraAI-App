@@ -71,6 +71,7 @@ class _VisitRequestCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusColor = _getStatusColor(request.status);
     final user = ref.watch(authStateProvider).value;
 
