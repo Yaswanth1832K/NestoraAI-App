@@ -19,6 +19,10 @@ abstract interface class ChatRemoteDataSource {
   Stream<List<MessageModel>> streamMessages(String chatId);
 
   Stream<List<ChatRoomModel>> userChatRoomsStream(String userId);
+
+  Future<void> setTyping(String chatId, String userId);
+
+  Future<void> clearTyping(String chatId, String userId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -87,13 +91,36 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       message.toFirestore(),
     );
 
-    // Update parent chat room last message info
+    // Update parent chat room last message + clear sender's typing
     batch.update(_firestore.collection('chats').doc(chatId), {
       'lastMessage': text,
       'lastTimestamp': Timestamp.fromDate(now),
+      'lastMessageSenderId': senderId,
+      'typingUserId': null,
+      'typingUpdatedAt': null,
     });
 
     await batch.commit();
+  }
+
+  @override
+  Future<void> setTyping(String chatId, String userId) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'typingUserId': userId,
+      'typingUpdatedAt': Timestamp.now(),
+    });
+  }
+
+  @override
+  Future<void> clearTyping(String chatId, String userId) async {
+    final doc = await _firestore.collection('chats').doc(chatId).get();
+    final data = doc.data();
+    if (data != null && data['typingUserId'] == userId) {
+      await _firestore.collection('chats').doc(chatId).update({
+        'typingUserId': null,
+        'typingUpdatedAt': null,
+      });
+    }
   }
 
   @override

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +46,15 @@ final deleteListingUseCaseProvider = Provider<DeleteListingUseCase>((ref) {
 
 final getMyListingsUseCaseProvider = Provider<GetMyListingsUseCase>((ref) {
   return GetMyListingsUseCase(ref.read(listingRepositoryProvider));
+});
+
+/// Owner's listings by user id. Used by owner dashboard and my-properties.
+final getMyListingsProvider = FutureProvider.family<List<ListingEntity>, String>((ref, userId) async {
+  final result = await ref.read(getMyListingsUseCaseProvider)(userId);
+  return result.fold(
+    (failure) => throw failure,
+    (listings) => listings,
+  );
 });
 
 final getNearbyListingsUseCaseProvider = Provider<GetNearbyListingsUseCase>((ref) {

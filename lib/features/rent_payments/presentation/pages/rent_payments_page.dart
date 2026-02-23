@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/rent_payments/domain/entities/rent_payment_entity.dart';
 import 'package:house_rental/features/rent_payments/presentation/providers/rent_payment_providers.dart';
@@ -34,7 +33,11 @@ class RentPaymentsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Current Rent Section
+            // 1. Promo Banner (NoBroker style)
+            _buildPromoBanner(context),
+            const SizedBox(height: 24),
+
+            // 2. Current Rent Section
             const Text(
               "Current Due",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -86,6 +89,72 @@ class RentPaymentsPage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark 
+              ? [const Color(0xFF2C194D), const Color(0xFF1E103C)] 
+              : [const Color(0xFFF3E5F5), const Color(0xFFE1BEE7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade400,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    "PREMIUM",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Pay Rent with Credit Card",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Earn up to 45 days of free credit period and miles!",
+                  style: TextStyle(
+                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Icon(Icons.credit_card, size: 64, color: isDark ? Colors.purple.shade300 : Colors.purple.shade700),
+        ],
       ),
     );
   }

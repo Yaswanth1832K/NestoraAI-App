@@ -38,7 +38,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
   final _lngController = TextEditingController(text: '76.9558');
 
   List<String> _existingImageUrls = [];
-  List<XFile> _images = [];
+  final List<XFile> _images = [];
   List<DateTime> _availableDates = [];
   String _status = ListingEntity.statusAvailable;
   bool _isLoading = false;
@@ -199,8 +199,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
               onPrimary: Colors.white,
               surface: const Color(0xFF1E1E1E),
               onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF1E1E1E),
+            ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E1E1E)),
           ),
           child: child!,
         );
@@ -464,7 +463,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
                   _buildSectionHeader("Property Status"),
                   const SizedBox(height: 12),
                    DropdownButtonFormField<String>(
-                    value: _status,
+                    initialValue: _status,
                     decoration: InputDecoration(
                        labelText: 'Status',
                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -618,7 +617,7 @@ class _PostPropertyPageState extends ConsumerState<PostPropertyPage> {
     required ValueChanged<T?> onChanged,
   }) {
     return DropdownButtonFormField<T>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

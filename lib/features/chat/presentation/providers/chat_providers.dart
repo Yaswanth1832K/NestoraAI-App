@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/chat/data/datasources/chat_remote_datasource.dart';
 import 'package:house_rental/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:house_rental/features/chat/data/models/chat_room_model.dart';
@@ -11,6 +9,8 @@ import 'package:house_rental/features/chat/domain/repositories/chat_repository.d
 import 'package:house_rental/features/chat/domain/usecases/get_messages_stream_usecase.dart';
 import 'package:house_rental/features/chat/domain/usecases/get_or_create_chat_room_usecase.dart';
 import 'package:house_rental/features/chat/domain/usecases/send_message_usecase.dart';
+import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
+import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
 
 final chatRemoteDataSourceProvider = Provider<ChatRemoteDataSource>((ref) {
   return ChatRemoteDataSourceImpl(ref.read(firestoreProvider));
@@ -48,16 +48,7 @@ final chatRoomStreamProvider = StreamProvider.family<ChatRoomEntity?, String>((r
       .map((doc) => doc.exists ? ChatRoomModel.fromFirestore(doc) : null);
 });
 
-final bookingStreamProvider = StreamProvider.family<QuerySnapshot, String>((ref, chatRoomId) {
-  final userId = ref.watch(authStateProvider).value?.uid;
-  if (userId == null) {
-    // Return an empty stream if not authenticated
-    return const Stream.empty();
-  }
-
-  return ref.watch(firestoreProvider)
-      .collection('bookings')
-      .where('chatId', isEqualTo: chatRoomId)
-      .where('participants', arrayContains: userId)
-      .snapshots();
+/// Bookings for a chat room (visit requests created from chat). Uses visit request repository.
+final bookingStreamProvider = StreamProvider.family<List<VisitRequestEntity>, String>((ref, chatRoomId) {
+  return ref.watch(visitRequestRepositoryProvider).getBookingsByChatId(chatRoomId);
 });

@@ -10,6 +10,9 @@ class ChatRoomModel extends ChatRoomEntity {
     required super.participants,
     super.lastMessage,
     super.lastTimestamp,
+    super.lastMessageSenderId,
+    super.typingUserId,
+    super.typingUpdatedAt,
   });
 
   factory ChatRoomModel.fromFirestore(DocumentSnapshot doc) {
@@ -22,6 +25,9 @@ class ChatRoomModel extends ChatRoomEntity {
       participants: List<String>.from(data['participants'] ?? []),
       lastMessage: data['lastMessage'],
       lastTimestamp: (data['lastTimestamp'] as Timestamp?)?.toDate(),
+      lastMessageSenderId: data['lastMessageSenderId'] as String?,
+      typingUserId: data['typingUserId'] as String?,
+      typingUpdatedAt: (data['typingUpdatedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -33,6 +39,9 @@ class ChatRoomModel extends ChatRoomEntity {
       'participants': participants,
       'lastMessage': lastMessage,
       'lastTimestamp': lastTimestamp != null ? Timestamp.fromDate(lastTimestamp!) : null,
+      if (lastMessageSenderId != null) 'lastMessageSenderId': lastMessageSenderId,
+      if (typingUserId != null) 'typingUserId': typingUserId,
+      if (typingUpdatedAt != null) 'typingUpdatedAt': Timestamp.fromDate(typingUpdatedAt!),
     };
   }
 }

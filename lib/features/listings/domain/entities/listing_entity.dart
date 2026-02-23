@@ -28,8 +28,13 @@ class ListingEntity extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<DateTime> availableDates;
+  /// AI-generated 3 bullet highlights from description (stored in Firestore).
+  final List<String>? aiSummaryBullets;
+  /// Set by Cloud Function: 'safe' | 'suspicious'.
+  final String? safety;
 
   List<String> get allImages => imageUrls.isNotEmpty ? imageUrls : images;
+  bool get isSuspicious => safety == 'suspicious' || (fraudRiskScore != null && fraudRiskScore! > 0.5);
 
   String get city => address['city'] ?? 'Unknown City';
 
@@ -65,6 +70,8 @@ class ListingEntity extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.availableDates = const [],
+    this.aiSummaryBullets,
+    this.safety,
   });
 
   ListingEntity copyWith({
@@ -95,6 +102,8 @@ class ListingEntity extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<DateTime>? availableDates,
+    List<String>? aiSummaryBullets,
+    String? safety,
   }) {
     return ListingEntity(
       id: id ?? this.id,
@@ -124,6 +133,8 @@ class ListingEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       availableDates: availableDates ?? this.availableDates,
+      aiSummaryBullets: aiSummaryBullets ?? this.aiSummaryBullets,
+      safety: safety ?? this.safety,
     );
   }
 
@@ -156,5 +167,7 @@ class ListingEntity extends Equatable {
         createdAt,
         updatedAt,
         availableDates,
+        aiSummaryBullets,
+        safety,
       ];
 }

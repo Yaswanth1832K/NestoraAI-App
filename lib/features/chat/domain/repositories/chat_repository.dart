@@ -17,6 +17,9 @@ abstract class ChatRepository {
     required String senderId,
     required String text,
   });
-  
+
+  Future<void> setTyping(String chatId, String userId);
+  Future<void> clearTyping(String chatId, String userId);
+
   Stream<List<ChatRoomEntity>> getUserChatRooms(String userId);
 }

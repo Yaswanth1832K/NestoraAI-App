@@ -106,9 +106,15 @@ class ProfilePage extends ConsumerWidget {
               // ROLE-SPECIFIC SECTION
               if (isOwner)
                 ProfileSection(
-                  title: "Hosting", // Fixed label for Owner
+                  title: "Hosting",
                   isDark: isDark,
                   children: [
+                    ProfileMenuItem(
+                      icon: Icons.dashboard_outlined,
+                      title: 'Dashboard',
+                      onTap: () => context.push(AppRouter.ownerDashboard),
+                      isDark: isDark,
+                    ),
                     ProfileMenuItem(
                       icon: Icons.home_work_outlined,
                       title: AppLocalizations.of(context)!.myListings,
@@ -140,6 +146,13 @@ class ProfilePage extends ConsumerWidget {
                   title: "Renting", // Fixed label for Renter
                   isDark: isDark,
                   children: [
+                    ProfileMenuItem(
+                      icon: Icons.auto_awesome,
+                      title: 'AI Recommendations',
+                      onTap: () => context.push(AppRouter.aiRecommendations),
+                      isDark: isDark,
+                      iconColor: Colors.purple,
+                    ),
                     ProfileMenuItem(
                       icon: Icons.favorite_border,
                       title: AppLocalizations.of(context)!.savedProperties,

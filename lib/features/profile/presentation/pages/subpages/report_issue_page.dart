@@ -35,7 +35,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _issueType,
+              initialValue: _issueType,
               items: _issueTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: (val) => setState(() => _issueType = val),
               decoration: InputDecoration(

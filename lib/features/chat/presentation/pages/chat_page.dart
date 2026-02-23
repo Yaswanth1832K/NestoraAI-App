@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
+import 'package:house_rental/features/chat/domain/entities/chat_room_entity.dart';
 import 'package:house_rental/features/chat/domain/entities/message_entity.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/reviews/presentation/review_screen.dart';
+import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
+import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   final String chatRoomId;
@@ -24,22 +27,40 @@ class ChatPage extends ConsumerStatefulWidget {
 
 class _ChatPageState extends ConsumerState<ChatPage> {
   final _messageController = TextEditingController();
+  Timer? _typingStopTimer;
 
   @override
   void dispose() {
+    _typingStopTimer?.cancel();
     _messageController.dispose();
     super.dispose();
+  }
+
+  void _onTyping() {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
+    _typingStopTimer?.cancel();
+    ref.read(chatRepositoryProvider).setTyping(widget.chatRoomId, user.uid);
+    _typingStopTimer = Timer(const Duration(seconds: 2), () {
+      ref.read(chatRepositoryProvider).clearTyping(widget.chatRoomId, user.uid);
+    });
   }
 
   void _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+    _messageController.clear();
+    _typingStopTimer?.cancel();
+    final user = ref.read(authStateProvider).value;
+    if (user != null) ref.read(chatRepositoryProvider).clearTyping(widget.chatRoomId, user.uid);
+    await _sendText(text);
+  }
 
+  Future<void> _sendText(String text) async {
+    if (text.isEmpty) return;
     final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
-    _messageController.clear();
-    
     final result = await ref.read(sendMessageUseCaseProvider)(
       chatRoomId: widget.chatRoomId,
       senderId: user.uid,
@@ -58,9 +79,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  static const List<String> _suggestedReplies = [
+    "Yes, it's available",
+    "Let me check and get back",
+    "What time works for you?",
+  ];
+
   @override
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(messagesStreamProvider(widget.chatRoomId));
+    final chatRoomAsync = ref.watch(chatRoomStreamProvider(widget.chatRoomId));
     final currentUser = ref.watch(authStateProvider).value;
 
     return Scaffold(
@@ -91,10 +119,54 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               error: (e, st) => Center(child: Text('Error: $e')),
             ),
           ),
+          _buildSuggestedReplies(messagesAsync, chatRoomAsync, currentUser),
+          _buildTypingIndicator(chatRoomAsync, currentUser),
           _buildBookingRequestButton(),
           _buildInput(),
         ],
       ),
+    );
+  }
+
+  Widget _buildSuggestedReplies(
+    AsyncValue<List<MessageEntity>> messagesAsync,
+    AsyncValue<ChatRoomEntity?> chatRoomAsync,
+    dynamic currentUser,
+  ) {
+    if (currentUser == null) return const SizedBox.shrink();
+    return messagesAsync.when(
+      data: (messages) {
+        return chatRoomAsync.when(
+          data: (chatRoom) {
+            if (chatRoom == null || messages.isEmpty) return const SizedBox.shrink();
+            if (currentUser.uid != chatRoom.ownerId) return const SizedBox.shrink();
+            if (messages.first.senderId == currentUser.uid) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _suggestedReplies.map((reply) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text(reply, style: const TextStyle(fontSize: 13)),
+                        onPressed: () => _sendText(reply),
+                        backgroundColor: Colors.grey.shade800,
+                        side: BorderSide(color: Colors.grey.shade600),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -103,15 +175,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final currentUser = ref.watch(authStateProvider).value;
 
     return bookingAsync.when(
-      data: (snapshot) {
-        if (snapshot.docs.isEmpty) return const SizedBox();
+      data: (bookings) {
+        if (bookings.isEmpty) return const SizedBox();
 
-        final booking = snapshot.docs.first;
-        final data = booking.data() as Map<String, dynamic>;
-        final status = data['status'];
-        final isOwner = currentUser?.uid == data['ownerId'];
+        final request = bookings.first;
+        final status = request.status;
+        final isOwner = currentUser?.uid == request.ownerId;
 
         if (status == 'pending' && isOwner) {
+          final updateStatus = ref.read(updateVisitStatusUseCaseProvider);
           return Container(
             padding: const EdgeInsets.all(16),
             color: const Color(0xFF1A1A1A),
@@ -124,12 +196,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => booking.reference.update({'status': 'rejected'}),
+                  onPressed: () => updateStatus(request, 'rejected'),
                   child: const Text("Reject", style: TextStyle(color: Colors.redAccent)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () => booking.reference.update({'status': 'approved'}),
+                  onPressed: () => updateStatus(request, 'approved'),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
                   child: const Text("Accept", style: TextStyle(color: Colors.white)),
                 ),
@@ -143,40 +215,38 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              color: status == 'approved' 
-                  ? Colors.green.withOpacity(0.1) 
-                  : status == 'rejected' 
-                      ? Colors.red.withOpacity(0.1) 
+              color: status == 'approved'
+                  ? Colors.green.withOpacity(0.1)
+                  : status == 'rejected'
+                      ? Colors.red.withOpacity(0.1)
                       : Colors.blue.withOpacity(0.1),
               child: Column(
                 children: [
                   Text(
                     "Visit Status: ${status.toString().toUpperCase()}",
                     style: TextStyle(
-                      color: status == 'approved' 
-                          ? Colors.greenAccent 
-                          : status == 'rejected' 
-                              ? Colors.redAccent 
+                      color: status == 'approved'
+                          ? Colors.greenAccent
+                          : status == 'rejected'
+                              ? Colors.redAccent
                               : Colors.blueAccent,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
                   ),
-                  if (data['visitDate'] != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      "Visit Date: ${DateFormat('dd/MM/yyyy').format((data['visitDate'] as Timestamp).toDate())}",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Visit Date: ${DateFormat('dd/MM/yyyy').format(request.date)}",
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
-            _buildReviewButton(data, booking.id),
+            _buildReviewButtonFromRequest(request),
           ],
         );
       },
@@ -185,12 +255,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Widget _buildReviewButton(Map<String, dynamic> bookingData, String bookingId) {
+  Widget _buildReviewButtonFromRequest(VisitRequestEntity request) {
     final currentUser = ref.watch(authStateProvider).value;
-    final isRenter = currentUser?.uid == bookingData['renterId'];
-    final status = bookingData['status'];
-
-    if (status != 'approved' || !isRenter) return const SizedBox();
+    final isRenter = currentUser?.uid == request.tenantId;
+    if (request.status != 'approved' || !isRenter) return const SizedBox();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -202,10 +270,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               context,
               MaterialPageRoute(
                 builder: (_) => ReviewScreen(
-                  listingId: bookingData['listingId'],
-                  listingTitle: "this property", // We could fetch actual title if needed
-                  ownerId: bookingData['ownerId'],
-                  bookingId: bookingId,
+                  listingId: request.listingId,
+                  listingTitle: request.listingTitle,
+                  ownerId: request.ownerId,
+                  bookingId: request.id,
                 ),
               ),
             );
@@ -233,7 +301,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         if (chatRoom == null || currentUser?.uid != chatRoom.renterId) return const SizedBox();
         
         // Hide button if a booking already exists
-        if (bookingsAsync.value?.docs.isNotEmpty ?? false) return const SizedBox();
+        if (bookingsAsync.value?.isNotEmpty ?? false) return const SizedBox();
 
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -243,14 +311,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               onPressed: () async {
                 // Ensure listing data is loaded (Fix Race Condition)
                 final listing = await ref.read(listingProvider(chatRoom.listingId).future);
-                if (listing == null) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Error: Property details not fully loaded yet.")),
-                    );
-                  }
-                  return;
-                }
 
                 // Pick Date
                 final DateTime? date = await showDatePicker(
@@ -270,16 +330,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
                 if (date == null) return;
 
-                // Double Booking Check (Permission check fixed in firestore.rules)
-                final bookingTimestamp = Timestamp.fromDate(DateTime(date.year, date.month, date.day));
-                final existing = await FirebaseFirestore.instance
-                    .collection('bookings')
-                    .where('listingId', isEqualTo: chatRoom.listingId)
-                    .where('visitDate', isEqualTo: bookingTimestamp)
-                    .where('status', isEqualTo: 'approved')
-                    .get();
-
-                if (existing.docs.isNotEmpty) {
+                final repo = ref.read(visitRequestRepositoryProvider);
+                final visitDate = DateTime(date.year, date.month, date.day);
+                final hasConflict = await repo.hasApprovedBookingForDate(chatRoom.listingId, visitDate);
+                if (hasConflict) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -291,19 +345,21 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   return;
                 }
 
-                await FirebaseFirestore.instance.collection('bookings').add({
-                  'listingId': chatRoom.listingId,
-                  'ownerId': chatRoom.ownerId,
-                  'renterId': chatRoom.renterId,
-                  'chatId': widget.chatRoomId,
-                  'participants': [chatRoom.renterId, chatRoom.ownerId],
-                  'status': 'pending',
-                  'visitDate': bookingTimestamp,
-                  'createdAt': FieldValue.serverTimestamp(),
-                });
+                final result = await repo.createBookingFromChat(
+                  listingId: chatRoom.listingId,
+                  ownerId: chatRoom.ownerId,
+                  renterId: chatRoom.renterId,
+                  chatId: widget.chatRoomId,
+                  visitDate: visitDate,
+                );
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Visit request sent successfully!")),
+                  result.fold(
+                    (failure) => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to send request: ${failure.message}')),
+                    ),
+                    (_) => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Visit request sent successfully!")),
+                    ),
                   );
                 }
               },
@@ -321,6 +377,30 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       },
       loading: () => const SizedBox(),
       error: (_, __) => const SizedBox(),
+    );
+  }
+
+  Widget _buildTypingIndicator(AsyncValue<ChatRoomEntity?> chatRoomAsync, dynamic currentUser) {
+    return chatRoomAsync.when(
+      data: (chatRoom) {
+        if (chatRoom == null || currentUser == null) return const SizedBox.shrink();
+        final typingId = chatRoom.typingUserId;
+        if (typingId == null || typingId == currentUser.uid) return const SizedBox.shrink();
+        final updated = chatRoom.typingUpdatedAt;
+        if (updated != null && DateTime.now().difference(updated).inSeconds > 5) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade400)),
+              const SizedBox(width: 8),
+              Text('Typing...', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -346,6 +426,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   border: InputBorder.none,
                 ),
                 maxLines: null,
+                onChanged: (_) => _onTyping(),
                 onSubmitted: (_) => _sendMessage(),
               ),
             ),

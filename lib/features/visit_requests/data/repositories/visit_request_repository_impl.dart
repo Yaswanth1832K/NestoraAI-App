@@ -30,6 +30,38 @@ class VisitRequestRepositoryImpl implements VisitRequestRepository {
   }
 
   @override
+  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId) {
+    return _remoteDataSource.getBookingsByChatId(chatId);
+  }
+
+  @override
+  Future<bool> hasApprovedBookingForDate(String listingId, DateTime date) async {
+    return _remoteDataSource.hasApprovedBookingForDate(listingId, date);
+  }
+
+  @override
+  Future<Either<Failure, void>> createBookingFromChat({
+    required String listingId,
+    required String ownerId,
+    required String renterId,
+    required String chatId,
+    required DateTime visitDate,
+  }) async {
+    try {
+      await _remoteDataSource.createBookingFromChat(
+        listingId: listingId,
+        ownerId: ownerId,
+        renterId: renterId,
+        chatId: chatId,
+        visitDate: visitDate,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateVisitRequestStatus(String requestId, String status) async {
     try {
       await _remoteDataSource.updateVisitRequestStatus(requestId, status);

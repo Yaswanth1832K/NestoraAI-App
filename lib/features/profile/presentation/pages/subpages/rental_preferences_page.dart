@@ -90,7 +90,7 @@ class _RentalPreferencesPageState extends State<RentalPreferencesPage> {
             title: const Text("Instant Book"),
             subtitle: const Text("Allow guests to book without approval"),
             value: _instantBook,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             onChanged: (val) => setState(() => _instantBook = val),
           ),
           const Divider(),

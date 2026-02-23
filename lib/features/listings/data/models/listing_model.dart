@@ -30,6 +30,8 @@ class ListingModel extends ListingEntity {
     required super.createdAt,
     required super.updatedAt,
     super.availableDates,
+    super.aiSummaryBullets,
+    super.safety,
   });
 
   factory ListingModel.fromJson(Map<String, dynamic> json) {
@@ -83,6 +85,10 @@ class ListingModel extends ListingEntity {
               .map((d) => (d as Timestamp).toDate())
               .toList()
           : [],
+      aiSummaryBullets: json['aiSummaryBullets'] != null
+          ? List<String>.from(json['aiSummaryBullets'] as List)
+          : null,
+      safety: json['safety'] as String?,
     );
   }
 
@@ -121,6 +127,8 @@ class ListingModel extends ListingEntity {
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       availableDates: entity.availableDates,
+      aiSummaryBullets: entity.aiSummaryBullets,
+      safety: entity.safety,
     );
   }
 
@@ -155,6 +163,8 @@ class ListingModel extends ListingEntity {
       'availableDates': availableDates
           .map((d) => Timestamp.fromDate(d))
           .toList(),
+      if (aiSummaryBullets != null) 'aiSummaryBullets': aiSummaryBullets,
+      if (safety != null) 'safety': safety,
     };
   }
 

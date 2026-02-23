@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:house_rental/core/constants/firestore_constants.dart';
 import 'package:house_rental/core/errors/exceptions.dart';
 import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
 import 'package:house_rental/features/listings/data/models/listing_model.dart';
@@ -30,7 +31,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
   Future<List<ListingModel>> getMyListings(String userId) async {
     try {
       final querySnapshot = await _firestore
-          .collection('listings')
+          .collection(FirestoreConstants.listings)
           .where('ownerId', isEqualTo: userId)
           .get();
 
@@ -55,7 +56,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
     String? lastListingId,
   }) async {
     try {
-      Query query = _firestore.collection('listings');
+      Query query = _firestore.collection(FirestoreConstants.listings);
 
       // Apply Filters
       if (filter != null) {
@@ -89,7 +90,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
 
       // Pagination
       if (lastListingId != null) {
-        final lastDocSnapshot = await _firestore.collection('listings').doc(lastListingId).get();
+        final lastDocSnapshot = await _firestore.collection(FirestoreConstants.listings).doc(lastListingId).get();
         if (lastDocSnapshot.exists) {
           query = query.startAfterDocument(lastDocSnapshot);
         }
@@ -110,7 +111,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
   @override
   Future<ListingModel> getListingById(String id) async {
     try {
-      final docSnapshot = await _firestore.collection('listings').doc(id).get();
+      final docSnapshot = await _firestore.collection(FirestoreConstants.listings).doc(id).get();
       if (!docSnapshot.exists) {
         throw const ServerException(message: 'Listing not found');
       }
@@ -125,7 +126,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
   @override
   Future<void> createListing(ListingModel listing) async {
     try {
-      await _firestore.collection('listings').doc(listing.id).set(listing.toJson());
+      await _firestore.collection(FirestoreConstants.listings).doc(listing.id).set(listing.toJson());
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -134,7 +135,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
   @override
   Future<void> updateListing(ListingModel listing) async {
     try {
-      await _firestore.collection('listings').doc(listing.id).update(listing.toJson());
+      await _firestore.collection(FirestoreConstants.listings).doc(listing.id).update(listing.toJson());
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -143,7 +144,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
   @override
   Future<void> deleteListing(String id) async {
     try {
-      await _firestore.collection('listings').doc(id).delete();
+      await _firestore.collection(FirestoreConstants.listings).doc(id).delete();
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -156,13 +157,13 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
       final maxPrice = baseListing.price * 1.2;
       
       // Bedrooms ±1: [b-1, b, b+1]
-      final bedroomList = [
+      final bedroomList = {
         if (baseListing.bedrooms > 1) baseListing.bedrooms - 1,
         baseListing.bedrooms,
         baseListing.bedrooms + 1,
-      ].toSet().toList();
+      }.toList();
 
-      Query query = _firestore.collection('listings');
+      Query query = _firestore.collection(FirestoreConstants.listings);
 
       // Price Filter (Inequality)
       query = query.where('price', isGreaterThanOrEqualTo: minPrice)
@@ -192,7 +193,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
       double minLat, double maxLat, double minLng, double maxLng) async {
     try {
       final querySnapshot = await _firestore
-          .collection('listings')
+          .collection(FirestoreConstants.listings)
           .where('latitude', isGreaterThanOrEqualTo: minLat)
           .where('latitude', isLessThanOrEqualTo: maxLat)
           .where('longitude', isGreaterThanOrEqualTo: minLng)
@@ -201,7 +202,7 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
 
       return querySnapshot.docs
           .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             data['id'] = doc.id;
             return ListingModel.fromJson(data);
           })

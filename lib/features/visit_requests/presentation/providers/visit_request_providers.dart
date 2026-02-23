@@ -1,13 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dartz/dartz.dart';
-import 'package:uuid/uuid.dart';
-import 'package:house_rental/features/notifications/domain/entities/notification_entity.dart';
-import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
-import 'package:house_rental/core/errors/failures.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:house_rental/features/visit_requests/data/datasources/visit_request_remote_datasource.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
 import 'package:house_rental/features/visit_requests/domain/repositories/visit_request_repository.dart';

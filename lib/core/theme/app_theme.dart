@@ -20,8 +20,6 @@ abstract final class AppTheme {
         onSurface: AppColors.textPrimaryLight,
         error: AppColors.error,
         onError: Colors.white,
-        background: AppColors.backgroundLight,
-        onBackground: AppColors.textPrimaryLight,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceLight,
@@ -65,8 +63,6 @@ abstract final class AppTheme {
         onSurface: AppColors.textPrimaryDark,
         error: AppColors.error,
         onError: Colors.white,
-        background: AppColors.backgroundDark,
-        onBackground: AppColors.textPrimaryDark,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceDark,

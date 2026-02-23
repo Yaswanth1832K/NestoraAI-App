@@ -51,7 +51,7 @@ class _MessageSettingsPageState extends State<MessageSettingsPage> {
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
     );
   }
 }

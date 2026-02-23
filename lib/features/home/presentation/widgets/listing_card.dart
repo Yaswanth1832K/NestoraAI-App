@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +7,6 @@ import 'package:house_rental/features/listings/presentation/providers/favorites_
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
 import 'package:house_rental/main.dart';
-import 'package:house_rental/core/theme/theme_provider.dart';
 
 class ListingCard extends ConsumerStatefulWidget {
   final ListingEntity listing;
@@ -36,6 +36,8 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   bool _isToggling = false;
+  int _currentImageIndex = 0;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -47,11 +49,16 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _pageController.addListener(() {
+      final page = _pageController.page?.round() ?? 0;
+      if (page != _currentImageIndex && mounted) setState(() => _currentImageIndex = page);
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -60,10 +67,15 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
     final favorites = ref.watch(favoritesNotifierProvider);
     final isFavorite = favorites.value?.contains(widget.listing.id) ?? false;
     
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // In the new precise UI, the feed is white background, dark text (or dark background, light text)
     final textColor = isDark ? Colors.white : const Color(0xFF222222);
     final subTextColor = isDark ? Colors.grey.shade400 : const Color(0xFF717171);
+
+    // If used in a horizontal scroll (what we want for the redesign), we need to enforce a width. 
+    // We'll use 280 for average screen sizes, allowing part of the next card to peek out.
+    final cardWidth = widget.isVerticalFeed ? null : 280.0;
 
     return GestureDetector(
       onTap: widget.onTap ?? () {
@@ -74,32 +86,40 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
         );
       },
       child: Container(
-        margin: widget.margin ?? const EdgeInsets.only(bottom: 24),
+        width: cardWidth,
+        margin: widget.margin ?? const EdgeInsets.only(right: 16),
         color: Colors.transparent, // Flat design
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image and Favorite Button
+            // Swipeable image gallery and Favorite Button
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   child: AspectRatio(
-                    aspectRatio: 1.05, // 20:19 aspect ratio (standard listing)
-                    child: Image.network(
-                      widget.listing.allImages.isNotEmpty ? widget.listing.allImages.first : 'https://placeholder.com/400x300',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                    aspectRatio: 1.0,
+                    child: _buildImageGallery(isDark),
+                  ),
+                ),
+                // Gradient overlay for better top icon/badge visibility
+                Positioned(
+                  top: 0, left: 0, right: 0, height: 60,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black.withOpacity(0.3), Colors.transparent],
                       ),
+                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
                     ),
                   ),
                 ),
                 if (widget.actionButton != null)
                   Positioned(
-                    top: 16,
-                    right: 16,
+                    top: 12,
+                    right: 12,
                     child: widget.actionButton!,
                   )
                 else if (widget.showFavoriteButton)
@@ -116,9 +136,9 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                             child: Icon(
                               isFavorite ? Icons.favorite : Icons.favorite_border,
                               color: isFavorite ? const Color(0xFFFF385C) : Colors.white, // Airbnb Red or White
-                              size: 26,
+                              size: 28,
                               shadows: const [
-                                Shadow(blurRadius: 2, color: Colors.black26),
+                                Shadow(blurRadius: 4, color: Colors.black45),
                               ],
                             ),
                           );
@@ -126,21 +146,50 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                       ),
                     ),
                   ),
+                if (widget.listing.allImages.length > 1)
+                  Positioned(
+                    bottom: 10,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        widget.listing.allImages.length.clamp(0, 10),
+                        (i) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          height: 4,
+                          width: _currentImageIndex == i ? 12 : 4,
+                          decoration: BoxDecoration(
+                            color: _currentImageIndex == i
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                // "Guest favourite" badge
                 Positioned(
                    top: 12,
                    left: 12,
                    child: Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                     decoration: const BoxDecoration(
+                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                     decoration: BoxDecoration(
                        color: Colors.white,
-                       borderRadius: BorderRadius.all(Radius.circular(4)),
+                       borderRadius: BorderRadius.circular(20),
+                       boxShadow: const [
+                         BoxShadow(blurRadius: 4, color: Colors.black26),
+                       ],
                      ),
                      child: const Text(
                        'Guest favourite',
                        style: TextStyle(
                          fontSize: 12,
-                         fontWeight: FontWeight.bold,
+                         fontWeight: FontWeight.w600,
                          color: Colors.black,
+                         fontFamily: 'Inter',
                        ),
                      ),
                    ),
@@ -151,78 +200,42 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
             const SizedBox(height: 12),
             
             // Text Details
+            Text(
+              widget.listing.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 2),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.listing.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${widget.listing.city} • ${widget.listing.bedrooms} Beds', // simplified location
-                        style: TextStyle(
-                          color: subTextColor,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Mar 1 - 6', // Date range placeholder
-                        style: TextStyle(
-                          color: subTextColor,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '£${widget.listing.price.toInt()}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ' night',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: textColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    '₹${widget.listing.price.toInt()}/mo',
+                    style: TextStyle(
+                      color: subTextColor,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Rating
                 if (widget.listing.averageRating > 0)
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(Icons.star, size: 14, color: textColor),
-                      const SizedBox(width: 4),
+                      Text(' • ', style: TextStyle(color: subTextColor, fontSize: 14)),
+                      Icon(Icons.star_rounded, size: 16, color: textColor),
+                      const SizedBox(width: 2),
                       Text(
                         widget.listing.averageRating.toStringAsFixed(1),
                         style: TextStyle(
                           color: textColor,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -232,6 +245,48 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImageGallery(bool isDark) {
+    final urls = widget.listing.allImages;
+    if (urls.isEmpty) {
+      return Container(
+        color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+        child: Icon(Icons.home_rounded, size: 48, color: Colors.grey.shade500),
+      );
+    }
+    if (urls.length == 1) {
+      return CachedNetworkImage(
+        imageUrl: urls.first,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (_, __, ___) => Container(
+          color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+        ),
+      );
+    }
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: urls.length,
+      itemBuilder: (context, index) {
+        return CachedNetworkImage(
+          imageUrl: urls[index],
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Container(
+            color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorWidget: (_, __, ___) => Container(
+            color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+            child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+          ),
+        );
+      },
     );
   }
 

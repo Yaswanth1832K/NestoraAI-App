@@ -133,7 +133,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ),
                       dropdownColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                       style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                      value: _bedrooms,
+                      initialValue: _bedrooms,
                       hint: const Text('Any'),
                       items: [1, 2, 3, 4].map((e) => DropdownMenuItem(
                         value: e,
@@ -164,7 +164,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ),
                       dropdownColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                       style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                      value: _bathrooms,
+                      initialValue: _bathrooms,
                       hint: const Text('Any'),
                       items: [1, 2, 3].map((e) => DropdownMenuItem(
                         value: e,

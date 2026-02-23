@@ -4,10 +4,7 @@ import 'package:house_rental/features/auth/presentation/providers/auth_providers
 import 'package:house_rental/features/roommate/domain/entities/roommate_entity.dart';
 import 'package:house_rental/features/roommate/presentation/pages/roommate_profile_screen.dart';
 import 'package:house_rental/features/roommate/presentation/providers/roommate_providers.dart';
-import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
-import 'package:house_rental/core/router/app_router.dart';
-import 'package:go_router/go_router.dart';
 
 class RoommateFeedScreen extends ConsumerStatefulWidget {
   const RoommateFeedScreen({super.key});
@@ -16,7 +13,25 @@ class RoommateFeedScreen extends ConsumerStatefulWidget {
   ConsumerState<RoommateFeedScreen> createState() => _RoommateFeedScreenState();
 }
 
+/// Computes compatibility score 0–100 from city, gender preference, budget, occupation.
+int roommateCompatibilityScore(RoommateEntity me, RoommateEntity other) {
+  int score = 0;
+  if (me.city.toLowerCase() == other.city.toLowerCase()) score += 25;
+  final iMatchThem = me.preferredGender == 'Any' || me.preferredGender == other.gender;
+  final theyMatchMe = other.preferredGender == 'Any' || other.preferredGender == me.gender;
+  if (iMatchThem && theyMatchMe) score += 25;
+  if ((other.budget - me.budget).abs() <= 5000) score += 25;
+  if (me.occupation.isNotEmpty && other.occupation.isNotEmpty &&
+      me.occupation.toLowerCase() == other.occupation.toLowerCase()) {
+    score += 25;
+  }
+  return score.clamp(0, 100);
+}
+
 class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
+  String? _filterOccupation;
+  int? _filterMaxBudget;
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).value;
@@ -102,8 +117,16 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
 
     return matchesAsync.when(
       data: (matches) {
-        // Filter out self
-        final filteredMatches = matches.where((m) => m.userId != myProfile.userId).toList();
+        var filteredMatches = matches.where((m) => m.userId != myProfile.userId).toList();
+        if (_filterOccupation != null && _filterOccupation!.isNotEmpty) {
+          filteredMatches = filteredMatches.where((m) => m.occupation == _filterOccupation).toList();
+        }
+        if (_filterMaxBudget != null) {
+          filteredMatches = filteredMatches.where((m) => m.budget <= _filterMaxBudget!).toList();
+        }
+        // Sort by compatibility descending
+        filteredMatches = List.from(filteredMatches)
+          ..sort((a, b) => roommateCompatibilityScore(myProfile, b).compareTo(roommateCompatibilityScore(myProfile, a)));
 
         if (filteredMatches.isEmpty) {
           return const Center(
@@ -115,12 +138,20 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: filteredMatches.length,
-          itemBuilder: (context, index) {
-            return _buildRoommateCard(filteredMatches[index], myProfile);
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildFilters(myProfile, filteredMatches),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: filteredMatches.length,
+                itemBuilder: (context, index) {
+                  return _buildRoommateCard(filteredMatches[index], myProfile);
+                },
+              ),
+            ),
+          ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -128,13 +159,44 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
     );
   }
 
+  Widget _buildFilters(RoommateEntity myProfile, List<RoommateEntity> matches) {
+    final occupations = matches.map((m) => m.occupation).where((o) => o.isNotEmpty).toSet().toList()..sort();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          DropdownButton<String>(
+            value: _filterOccupation,
+            hint: const Text('Occupation', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            underline: const SizedBox(),
+            isDense: true,
+            items: [
+              const DropdownMenuItem(value: null, child: Text('All')),
+              ...occupations.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 13)))),
+            ],
+            onChanged: (v) => setState(() => _filterOccupation = v),
+          ),
+          const SizedBox(width: 12),
+          DropdownButton<int>(
+            value: _filterMaxBudget,
+            hint: const Text('Max budget', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            underline: const SizedBox(),
+            isDense: true,
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Any')),
+              const DropdownMenuItem(value: 15000, child: Text('≤ ₹15k')),
+              const DropdownMenuItem(value: 25000, child: Text('≤ ₹25k')),
+              const DropdownMenuItem(value: 40000, child: Text('≤ ₹40k')),
+            ],
+            onChanged: (v) => setState(() => _filterMaxBudget = v),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRoommateCard(RoommateEntity match, RoommateEntity myProfile) {
-    // Mutual compatibility check
-    final bool iMatchThem = myProfile.preferredGender == 'Any' || myProfile.preferredGender == match.gender;
-    final bool theyMatchMe = match.preferredGender == 'Any' || match.preferredGender == myProfile.gender;
-    final bool budgetMatch = (match.budget - myProfile.budget).abs() <= 5000;
-    
-    final bool isCompatible = iMatchThem && theyMatchMe && budgetMatch;
+    final score = roommateCompatibilityScore(myProfile, match);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -179,12 +241,14 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
                     ],
                   ),
                 ),
-                if (isCompatible)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Compatible', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: score >= 75 ? Colors.green.withOpacity(0.2) : score >= 50 ? Colors.orange.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child: Text('$score%', style: TextStyle(color: score >= 75 ? Colors.green : score >= 50 ? Colors.orange : Colors.grey, fontSize: 14, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
             const Divider(height: 32, color: Colors.white12),

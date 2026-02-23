@@ -1,14 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/notifications/domain/entities/notification_entity.dart';
 import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/features/search/presentation/providers/search_providers.dart';
 import 'package:house_rental/features/search/presentation/providers/search_history_providers.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
@@ -27,16 +25,33 @@ class SearchPage extends ConsumerStatefulWidget {
   ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
+/// Debounce delay before firing Firestore/API search (reduces reads).
+const Duration _kSearchDebounce = Duration(milliseconds: 300);
+
 class _SearchPageState extends ConsumerState<SearchPage> {
   final _searchController = TextEditingController();
   late stt.SpeechToText _speech;
   bool _isListening = false;
   String _lastWords = '';
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _searchController.addListener(_onSearchTextChanged);
+  }
+
+  void _onSearchTextChanged() {
+    _debounceTimer?.cancel();
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      ref.read(searchProvider.notifier).clearResults();
+      return;
+    }
+    _debounceTimer = Timer(_kSearchDebounce, () {
+      _performSearch(query: query);
+    });
   }
 
   Future<void> _listen() async {
@@ -110,6 +125,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     super.dispose();
   }

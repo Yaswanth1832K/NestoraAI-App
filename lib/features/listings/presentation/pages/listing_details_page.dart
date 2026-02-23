@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:house_rental/core/errors/failures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/features/listings/presentation/providers/favorites_notifier.dart';
+import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
 import 'package:house_rental/features/ai_services/presentation/ai_assistant_sheet.dart';
@@ -16,6 +17,7 @@ import 'package:house_rental/features/listings/domain/entities/review_entity.dar
 import 'package:house_rental/features/listings/presentation/providers/review_providers.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
 import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
+import 'package:house_rental/features/location/commute_provider.dart';
 import 'package:house_rental/main.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
@@ -37,7 +39,6 @@ class ListingDetailsPage extends ConsumerStatefulWidget {
 class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
   double? predictedPrice;
   bool _isLoading = true;
-  String? _errorMessage;
   int _currentPage = 0;
   final PageController _pageController = PageController();
 
@@ -59,7 +60,6 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
     if (mounted) {
       result.fold(
         (failure) => setState(() {
-          _errorMessage = failure.message;
           _isLoading = false;
         }),
         (price) => setState(() {
@@ -221,6 +221,7 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
       reviewerName: user.displayName ?? 'Anonymous',
       rating: rating,
       comment: comment,
+      bookingId: '', // Default empty string since booking is not strictly tied to reviews in this flow yet
       createdAt: DateTime.now(),
     );
 
@@ -482,9 +483,143 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
     );
   }
 
+  Widget _buildCommuteSection(bool isDark, Color textColor, Color subTextColor) {
+    final uid = ref.watch(authStateProvider).value?.uid;
+    final profileAsync = uid != null ? ref.watch(userProfileProvider(uid)) : null;
+    final destination = profileAsync?.valueOrNull?.destination?.trim();
+    if (destination == null || destination.isEmpty) return const SizedBox.shrink();
+
+    final commuteAsync = ref.watch(commuteTimeProvider((lat: widget.listing.latitude, lng: widget.listing.longitude, destination: destination)));
+    return commuteAsync.when(
+      data: (duration) {
+        if (duration == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade800 : Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.directions_car, size: 20, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '~$duration to your destination',
+                    style: TextStyle(fontSize: 14, color: textColor, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Row(
+          children: [
+            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: subTextColor)),
+            const SizedBox(width: 10),
+            Text('Checking commute...', style: TextStyle(fontSize: 13, color: subTextColor)),
+          ],
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildNearbyPriceSection(bool isDark, Color textColor, Color subTextColor) {
+    final nearbyAsync = ref.watch(nearbyListingsProvider(widget.listing));
+    return nearbyAsync.when(
+      data: (nearby) {
+        if (nearby.isEmpty) return const SizedBox.shrink();
+        final avg = nearby.map((e) => e.price).reduce((a, b) => a + b) / nearby.length;
+        final diff = (widget.listing.price - avg) / avg;
+        final percent = (diff * 100).round().abs();
+        Color chipColor;
+        String label;
+        if (diff > 0.1) {
+          chipColor = Colors.orange;
+          label = '$percent% above nearby average';
+        } else if (diff < -0.1) {
+          chipColor = Colors.green;
+          label = '$percent% below nearby average';
+        } else {
+          chipColor = Colors.grey;
+          label = 'In line with nearby (${nearby.length} similar)';
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: chipColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: chipColor.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.compare_arrows, size: 18, color: chipColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(fontSize: 13, color: textColor, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildTrustSafetyWarning(bool isDark, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trust & Safety',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange.shade900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This listing has been flagged for review. Avoid sharing contact details or making advance payments outside the app.',
+                  style: TextStyle(fontSize: 13, color: Colors.orange.shade900),
+                ),
+                if (widget.listing.fraudSignals?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 6),
+                  ...(widget.listing.fraudSignals!.take(3).map((s) => Text('• $s', style: TextStyle(fontSize: 12, color: Colors.orange.shade800)))),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDealIndicator(double predicted) {
     final actual = widget.listing.price;
-    final diffPercent = (actual - predicted).abs() / predicted;
 
     String label;
     Color color;
@@ -724,6 +859,8 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                       ),
                     ],
                   ),
+                  _buildCommuteSection(isDark, textColor, subTextColor),
+                  _buildNearbyPriceSection(isDark, textColor, subTextColor),
                   Divider(height: 32, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                   Text(
                     'Features',
@@ -738,7 +875,28 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                       _buildInfoIcon(Icons.square_foot, '${widget.listing.sqft} sqft', textColor),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  if (widget.listing.isSuspicious) ...[
+                    _buildTrustSafetyWarning(isDark, textColor),
+                    const SizedBox(height: 16),
+                  ],
+                  if (widget.listing.aiSummaryBullets != null && widget.listing.aiSummaryBullets!.isNotEmpty) ...[
+                    Text(
+                      'Highlights',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                    ),
+                    const SizedBox(height: 8),
+                    ...widget.listing.aiSummaryBullets!.map((b) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('• ', style: TextStyle(fontSize: 16, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                          Expanded(child: Text(b, style: TextStyle(fontSize: 15, color: isDark ? Colors.grey.shade300 : Colors.black87))),
+                        ],
+                      ),
+                    )),
+                    const SizedBox(height: 20),
+                  ],
                   Text(
                     'Description',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import 'package:house_rental/core/errors/failures.dart';
 import 'package:house_rental/features/chat/domain/entities/chat_room_entity.dart';
-import 'package:house_rental/features/chat/domain/repositories/chat_repository.dart';
 
 class GetOrCreateRoommateChatUseCase {
   final FirebaseFirestore _firestore;

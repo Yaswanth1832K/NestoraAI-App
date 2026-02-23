@@ -52,6 +52,16 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<void> setTyping(String chatId, String userId) async {
+    await _remoteDataSource.setTyping(chatId, userId);
+  }
+
+  @override
+  Future<void> clearTyping(String chatId, String userId) async {
+    await _remoteDataSource.clearTyping(chatId, userId);
+  }
+
+  @override
   Stream<List<ChatRoomEntity>> getUserChatRooms(String userId) {
     return _remoteDataSource.userChatRoomsStream(userId);
   }
