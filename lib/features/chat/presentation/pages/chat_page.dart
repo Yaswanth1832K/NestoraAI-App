@@ -94,36 +94,55 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        elevation: 0,
       ),
-      body: Column(
-        children: [
-          _buildBookingStatus(),
-          Expanded(
-            child: messagesAsync.when(
-              data: (messages) {
-                if (messages.isEmpty) {
-                  return const Center(child: Text('No messages yet. Say hi!'));
-                }
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.senderId == currentUser?.uid;
-                    return _MessageBubble(message: message, isMe: isMe);
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
+          children: [
+            Expanded(
+              child: messagesAsync.when(
+                data: (messages) {
+                  if (messages.isEmpty) {
+                    return const Center(child: Text('No messages yet. Say hi!'));
+                  }
+                  return ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: messages.length + 1, // +1 for the booking status header
+                    itemBuilder: (context, index) {
+                      if (index == messages.length) {
+                        // This is the top (status bar) since list is reversed
+                        return _buildBookingStatus();
+                      }
+                      final message = messages[index];
+                      final isMe = message.senderId == currentUser?.uid;
+                      return _MessageBubble(message: message, isMe: isMe);
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, st) => Center(child: Text('Error: $e')),
+              ),
             ),
-          ),
-          _buildSuggestedReplies(messagesAsync, chatRoomAsync, currentUser),
-          _buildTypingIndicator(chatRoomAsync, currentUser),
-          _buildBookingRequestButton(),
-          _buildInput(),
-        ],
+            // Group transient bottom widgets with scroll safety
+            Flexible(
+              flex: 0,
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildSuggestedReplies(messagesAsync, chatRoomAsync, currentUser),
+                    _buildTypingIndicator(chatRoomAsync, currentUser),
+                    _buildBookingRequestButton(),
+                  ],
+                ),
+              ),
+            ),
+            _buildInput(),
+          ],
+        ),
       ),
     );
   }
@@ -196,12 +215,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => updateStatus(request, 'rejected'),
+                  onPressed: () => updateStatus.call(request, 'rejected'),
                   child: const Text("Reject", style: TextStyle(color: Colors.redAccent)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () => updateStatus(request, 'approved'),
+                  onPressed: () => updateStatus.call(request, 'approved'),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
                   child: const Text("Accept", style: TextStyle(color: Colors.white)),
                 ),
@@ -426,13 +445,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   border: InputBorder.none,
                 ),
                 maxLines: null,
-                onChanged: (_) => _onTyping(),
-                onSubmitted: (_) => _sendMessage(),
+                onChanged: (val) => _onTyping(),
+                onSubmitted: (val) => _sendMessage(),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.send, color: Colors.blueAccent),
-              onPressed: _sendMessage,
+              onPressed: () => _sendMessage(),
             ),
           ],
         ),
@@ -460,7 +479,7 @@ class _MessageBubble extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: isMe ? Colors.blueAccent : const Color(0xFF2A2A2A),
+              color: isMe ? Theme.of(context).primaryColor : const Color(0xFF2A2A2A),
               borderRadius: BorderRadius.circular(16).copyWith(
                 bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
                 bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),

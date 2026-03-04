@@ -133,20 +133,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (user == null) throw const ServerException(message: 'User not logged in');
 
       // Update Firebase Auth profile
-      if (displayName != null || photoURL != null) {
+      if (displayName != null) {
         await user.updateDisplayName(displayName);
+      }
+      if (photoURL != null) {
         await user.updatePhotoURL(photoURL);
       }
 
       // Update Firestore user document
       final Map<String, dynamic> updates = {};
-      if (displayName != null) updates['name'] = displayName;
+      if (displayName != null) updates['displayName'] = displayName;
       if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
-      if (photoURL != null) updates['photoURL'] = photoURL;
-      // Add 'bio' if needed, though strictly not in interface yet, we will stick to interface params for now
+      if (photoURL != null) updates['photoUrl'] = photoURL;
       
       if (updates.isNotEmpty) {
-        await _firestore.collection('users').doc(user.uid).update(updates);
+        await _firestore.collection('users').doc(user.uid).set(updates, SetOptions(merge: true));
       }
       
       await user.reload(); // Refresh user data

@@ -32,6 +32,8 @@ class ListingEntity extends Equatable {
   final List<String>? aiSummaryBullets;
   /// Set by Cloud Function: 'safe' | 'suspicious'.
   final String? safety;
+  final String? allowedTenants; // Bachelors, Family, etc.
+  final bool isVerified;
 
   List<String> get allImages => imageUrls.isNotEmpty ? imageUrls : images;
   bool get isSuspicious => safety == 'suspicious' || (fraudRiskScore != null && fraudRiskScore! > 0.5);
@@ -72,6 +74,8 @@ class ListingEntity extends Equatable {
     this.availableDates = const [],
     this.aiSummaryBullets,
     this.safety,
+    this.allowedTenants,
+    this.isVerified = false,
   });
 
   ListingEntity copyWith({
@@ -104,6 +108,8 @@ class ListingEntity extends Equatable {
     List<DateTime>? availableDates,
     List<String>? aiSummaryBullets,
     String? safety,
+    String? allowedTenants,
+    bool? isVerified,
   }) {
     return ListingEntity(
       id: id ?? this.id,
@@ -135,6 +141,8 @@ class ListingEntity extends Equatable {
       availableDates: availableDates ?? this.availableDates,
       aiSummaryBullets: aiSummaryBullets ?? this.aiSummaryBullets,
       safety: safety ?? this.safety,
+      allowedTenants: allowedTenants ?? this.allowedTenants,
+      isVerified: isVerified ?? this.isVerified,
     );
   }
 
@@ -169,5 +177,7 @@ class ListingEntity extends Equatable {
         availableDates,
         aiSummaryBullets,
         safety,
+        allowedTenants,
+        isVerified,
       ];
 }

@@ -17,6 +17,9 @@ import 'package:house_rental/features/listings/domain/repositories/listing_repos
 import 'package:house_rental/main.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
 import 'package:house_rental/features/listings/presentation/pages/post_property_page.dart';
+import 'package:go_router/go_router.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -133,159 +136,96 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final searchState = ref.watch(searchProvider);
-    final recommendationsState = ref.watch(recommendationsProvider);
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          'Search Homes',
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
+        title: const Text(
+          'Search Explore',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: -0.5),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.onSurface),
-            tooltip: 'Filters',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const FilterBottomSheet(),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.add_home, color: Theme.of(context).colorScheme.onSurface),
-            tooltip: 'Post Property',
-            onPressed: () {
-              rootNavigatorKey.currentState!.push(
-                MaterialPageRoute(builder: (_) => const PostPropertyPage()),
-              );
-            },
-          ),
-          Consumer(
-            builder: (context, ref, child) {
-              final authState = ref.watch(authStateProvider);
-              return authState.maybeWhen(
-                data: (user) => IconButton(
-                  icon: Icon(user == null ? Icons.account_circle_outlined : Icons.account_circle, 
-                    color: user == null ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.primary),
-                  tooltip: user == null ? 'Quick Login' : 'Logout',
-                  onPressed: () async {
-                    if (user == null) {
-                      try {
-                        await ref.read(firebaseAuthProvider).signInAnonymously();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Logged in as Guest')),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Login failed: $e')),
-                          );
-                        }
-                      }
-                    } else {
-                      await ref.read(firebaseAuthProvider).signOut();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logged out')),
-                        );
-                      }
-                    }
-                  },
-                ),
-                orElse: () => const SizedBox.shrink(),
-              );
-            },
-          ),
+          _buildActionIcon(Icons.tune_rounded, () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => const FilterBottomSheet(),
+            );
+          }),
+          const SizedBox(width: 8),
+          _buildActionIcon(Icons.add_home_rounded, () => context.push(AppRouter.postProperty)),
+          const SizedBox(width: 20),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                        decoration: InputDecoration(
-                          hintText: _isListening ? 'Listening...' : 'Try: 2bhk near college under 15000',
-                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.outline),
-                          filled: true,
-                          fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          prefixIcon: Icon(
-                            _isListening ? Icons.mic : Icons.search,
-                            color: _isListening ? Colors.red : Theme.of(context).colorScheme.outline,
-                          ),
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_searchController.text.isNotEmpty)
-                                IconButton(
-                                  icon: const Icon(Icons.clear, color: Colors.grey),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    ref.read(searchProvider.notifier).clearResults();
-                                    setState(() {});
-                                  },
-                                ),
-                              IconButton(
-                                icon: Icon(
-                                  _isListening ? Icons.mic : Icons.mic_none,
-                                  color: _isListening ? Colors.red : Theme.of(context).primaryColor,
-                                ),
-                                onPressed: _listen,
-                              ),
-                            ],
+                Hero(
+                  tag: 'search_bar',
+                  child: GlassContainer.standard(
+                    context: context,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    borderRadius: 20,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isListening ? Icons.mic_rounded : Icons.search_rounded,
+                          color: _isListening ? Colors.red : Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            decoration: InputDecoration(
+                              hintText: _isListening ? 'Listening...' : 'Search near you...',
+                              hintStyle: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.5), fontWeight: FontWeight.w500),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onChanged: (val) => setState(() {}),
+                            onSubmitted: (_) => _performSearch(),
                           ),
                         ),
-                        onChanged: (val) => setState(() {}),
-                        onSubmitted: (_) => _performSearch(),
-                      ),
+                        if (_searchController.text.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            onPressed: () {
+                              _searchController.clear();
+                              ref.read(searchProvider.notifier).clearResults();
+                              setState(() {});
+                            },
+                          ),
+                        IconButton(
+                          icon: Icon(
+                            _isListening ? Icons.stop_circle_rounded : Icons.mic_none_rounded,
+                            color: _isListening ? Colors.red : Theme.of(context).primaryColor,
+                          ),
+                          onPressed: _listen,
+                        ),
+                      ],
                     ),
-                    if (!_isListening) ...[
-                      const SizedBox(width: 10),
-                      IconButton.filled(
-                        style: IconButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
-                        onPressed: searchState.isLoading ? null : _performSearch,
-                        icon: searchState.isLoading 
-                          ? const SizedBox(
-                              width: 20, 
-                              height: 20, 
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.search, color: Colors.white),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  'Search in natural language (AI powered)',
-                  style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 13, fontWeight: FontWeight.w500),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    'Try "Apartment with pool" or "2BHK near city center"',
+                    style: TextStyle(
+                      color: Theme.of(context).hintColor.withOpacity(0.4), 
+                      fontSize: 12, 
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 // Recent Searches UI
                 ref.watch(searchHistoryProvider).maybeWhen(
                   data: (history) {
@@ -293,22 +233,25 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Recent Searches',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: history.map((query) => ActionChip(
-                            label: Text(query),
-                            onPressed: () => _performSearch(query: query),
-                            avatar: Icon(Icons.history, size: 16, color: Theme.of(context).primaryColor),
-                            backgroundColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                            side: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-                            labelStyle: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface),
-                          )).toList(),
+                        SizedBox(
+                          height: 40,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: history.length,
+                            itemBuilder: (context, index) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _buildGlassChip(
+                                label: history[index],
+                                icon: Icons.history_rounded,
+                                onTap: () => _performSearch(query: history[index]),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     );
@@ -319,9 +262,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _buildActiveFilters(ref),
           ),
+          const SizedBox(height: 10),
           Expanded(
             child: Consumer(
               builder: (context, ref, child) {
@@ -331,138 +275,138 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 if (isFiltered && _searchController.text.isEmpty) {
                   return ref.watch(filteredListingsProvider).when(
                     data: (listings) {
-                      if (listings.isEmpty) return const Center(child: Text('No properties match your filters'));
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text('Filtered Properties', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: listings.length,
-                              itemBuilder: (context, index) => ListingCard(listing: listings[index]),
-                            ),
-                          ),
-                        ],
-                      );
+                      if (listings.isEmpty) return _buildInfoState(Icons.filter_list_off_rounded, 'No matches found');
+                      return _buildResultsList('Filtered Properties', listings);
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Center(child: Text('Error: $e')),
+                    error: (e, _) => _buildInfoState(Icons.error_outline_rounded, 'Search Error: $e'),
                   );
                 }
 
+                final searchState = ref.watch(searchProvider);
                 return searchState.when(
-              data: (listings) {
-                if (listings.isEmpty && _searchController.text.isEmpty) {
-                  // Show Recommendations when not searching
-                  return recommendationsState.when(
-                    data: (recListings) {
-                      if (recListings.isEmpty) {
-                        return const Center(child: Text('Type to search for homes'));
-                      }
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                            child: Text(
-                              'Recommended for you',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: recListings.length,
-                              itemBuilder: (context, index) => ListingCard(listing: recListings[index]),
-                            ),
-                          ),
-                        ],
+                  data: (listings) {
+                    if (listings.isEmpty && _searchController.text.isEmpty) {
+                      final recommendationsState = ref.watch(recommendationsProvider);
+                      return recommendationsState.when(
+                        data: (recListings) {
+                          if (recListings.isEmpty) return _buildInfoState(Icons.search_rounded, 'Discover your next home');
+                          return _buildResultsList('Suggested for you', recListings);
+                        },
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (_, __) => _buildInfoState(Icons.home_rounded, 'Discover your next home'),
                       );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => const Center(child: Text('Type to search for homes')),
-                  );
-                }
+                    }
 
-                if (listings.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'No properties found for your search',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Try increasing budget or changing keywords',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: listings.length,
-                  itemBuilder: (context, index) => ListingCard(listing: listings[index]),
+                    if (listings.isEmpty) return _buildInfoState(Icons.search_off_rounded, 'No properties match your search');
+                    
+                    return _buildResultsList('Search Results', listings);
+                  },
+                  error: (err, stack) => _buildInfoState(Icons.error_outline_rounded, 'Something went wrong: $err'),
+                  loading: () => _buildLoadingState(),
                 );
               },
-              error: (err, stack) => Center(
-                child: Card(
-                  color: Colors.red.shade50,
-                  margin: const EdgeInsets.all(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Search Error',
-                          style: TextStyle(
-                            color: Colors.red.shade900,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$err',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              loading: () => const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Searching for your dream home...'),
-                  ],
-                ),
-              ),
-            );
-          },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionIcon(IconData icon, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: GlassContainer.standard(
+        context: context,
+        borderRadius: 40,
+        padding: EdgeInsets.zero,
+        child: IconButton(
+          icon: Icon(icon, size: 22),
+          onPressed: onTap,
         ),
       ),
-    ],
+    );
+  }
+
+  Widget _buildGlassChip({required String label, required IconData icon, required VoidCallback onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: GlassContainer.standard(
+        context: context,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        borderRadius: 15,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsList(String title, List listings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            itemCount: listings.length,
+            itemBuilder: (context, index) => ListingCard(listing: listings[index], isVerticalFeed: true),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoState(IconData icon, String message) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 64, color: Theme.of(context).hintColor.withOpacity(0.1)),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 16, 
+              fontWeight: FontWeight.w800, 
+              color: Theme.of(context).hintColor.withOpacity(0.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(strokeWidth: 3),
+          const SizedBox(height: 24),
+          Text(
+            'Finding the best matches...',
+            style: TextStyle(fontWeight: FontWeight.w800, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
@@ -490,19 +434,37 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     if (filter.amenities != null) chips.addAll(filter.amenities!);
 
     return SizedBox(
-      height: 40,
-      child: ListView(
+      height: 36,
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        children: [
-          const Icon(Icons.tune, size: 16, color: Colors.blue),
-          const SizedBox(width: 8),
-          ...chips.map((c) => Padding(
+        itemCount: chips.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Icon(Icons.tune_rounded, size: 18, color: Theme.of(context).primaryColor),
+            );
+          }
+          final chipLabel = chips[index - 1];
+          return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Chip(
-              label: Text(c, style: const TextStyle(fontSize: 11)),
+            child: GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              borderRadius: 10,
+              child: Center(
+                child: Text(
+                  chipLabel,
+                  style: TextStyle(
+                    fontSize: 10, 
+                    fontWeight: FontWeight.w800, 
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ),
             ),
-          )),
-        ],
+          );
+        },
       ),
     );
   }

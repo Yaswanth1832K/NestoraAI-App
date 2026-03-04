@@ -9,6 +9,9 @@ import 'package:house_rental/features/listings/domain/entities/listing_entity.da
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/listings/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 
 class MapPage extends ConsumerStatefulWidget {
   const MapPage({super.key});
@@ -103,35 +106,13 @@ class _MapPageState extends ConsumerState<MapPage> {
                   ),
                 ),
               ),
-              const Icon(Icons.location_on, color: Colors.blue, size: 30),
+              Icon(Icons.location_on, color: Theme.of(context).primaryColor, size: 30),
             ],
           ),
         ),
       );
     }).toList();
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Property Map'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'Filters',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const FilterBottomSheet(),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _fetchInitialListings(),
-          ),
-        ],
-      ),
       body: Stack(
         children: [
           FlutterMap(
@@ -150,42 +131,64 @@ class _MapPageState extends ConsumerState<MapPage> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.nestora.app',
               ),
               MarkerLayer(markers: markers),
-              RichAttributionWidget(
-                attributions: [
-                  TextSourceAttribution(
-                    'OpenStreetMap contributors',
-                    onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
-                  ),
-                ],
-              ),
             ],
           ),
           
+          // Premium AppBar Overlay
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 20, right: 20),
+              child: Row(
+                children: [
+                  _buildMapActionIcon(Icons.arrow_back_rounded, () => Navigator.pop(context)),
+                  const Spacer(),
+                  _buildMapActionIcon(Icons.tune_rounded, () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const FilterBottomSheet(),
+                    );
+                  }),
+                  const SizedBox(width: 12),
+                  _buildMapActionIcon(Icons.refresh_rounded, _fetchInitialListings),
+                ],
+              ),
+            ),
+          ),
+
           if (_isLoading)
-            const Positioned(
-              top: 16,
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 80,
               left: 0,
               right: 0,
               child: Center(
-                child: Card(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 12),
-                        Text('Loading listings...', style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
+                child: GlassContainer.standard(
+                  context: context,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  borderRadius: 30,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Scanning area...', 
+                        style: TextStyle(fontWeight: FontWeight.w800, color: Theme.of(context).primaryColor, fontSize: 13),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -193,38 +196,30 @@ class _MapPageState extends ConsumerState<MapPage> {
 
           if (_selectedListing != null)
             Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildListingPreviewCard(_selectedListing!),
+              bottom: 30,
+              left: 20,
+              right: 20,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _buildPremiumListingPreview(_selectedListing!),
               ),
             ),
 
           // Zoom Controls
           Positioned(
-            right: 16,
-            bottom: _selectedListing != null ? 150 : 16,
+            right: 24,
+            bottom: _selectedListing != null ? 220 : 100,
             child: Column(
               children: [
-                FloatingActionButton.small(
-                  heroTag: 'zoom_in',
-                  onPressed: () {
-                    final zoom = _mapController.camera.zoom + 1;
-                    _mapController.move(_mapController.camera.center, zoom);
-                  },
-                  child: const Icon(Icons.add),
-                ),
-                const SizedBox(height: 8),
-                FloatingActionButton.small(
-                  heroTag: 'zoom_out',
-                  onPressed: () {
-                    final zoom = _mapController.camera.zoom - 1;
-                    _mapController.move(_mapController.camera.center, zoom);
-                  },
-                  child: const Icon(Icons.remove),
-                ),
+                _buildMapActionIcon(Icons.add_rounded, () {
+                  final zoom = _mapController.camera.zoom + 1;
+                  _mapController.move(_mapController.camera.center, zoom);
+                }),
+                const SizedBox(height: 12),
+                _buildMapActionIcon(Icons.remove_rounded, () {
+                  final zoom = _mapController.camera.zoom - 1;
+                  _mapController.move(_mapController.camera.center, zoom);
+                }),
               ],
             ),
           ),
@@ -233,96 +228,154 @@ class _MapPageState extends ConsumerState<MapPage> {
     );
   }
 
-  Widget _buildListingPreviewCard(ListingEntity listing) {
-    return Card(
-      elevation: 8,
-      shadowColor: Colors.black26,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () {
-          rootNavigatorKey.currentState!.push(
-            MaterialPageRoute(
-              builder: (_) => ListingDetailsPage(listing: listing),
+  Widget _buildMapActionIcon(IconData icon, VoidCallback onTap) {
+    return GlassContainer.standard(
+      context: context,
+      borderRadius: 20,
+      padding: EdgeInsets.zero,
+      child: IconButton(
+        icon: Icon(icon, size: 22, color: Theme.of(context).colorScheme.onSurface),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  Widget _buildMarkerIcon(ListingEntity listing, bool isSelected) {
+    final primaryColor = Theme.of(context).primaryColor;
+    return Column(
+      children: [
+        AnimatedScale(
+          duration: const Duration(milliseconds: 200),
+          scale: isSelected ? 1.2 : 1.0,
+          child: GlassContainer.standard(
+            context: context,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            borderRadius: 12,
+            child: Text(
+              '₹${listing.price.toStringAsFixed(0)}',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                color: isSelected ? primaryColor : null,
+              ),
             ),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          height: 120,
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: listing.allImages.isNotEmpty
-                      ? Image.network(
-                          listing.allImages.first,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300,
-                              highlightColor: Colors.grey.shade100,
-                              child: Container(color: Colors.white),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.blue.shade50,
-                            child: const Icon(Icons.broken_image, color: Colors.blue),
-                          ),
-                        )
-                      : Container(
-                          color: Colors.blue.shade50,
-                          child: const Icon(Icons.home, color: Colors.blue),
-                        ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      listing.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '₹${listing.price.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          listing.city,
-                          style: const TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
           ),
+        ),
+        Icon(
+          Icons.location_on_rounded, 
+          color: isSelected ? primaryColor : primaryColor.withOpacity(0.7), 
+          size: isSelected ? 40 : 34,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumListingPreview(ListingEntity listing) {
+    return InkWell(
+      onTap: () => context.push(AppRouter.listingDetails, extra: listing),
+      child: GlassContainer.standard(
+        context: context,
+        borderRadius: 30,
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: SizedBox(
+                width: 100,
+                height: 100,
+                child: listing.allImages.isNotEmpty
+                    ? Image.network(
+                        listing.allImages.first,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(color: Theme.of(context).primaryColor.withOpacity(0.1)),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    listing.title,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.5),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '₹${listing.price.toInt()}',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_rounded, size: 14, color: Theme.of(context).primaryColor.withOpacity(0.5)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${listing.city}, ${listing.propertyType}',
+                        style: TextStyle(
+                          color: Theme.of(context).hintColor.withOpacity(0.6), 
+                          fontSize: 12, 
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.chevron_right_rounded, color: Theme.of(context).primaryColor),
+            ),
+            const SizedBox(width: 10),
+          ],
         ),
       ),
     );
+  }
+
+  // Update build markers
+  List<Marker> _buildMarkers(List<ListingEntity> listings) {
+    final Map<String, int> coordinateCounts = {};
+    return listings.map<Marker>((listing) {
+      final String coordKey = '${listing.latitude}_${listing.longitude}';
+      final int count = coordinateCounts[coordKey] ?? 0;
+      coordinateCounts[coordKey] = count + 1;
+
+      double jitterLat = listing.latitude;
+      double jitterLng = listing.longitude;
+      
+      if (count > 0) {
+        jitterLat += 0.0001 * (count % 2 == 0 ? 1 : -1) * (count / 2).ceil();
+        jitterLng += 0.0001 * (count % 3 == 0 ? 1 : -1) * (count / 3).ceil();
+      }
+
+      final isSelected = _selectedListing?.id == listing.id;
+
+      return Marker(
+        point: LatLng(jitterLat, jitterLng),
+        width: 100,
+        height: 100,
+        child: GestureDetector(
+          onTap: () {
+            setState(() => _selectedListing = listing);
+            _mapController.move(LatLng(jitterLat, jitterLng), 14.5);
+          },
+          child: _buildMarkerIcon(listing, isSelected),
+        ),
+      );
+    }).toList();
   }
 }

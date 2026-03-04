@@ -17,7 +17,7 @@ class ListingCardSkeleton extends StatelessWidget {
         children: [
           // Image Skeleton
           const ShimmerContainer(
-            height: 200,
+            height: 250,
             width: double.infinity,
             borderRadius: 16,
           ),

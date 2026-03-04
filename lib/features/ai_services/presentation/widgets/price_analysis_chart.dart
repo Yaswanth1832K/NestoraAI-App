@@ -128,7 +128,7 @@ class PriceAnalysisChart extends StatelessWidget {
                     barRods: [
                       BarChartRodData(
                         toY: actualPrice,
-                        color: Colors.blue.shade400,
+                        color: Theme.of(context).primaryColor.withOpacity(0.8),
                         width: 40,
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                       ),

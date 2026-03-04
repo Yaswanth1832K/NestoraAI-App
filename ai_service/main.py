@@ -22,7 +22,7 @@ start_notification_service()
 import os
 
 # Configure Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAXtq9pTAFk9WKDm0chDq2y-4F7KTgqaas")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB4BeMYF7wdjoqzeoVb3P8-H4GYoNdMeIU")
 
 
 if "YOUR_GEMINI_API_KEY" in GEMINI_API_KEY:

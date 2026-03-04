@@ -8,6 +8,9 @@ import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
 import 'package:house_rental/features/profile/presentation/widgets/profile_widgets.dart';
 import 'package:house_rental/core/widgets/shimmer_container.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:go_router/go_router.dart';
+import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
 
 class RoommateFeedScreen extends ConsumerStatefulWidget {
   const RoommateFeedScreen({super.key});
@@ -38,104 +41,85 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).value;
-    if (user == null) return const Scaffold(body: Center(child: Text('Please login')));
+    if (user == null) return const Center(child: Text('Please login'));
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileAsync = ref.watch(userRoommateProfileProvider(user.uid));
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Find Roommate', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          profileAsync.maybeWhen(
-            data: (profile) => profile != null
-                ? IconButton(
-                    icon: Icon(Icons.edit_note_rounded, color: isDark ? Colors.blue.shade300 : Colors.blue.shade700),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RoommateProfileScreen(existingProfile: profile)),
-                    ),
-                  )
-                : const SizedBox(),
-            orElse: () => const SizedBox(),
-          ),
-        ],
-      ),
-      body: profileAsync.when(
-        data: (profile) {
-          if (profile == null) {
-            return _buildNoProfileState(isDark);
-          }
-          return _buildMatchesList(profile, isDark);
-        },
-        loading: () => _buildSkeletonLoading(isDark),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-    );
-  }
-
-  Widget _buildSkeletonLoading(bool isDark) {
-    return Center(
-      child: ShimmerContainer(
-        height: 200,
-        width: MediaQuery.of(context).size.width * 0.8,
-        borderRadius: 24,
-      ),
+    return profileAsync.when(
+      data: (profile) {
+        if (profile == null) {
+          return _buildNoProfileState(isDark);
+        }
+        return _buildMatchesList(profile, isDark);
+      },
+      loading: () => _buildSkeletonMatches(isDark),
+      error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
 
   Widget _buildSkeletonMatches(bool isDark) {
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       itemCount: 3,
-      itemBuilder: (context, index) => const ShimmerContainer(
-        height: 240,
-        width: double.infinity,
-        borderRadius: 24,
-        margin: EdgeInsets.only(bottom: 20),
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: ShimmerContainer(
+          height: 240,
+          width: double.infinity,
+          borderRadius: 24,
+        ),
       ),
     );
   }
 
   Widget _buildNoProfileState(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_outline_rounded, size: 100, color: Colors.blue.withOpacity(0.3)),
-          const SizedBox(height: 32),
-          Text(
-            'Find your perfect roommate',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Create a profile describing your lifestyle and budget to start matching with compatible people in your city.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF385C),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
+    return Center(
+      child: GlassContainer.standard(
+        context: context,
+        margin: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
+        borderRadius: 30,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.people_alt_rounded, size: 64, color: Theme.of(context).primaryColor),
             ),
-            icon: const Icon(Icons.add_circle_outline_rounded),
-            label: const Text('Create My Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RoommateProfileScreen()),
+            const SizedBox(height: 24),
+            Text(
+              'Find your match',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black, letterSpacing: -0.5),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'Create a roommate profile to start matching with compatible people in your city.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 14, height: 1.5),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                elevation: 0,
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RoommateProfileScreen()),
+              ),
+              child: const Text('Create My Profile', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -158,21 +142,26 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
 
         if (filteredMatches.isEmpty) {
           return Center(
-            child: Text(
-              'No matches found in your city yet.\nCheck back later!',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off_rounded, size: 64, color: isDark ? Colors.white12 : Colors.black12),
+                const SizedBox(height: 16),
+                Text(
+                  'No matches found yet',
+                  style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ],
             ),
           );
         }
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildFilters(myProfile, filteredMatches, isDark),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 itemCount: filteredMatches.length,
                 itemBuilder: (context, index) {
                   return _buildRoommateCard(filteredMatches[index], myProfile, isDark);
@@ -189,8 +178,9 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
 
   Widget _buildFilters(RoommateEntity myProfile, List<RoommateEntity> matches, bool isDark) {
     final occupations = matches.map((m) => m.occupation).where((o) => o.isNotEmpty).toSet().toList()..sort();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
         children: [
           _buildFilterChip(
@@ -214,30 +204,33 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
   }
 
   Widget _buildFilterChip({required String label, required VoidCallback onTap, required bool isDark, required bool isActive}) {
+    final primaryColor = Theme.of(context).primaryColor;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? (isDark ? Colors.white : Colors.black) : (isDark ? Colors.grey.shade900 : Colors.white),
+          color: isActive ? primaryColor : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isActive ? Colors.transparent : (isDark ? Colors.grey.shade800 : Colors.grey.shade200)),
+          border: Border.all(color: isActive ? Colors.transparent : (isDark ? Colors.white10 : Colors.black12)),
         ),
         child: Row(
           children: [
             Text(
               label,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isActive ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white70 : Colors.black87),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+                color: isActive ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Icon(
-              Icons.keyboard_arrow_down,
+              Icons.keyboard_arrow_down_rounded,
               size: 16,
-              color: isActive ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white60 : Colors.black54),
+              color: isActive ? Colors.white70 : (isDark ? Colors.white38 : Colors.black38),
             ),
           ],
         ),
@@ -248,20 +241,22 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
   void _showFilterPicker(String title, List<String> options, String? currentValue, Function(String?) onSelected, bool isDark) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Container(
+      backgroundColor: Colors.transparent,
+      builder: (context) => GlassContainer.standard(
+        context: context,
         padding: const EdgeInsets.all(24),
+        borderRadius: 30,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+            const SizedBox(height: 20),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildOptionChip('All/Any', currentValue == null, () {
+                _buildOptionChip('All', currentValue == null, () {
                   onSelected(null);
                   Navigator.pop(context);
                 }, isDark),
@@ -279,17 +274,24 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
   }
 
   Widget _buildOptionChip(String label, bool isSelected, VoidCallback onTap, bool isDark) {
+    final primaryColor = Theme.of(context).primaryColor;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF385C) : (isDark ? Colors.grey.shade900 : Colors.grey.shade100),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? primaryColor : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03)),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? Colors.transparent : (isDark ? Colors.white10 : Colors.black12)),
         ),
         child: Text(
           label,
-          style: TextStyle(color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87), 
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -303,36 +305,41 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
       context: context,
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: primaryColor.withOpacity(0.15),
-                child: Text(match.name[0].toUpperCase(), style: TextStyle(fontSize: 26, color: primaryColor, fontWeight: FontWeight.bold)),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [primaryColor.withOpacity(0.2), primaryColor.withOpacity(0.05)],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  match.name[0].toUpperCase(), 
+                  style: TextStyle(fontSize: 24, color: primaryColor, fontWeight: FontWeight.w900),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(match.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                    Text(
+                      match.name, 
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black, letterSpacing: -0.2),
+                    ),
                     const SizedBox(height: 4),
-                    Text('${match.occupation} • ${match.gender}', style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 14, color: primaryColor.withOpacity(0.7)),
-                        const SizedBox(width: 4),
-                        Text(match.city, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                        const SizedBox(width: 12),
-                        Icon(Icons.currency_rupee_rounded, size: 14, color: Colors.green.withOpacity(0.7)),
-                        const SizedBox(width: 4),
-                        Text('Up to ₹${match.budget}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                      ],
+                    Text(
+                      '${match.occupation} • ${match.gender}', 
+                      style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -340,41 +347,89 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: score >= 75 ? Colors.green.withOpacity(0.1) : score >= 50 ? Colors.orange.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                  color: score >= 75 ? Colors.green.withOpacity(0.12) : score >= 50 ? Colors.orange.withOpacity(0.12) : Colors.grey.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('$score%', style: TextStyle(color: score >= 75 ? Colors.green : score >= 50 ? Colors.orange : Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
+                child: Text(
+                  '$score%', 
+                  style: TextStyle(
+                    color: score >= 75 ? Colors.green : score >= 50 ? Colors.orange : Colors.grey, 
+                    fontSize: 12, 
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Divider(height: 1, color: Colors.white12),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildFeatureTag(Icons.location_on_rounded, match.city, isDark),
+              const SizedBox(width: 12),
+              _buildFeatureTag(Icons.currency_rupee_rounded, 'Up to ₹${match.budget}', isDark),
+            ],
           ),
-          const Text('LIFE STYLE', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.2)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             match.bio,
-            maxLines: 4,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, height: 1.5, fontSize: 14),
+            style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, height: 1.5, fontSize: 14, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? Colors.white : Colors.black,
-                foregroundColor: isDark ? Colors.black : Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                    foregroundColor: isDark ? Colors.white : Colors.black,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                  icon: const Icon(Icons.person_search_rounded, size: 18),
+                  label: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w800)),
+                  onPressed: () {
+                    // Could navigate to detail profile
+                  },
+                ),
               ),
-              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-              label: const Text('Message', style: TextStyle(fontWeight: FontWeight.bold)),
-              onPressed: () => _startChat(match),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                  icon: const Icon(Icons.chat_bubble_rounded, size: 18),
+                  label: const Text('Message', style: TextStyle(fontWeight: FontWeight.w800)),
+                  onPressed: () => _startChat(match),
+                ),
+              ),
+            ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureTag(IconData icon, String label, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: isDark ? Colors.white54 : Colors.black54),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -396,14 +451,9 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
       (failure) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failure.message ?? 'Unknown error'))),
       (chatRoom) {
         // Navigate to chat page
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChatPage(
-              chatRoomId: chatRoom.id,
-              title: otherUser.name,
-            ),
-          ),
+        context.push(
+          AppRouter.chat,
+          extra: {'chatRoomId': chatRoom.id, 'title': otherUser.name},
         );
       },
     );

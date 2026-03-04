@@ -9,6 +9,7 @@ import 'package:house_rental/features/listings/domain/entities/listing_entity.da
 import 'package:house_rental/features/listings/data/models/listing_model.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 
 class OwnerPropertiesScreen extends ConsumerStatefulWidget {
   const OwnerPropertiesScreen({super.key});
@@ -89,25 +90,31 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("My Properties", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        title: const Text("My Properties", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: -0.5)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-             IconButton(
-                icon: const Icon(Icons.add_circle_outline, size: 28),
-                tooltip: 'Post New Property',
-                onPressed: () => context.push(AppRouter.postProperty),
+          GlassContainer.standard(
+            context: context,
+            borderRadius: 40,
+            padding: EdgeInsets.zero,
+            child: IconButton(
+              icon: const Icon(Icons.add_rounded, size: 24),
+              onPressed: () => context.push(AppRouter.postProperty),
             ),
-             const SizedBox(width: 8),
+          ),
+          const SizedBox(width: 20),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRouter.postProperty),
-        icon: const Icon(Icons.add),
-        label: const Text("Add Property"),
+        icon: const Icon(Icons.add_home_work_rounded, color: Colors.white),
+        label: const Text("List Property", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
         backgroundColor: Theme.of(context).primaryColor,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -115,38 +122,46 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
             .where('ownerId', isEqualTo: user.uid)
             .snapshots(),
         builder: (context, snapshot) {
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
+            return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
           }
 
           final docs = snapshot.data!.docs;
-
           final listings = docs.map((doc) => ListingModel.fromFirestore(doc)).toList();
 
           final total = listings.length;
           final available = listings.where((l) => l.status == ListingEntity.statusAvailable || l.status == 'active').length;
           final rented = listings.where((l) => l.status == ListingEntity.statusRented).length;
 
-          return Column(
-            children: [
-              _buildDashboard(total, available, rented, isDark),
-              Expanded(
-                child: listings.isEmpty 
-                ? _buildEmptyState(isDark)
-                : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 100, top: 8),
-                  itemCount: listings.length,
-                  itemBuilder: (context, index) {
-                    final listing = listings[index];
-                    return _buildListingItem(listing, isDark);
-                  },
-                ),
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: _buildDashboard(total, available, rented, isDark),
               ),
+              if (listings.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildEmptyState(isDark),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final listing = listings[index];
+                        return _buildListingItem(listing, isDark);
+                      },
+                      childCount: listings.length,
+                    ),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         },
@@ -155,56 +170,56 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
   }
 
   Widget _buildDashboard(int total, int available, int rented, bool isDark) {
+    final primaryColor = Theme.of(context).primaryColor;
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark 
-            ? [const Color(0xFF2C2C2C), const Color(0xFF1A1A1A)]
-            : [Colors.blue.shade800, Colors.blue.shade600],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      margin: const EdgeInsets.all(20),
+      child: GlassContainer.standard(
+        context: context,
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+        borderRadius: 30,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem("Total", total.toString(), null, isDark ? Colors.white : Colors.black),
+            _buildStatItem("Available", available.toString(), Icons.check_circle_rounded, Colors.green),
+            _buildStatItem("Rented", rented.toString(), Icons.vpn_key_rounded, Colors.orange),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildStatItem("Total", total.toString(), null, Colors.white),
-          Container(width: 1, height: 40, color: Colors.white24),
-          _buildStatItem("Available", available.toString(), Icons.check_circle, Colors.greenAccent),
-          Container(width: 1, height: 40, color: Colors.white24),
-          _buildStatItem("Rented", rented.toString(), Icons.vpn_key, Colors.orangeAccent),
-        ],
       ),
     );
   }
 
   Widget _buildStatItem(String label, String value, IconData? icon, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[Icon(icon, color: color, size: 16), const SizedBox(width: 4)],
+            if (icon != null) ...[
+              Icon(icon, color: color.withOpacity(0.8), size: 14),
+              const SizedBox(width: 6),
+            ],
             Text(
               value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 28, 
+                fontWeight: FontWeight.w900, 
+                color: isDark ? Colors.white : Colors.black,
+                letterSpacing: -1,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w500),
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10, 
+            color: isDark ? Colors.white54 : Colors.black54, 
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
       ],
     );
@@ -215,11 +230,23 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.home_work_outlined, size: 60, color: Colors.grey.withOpacity(0.5)),
-          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.home_work_rounded, size: 64, color: isDark ? Colors.white12 : Colors.black12),
+          ),
+          const SizedBox(height: 24),
           Text(
-            "No properties listed yet",
-            style: TextStyle(color: Colors.grey.withOpacity(0.8), fontSize: 16),
+            "No properties listed",
+            style: TextStyle(
+              color: isDark ? Colors.white38 : Colors.black38, 
+              fontSize: 18, 
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
           ),
         ],
       ),
@@ -227,103 +254,101 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
   }
 
   Widget _buildListingItem(ListingEntity listing, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Stack(
+        children: [
+          ListingCard(
+            listing: listing,
+            showFavoriteButton: false,
+            margin: EdgeInsets.zero,
+            isVerticalFeed: true,
+            onTap: () {
+              context.push(
+                AppRouter.propertyRequests,
+                extra: {
+                  'listingId': listing.id,
+                  'title': listing.title,
+                },
+              );
+            },
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: GlassContainer.standard(
+              context: context,
+              borderRadius: 40,
+              padding: EdgeInsets.zero,
+              child: PopupMenuButton<String>(
+                icon: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
+                padding: EdgeInsets.zero,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                offset: const Offset(0, 40),
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _deleteListing(listing.id);
+                  } else if (value == 'edit') {
+                    context.push(
+                      AppRouter.postProperty,
+                      extra: listing,
+                    );
+                  } else if (value == 'mark_rented') {
+                    _updateStatus(listing, ListingEntity.statusRented);
+                  } else if (value == 'mark_available') {
+                    _updateStatus(listing, ListingEntity.statusAvailable);
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded, color: Theme.of(context).primaryColor, size: 18),
+                        const SizedBox(width: 12),
+                        const Text('Edit Details', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+                  if (listing.status != ListingEntity.statusRented)
+                    const PopupMenuItem<String>(
+                      value: 'mark_rented',
+                      child: Row(
+                        children: [
+                          Icon(Icons.key_off_rounded, color: Colors.orange, size: 18),
+                          const SizedBox(width: 12),
+                          Text('Mark as Rented', style: TextStyle(fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  if (listing.status == ListingEntity.statusRented)
+                    const PopupMenuItem<String>(
+                      value: 'mark_available',
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle_rounded, color: Colors.green, size: 18),
+                          const SizedBox(width: 12),
+                          Text('Mark Available', style: TextStyle(fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_forever_rounded, color: Colors.red, size: 18),
+                        const SizedBox(width: 12),
+                        Text('Delete Listing', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
-      ),
-      child: ListingCard(
-        listing: listing,
-        showFavoriteButton: false,
-        margin: EdgeInsets.zero,
-        isVerticalFeed: true,
-        onTap: () {
-          context.push(
-            AppRouter.propertyRequests,
-            extra: {
-              'listingId': listing.id,
-              'title': listing.title,
-            },
-          );
-        },
-        actionButton: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          margin: const EdgeInsets.all(8),
-          child: PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
-            padding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            onSelected: (value) {
-              if (value == 'delete') {
-                _deleteListing(listing.id);
-              } else if (value == 'edit') {
-                context.push(
-                  AppRouter.postProperty,
-                  extra: listing,
-                );
-              } else if (value == 'mark_rented') {
-                _updateStatus(listing, ListingEntity.statusRented);
-              } else if (value == 'mark_available') {
-                _updateStatus(listing, ListingEntity.statusAvailable);
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text('Edit Details'),
-                  ],
-                ),
-              ),
-              if (listing.status != ListingEntity.statusRented)
-                const PopupMenuItem<String>(
-                  value: 'mark_rented',
-                  child: Row(
-                    children: [
-                      Icon(Icons.key_off, color: Colors.orange, size: 20),
-                      SizedBox(width: 8),
-                      Text('Mark as Rented'),
-                    ],
-                  ),
-                ),
-              if (listing.status == ListingEntity.statusRented)
-                const PopupMenuItem<String>(
-                  value: 'mark_available',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
-                      SizedBox(width: 8),
-                      Text('Mark as Available'),
-                    ],
-                  ),
-                ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red, size: 20),
-                    SizedBox(width: 8),
-                    Text('Delete Listing'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

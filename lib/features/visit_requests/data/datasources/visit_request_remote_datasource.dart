@@ -8,7 +8,7 @@ abstract class VisitRequestRemoteDataSource {
   Future<void> createVisitRequest(VisitRequestEntity request);
   Stream<List<VisitRequestEntity>> getOwnerVisitRequests(String ownerId);
   Stream<List<VisitRequestEntity>> getTenantVisitRequests(String tenantId);
-  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId);
+  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId, String userId);
   Future<bool> hasApprovedBookingForDate(String listingId, DateTime date);
   Future<void> createBookingFromChat({
     required String listingId,
@@ -46,10 +46,11 @@ class VisitRequestRemoteDataSourceImpl implements VisitRequestRemoteDataSource {
   }
 
   @override
-  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId) {
+  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId, String userId) {
     return _firestore
         .collection(FirestoreConstants.bookings)
         .where('chatId', isEqualTo: chatId)
+        .where('participants', arrayContains: userId)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => VisitRequestModel.fromFirestore(doc))

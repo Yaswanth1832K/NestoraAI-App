@@ -30,8 +30,8 @@ class VisitRequestRepositoryImpl implements VisitRequestRepository {
   }
 
   @override
-  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId) {
-    return _remoteDataSource.getBookingsByChatId(chatId);
+  Stream<List<VisitRequestEntity>> getBookingsByChatId(String chatId, String userId) {
+    return _remoteDataSource.getBookingsByChatId(chatId, userId);
   }
 
   @override

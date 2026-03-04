@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:house_rental/features/trips/presentation/pages/trips_page.dart';
-import 'package:house_rental/features/inbox/presentation/pages/inbox_page.dart';
+import 'package:house_rental/features/chat/presentation/pages/chat_inbox_page.dart';
 import 'package:house_rental/features/profile/presentation/pages/profile_page.dart';
 import 'package:house_rental/features/profile/presentation/pages/login_security_page.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
@@ -124,7 +124,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.chat,
-        builder: (context, state) => const InboxPage(),
+        builder: (context, state) => const ChatInboxPage(),
       ),
       GoRoute(
         path: AppRouter.trips,
@@ -140,7 +140,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.inbox,
-        builder: (context, state) => const InboxPage(),
+        builder: (context, state) => const ChatInboxPage(),
       ),
       GoRoute(
         path: AppRouter.profile,

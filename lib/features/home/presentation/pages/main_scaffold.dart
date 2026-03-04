@@ -50,26 +50,27 @@ class MainScaffold extends ConsumerWidget {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.search_rounded),
             label: 'Explore',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            activeIcon: Icon(Icons.favorite),
+            icon: Icon(Icons.favorite_border_rounded),
+            activeIcon: Icon(Icons.favorite_rounded),
             label: 'Wishlists',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.flight_takeoff), // Or a logo icon if available
+            icon: Icon(Icons.luggage_outlined),
+            activeIcon: Icon(Icons.luggage_rounded),
             label: 'Trips',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.message_outlined),
-            activeIcon: Icon(Icons.message),
+            icon: Icon(Icons.chat_bubble_outline_rounded),
+            activeIcon: Icon(Icons.chat_bubble_rounded),
             label: 'Inbox',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],

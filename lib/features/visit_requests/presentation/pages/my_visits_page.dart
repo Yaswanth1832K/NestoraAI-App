@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
 import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
-import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
-import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
-import 'package:intl/intl.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
+import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
 
 class MyVisitsPage extends ConsumerWidget {
   const MyVisitsPage({super.key});
@@ -25,32 +27,23 @@ class MyVisitsPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('My Visits', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        title: const Text(
+          'My Visits', 
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: -1),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: requestsAsync.when(
         data: (requests) {
           if (requests.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                   Icon(Icons.calendar_today_outlined, size: 64, color: Theme.of(context).colorScheme.outline.withOpacity(0.4)),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No scheduled visits yet',
-                    style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 18),
-                  ),
-                ],
-              ),
-            );
+            return _buildEmptyState(context);
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             itemCount: requests.length,
+            physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               final request = requests[index];
               return _VisitRequestCard(request: request);
@@ -59,6 +52,42 @@ class MyVisitsPage extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.all(30),
+              borderRadius: 40,
+              child: Icon(Icons.calendar_month_rounded, size: 50, color: Theme.of(context).primaryColor),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'No scheduled visits',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You haven\'t scheduled any home visits yet. Start exploring properties to book a viewing.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).hintColor.withOpacity(0.6),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -71,179 +100,144 @@ class _VisitRequestCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusColor = _getStatusColor(request.status);
     final user = ref.watch(authStateProvider).value;
+    final primaryColor = Theme.of(context).primaryColor;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: GlassContainer.standard(
+        context: context,
+        borderRadius: 24,
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             Row(
               children: [
-                // Listing Image
-                SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: CachedNetworkImage(
-                    imageUrl: request.listingImage,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Theme.of(context).colorScheme.surfaceVariant),
-                    errorWidget: (context, url, error) => Container(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                      child: Icon(Icons.home_work, color: Theme.of(context).colorScheme.outline),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: SizedBox(
+                    width: 90,
+                    height: 90,
+                    child: CachedNetworkImage(
+                      imageUrl: request.listingImage,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(color: Colors.grey.withOpacity(0.1)),
                     ),
                   ),
                 ),
-                
-                // Listing Info
+                const SizedBox(width: 16),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          request.listingTitle,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 14, color: Theme.of(context).colorScheme.outline),
-                            const SizedBox(width: 4),
-                            Text(
-                              DateFormat('MMM dd, yyyy').format(request.date),
-                              style: TextStyle(
-                                color: Theme.of(context).textTheme.bodySmall?.color,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(Icons.access_time, size: 14, color: Theme.of(context).textTheme.bodySmall?.color),
-                            const SizedBox(width: 4),
-                            Text(
-                              request.time,
-                              style: TextStyle(
-                                color: Theme.of(context).textTheme.bodySmall?.color,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Status Chip
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      request.status.toUpperCase(),
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        request.listingTitle,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today_rounded, size: 14, color: primaryColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            DateFormat('EEE, MMM dd').format(request.date),
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(Icons.access_time_rounded, size: 14, color: primaryColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            request.time,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          request.status.toUpperCase(),
+                          style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 10),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            if (request.message.isNotEmpty)
+            if (request.message.isNotEmpty) ...[
+              const SizedBox(height: 16),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                color: isDark ? Colors.white.withOpacity(0.03) : Colors.grey.shade50,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your Message:',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.outline),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      request.message,
-                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
-                    ),
-                  ],
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  request.message,
+                  style: TextStyle(
+                    fontSize: 13, 
+                    color: Theme.of(context).hintColor.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-
-            // Actions Area
-            if (request.status != 'cancelled' && request.status != 'rejected')
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  children: [
-                    if (request.status == 'pending')
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _cancelRequest(context, ref, user?.uid),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text("Cancel"),
-                        ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                if (request.status == 'pending') ...[
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _cancelRequest(context, ref, user?.uid),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.1),
+                        foregroundColor: Colors.red,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                    if (request.status == 'pending') const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _rescheduleRequest(context, ref),
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text("Reschedule"),
-                      ),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
-                    if (request.status == 'approved') ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _openChat(context, ref),
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                          label: const Text("Chat"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _rescheduleRequest(context, ref),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor.withOpacity(0.1),
+                      foregroundColor: primaryColor,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Reschedule', style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
                 ),
-              ),
+                if (request.status == 'approved') ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _openChat(context, ref),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Chat', style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
@@ -305,31 +299,17 @@ class _VisitRequestCard extends ConsumerWidget {
           SnackBar(content: Text('Error opening chat: ${failure.message}')),
         );
       },
-      (chatRoom) {
-        // Use navigator to push chat page
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatPage(
-              chatRoomId: chatRoom.id,
-              title: request.listingTitle,
-            ),
-          ),
-        );
-      },
+      (chatRoom) => context.push(AppRouter.chat, extra: {'chatRoomId': chatRoom.id, 'title': request.listingTitle}),
     );
   }
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'approved':
-        return Colors.green;
+      case 'approved': return Colors.green;
       case 'rejected':
-      case 'cancelled':
-        return Colors.red;
-      case 'pending':
-        return Colors.orange;
-      default:
-        return Colors.grey;
+      case 'cancelled': return Colors.red;
+      case 'pending': return Colors.orange;
+      default: return Colors.grey;
     }
   }
 }

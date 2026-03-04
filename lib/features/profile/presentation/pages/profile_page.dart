@@ -8,6 +8,7 @@ import 'package:house_rental/features/auth/domain/usecases/update_user_role_usec
 import 'package:house_rental/features/profile/presentation/widgets/profile_widgets.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/l10n/generated/app_localizations.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
 
 final notificationsProvider = StateProvider<bool>((ref) => true);
 
@@ -16,8 +17,8 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
-    final user = authState.value;
+    final userSnapshot = ref.watch(currentUserProvider);
+    final user = userSnapshot.value;
     final isOwnerAsync = ref.watch(isOwnerProvider);
     final isOwner = isOwnerAsync.value ?? false;
     
@@ -30,7 +31,8 @@ class ProfilePage extends ConsumerWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -41,68 +43,104 @@ class ProfilePage extends ConsumerWidget {
                   Text(
                     AppLocalizations.of(context)!.profileTitle,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                       fontSize: 32,
                       color: textColor,
+                      letterSpacing: -1,
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.notifications_outlined, size: 28, color: textColor),
-                    onPressed: () => context.push(AppRouter.notifications),
+                  GlassContainer.standard(
+                    context: context,
+                    borderRadius: 40,
+                    padding: EdgeInsets.zero,
+                    child: IconButton(
+                      icon: Icon(Icons.notifications_none_rounded, size: 24, color: textColor),
+                      onPressed: () => context.push(AppRouter.notifications),
+                    ),
                   ),
                 ],
               ),
               
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
               // Profile Header Card
-              GlassContainer.standard(
-                context: context,
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: user?.photoURL != null 
-                          ? NetworkImage(user!.photoURL!) 
-                          : null,
-                      child: user?.photoURL == null 
-                          ? const Icon(Icons.person, size: 36, color: Colors.grey) 
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.displayName ?? "Guest",
-                            style: TextStyle(
-                              fontSize: 20, 
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user?.email ?? "Sign in to view profile",
-                            style: TextStyle(
-                              color: subTextColor, 
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+              userSnapshot.when(
+                data: (userData) => GlassContainer.standard(
+                  context: context,
+                  padding: const EdgeInsets.all(20),
+                  borderRadius: 24,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.5), width: 2),
+                        ),
+                        child: CircleAvatar(
+                          radius: 35,
+                          backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                          backgroundImage: userData?.photoUrl != null 
+                              ? NetworkImage(userData!.photoUrl!) 
+                              : null,
+                          child: userData?.photoUrl == null 
+                              ? Icon(Icons.person_rounded, size: 35, color: subTextColor) 
+                              : null,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.edit_outlined, color: textColor),
-                      onPressed: () => context.push(AppRouter.editProfile),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  userData?.displayName ?? "Guest",
+                                  style: TextStyle(
+                                    fontSize: 20, 
+                                    fontWeight: FontWeight.w900,
+                                    color: textColor,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                if (userData != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.check, size: 10, color: Colors.white),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              userData?.email ?? "Sign in for full access",
+                              style: TextStyle(
+                                color: subTextColor, 
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.chevron_right_rounded, color: subTextColor),
+                        onPressed: () => context.push(AppRouter.editProfile),
+                      ),
+                    ],
+                  ),
                 ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text("Error: $e")),
               ),
               
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // ROLE-SPECIFIC SECTION
               if (isOwner)
@@ -111,84 +149,86 @@ class ProfilePage extends ConsumerWidget {
                   isDark: isDark,
                   children: [
                     ProfileMenuItem(
-                      icon: Icons.dashboard_outlined,
+                      icon: Icons.dashboard_rounded,
                       title: 'Dashboard',
                       onTap: () => context.push(AppRouter.ownerDashboard),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.home_work_outlined,
+                      icon: Icons.home_work_rounded,
                       title: AppLocalizations.of(context)!.myListings,
                       onTap: () => context.push(AppRouter.myProperties),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.event_note_outlined,
+                      icon: Icons.event_note_rounded,
                       title: AppLocalizations.of(context)!.visitRequests,
                       onTap: () => context.push(AppRouter.ownerRequests),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.payments_outlined,
+                      icon: Icons.payments_rounded,
                       title: AppLocalizations.of(context)!.paymentsAndPayouts,
                       onTap: () => context.push(AppRouter.paymentMethods),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.admin_panel_settings_outlined,
+                      icon: Icons.admin_panel_settings_rounded,
                       title: "Property Management",
                       onTap: () => context.push(AppRouter.myProperties),
                       isDark: isDark,
+                      showDivider: false,
                     ),
                   ],
                 )
               else
                 ProfileSection(
-                  title: "Renting", // Fixed label for Renter
+                  title: "Renting",
                   isDark: isDark,
                   children: [
                     ProfileMenuItem(
-                      icon: Icons.auto_awesome,
+                      icon: Icons.auto_awesome_rounded,
                       title: 'AI Recommendations',
                       onTap: () => context.push(AppRouter.aiRecommendations),
                       isDark: isDark,
-                      iconColor: Colors.purple,
+                      iconColor: AppColors.primary,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.favorite_border,
+                      icon: Icons.favorite_rounded,
                       title: AppLocalizations.of(context)!.savedProperties,
                       onTap: () => context.push(AppRouter.favorites),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.tune,
+                      icon: Icons.tune_rounded,
                       title: AppLocalizations.of(context)!.rentalPreferences,
                       onTap: () => context.push(AppRouter.rentalPreferences),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.calendar_today_outlined,
-                      title: "Booking / Visit History",
+                      icon: Icons.calendar_today_rounded,
+                      title: "Booking History",
                       onTap: () => context.push(AppRouter.myVisits),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.account_balance_wallet_outlined,
+                      icon: Icons.account_balance_wallet_rounded,
                       title: "Rent Payments",
                       onTap: () => context.push(AppRouter.rentPayments),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
-                      icon: Icons.home_filled,
+                      icon: Icons.home_rounded,
                       title: "Become a Host",
                       onTap: () => _handleBecomeHost(context, ref, user?.uid),
                       isDark: isDark,
-                      iconColor: const Color(0xFFFF385C),
+                      iconColor: AppColors.primary,
+                      showDivider: false,
                     ),
                   ],
                 ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               // COMMON SETTINGS SECTION
               ProfileSection(
@@ -196,48 +236,52 @@ class ProfilePage extends ConsumerWidget {
                 isDark: isDark,
                 children: [
                   ProfileMenuItem(
-                    icon: Icons.person_outline,
+                    icon: Icons.person_rounded,
                     title: AppLocalizations.of(context)!.personalInformation,
                     onTap: () => context.push(AppRouter.editProfile),
                     isDark: isDark,
                   ),
                   ProfileMenuItem(
-                    icon: Icons.security_outlined,
+                    icon: Icons.security_rounded,
                     title: AppLocalizations.of(context)!.loginAndSecurity,
                     onTap: () => context.push(AppRouter.loginSecurity),
                     isDark: isDark,
                   ),
                   ProfileMenuItem(
-                    icon: Icons.notifications_none_outlined,
+                    icon: Icons.notifications_rounded,
                     title: AppLocalizations.of(context)!.notifications,
                     onTap: () => context.push(AppRouter.notifications),
                     isDark: isDark,
                   ),
                   ProfileMenuItem(
-                    icon: Icons.message_outlined,
+                    icon: Icons.message_rounded,
                     title: AppLocalizations.of(context)!.messageSettings,
                     onTap: () => context.push(AppRouter.messageSettings),
                     isDark: isDark,
                   ),
                   ProfileMenuItem(
-                    icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                    icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                     title: AppLocalizations.of(context)!.darkMode,
                     onTap: () {
                       ref.read(themeProvider.notifier).setTheme(isDark ? ThemeMode.light : ThemeMode.dark);
                     },
                     isDark: isDark,
-                    trailing: Switch(
-                      value: isDark,
-                      onChanged: (value) {
-                        ref.read(themeProvider.notifier).setTheme(value ? ThemeMode.dark : ThemeMode.light);
-                      },
-                      activeColor: const Color(0xFFFF385C),
+                    showDivider: false,
+                    trailing: Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: isDark,
+                        onChanged: (value) {
+                          ref.read(themeProvider.notifier).setTheme(value ? ThemeMode.dark : ThemeMode.light);
+                        },
+                        activeColor: AppColors.primary,
+                      ),
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               // SUPPORT & LEGAL SECTION
               ProfileSection(
@@ -245,22 +289,23 @@ class ProfilePage extends ConsumerWidget {
                 isDark: isDark,
                 children: [
                   ProfileMenuItem(
-                    icon: Icons.help_outline,
+                    icon: Icons.help_rounded,
                     title: AppLocalizations.of(context)!.helpCenter,
                     onTap: () => context.push(AppRouter.helpCenter),
                     isDark: isDark,
                   ),
                   ProfileMenuItem(
-                    icon: Icons.language,
+                    icon: Icons.language_rounded,
                     title: AppLocalizations.of(context)!.languageAndRegion,
                     onTap: () => context.push(AppRouter.languageRegion),
                     isDark: isDark,
                   ),
                   ProfileMenuItem(
-                    icon: Icons.privacy_tip_outlined,
+                    icon: Icons.privacy_tip_rounded,
                     title: AppLocalizations.of(context)!.privacyPolicy,
                     onTap: () => context.push(AppRouter.privacyPolicy),
                     isDark: isDark,
+                    showDivider: false,
                   ),
                 ],
               ),
@@ -273,8 +318,8 @@ class ProfilePage extends ConsumerWidget {
                   width: double.infinity,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFFF385C),
-                      side: const BorderSide(color: Color(0xFFFF385C)),
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(color: AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

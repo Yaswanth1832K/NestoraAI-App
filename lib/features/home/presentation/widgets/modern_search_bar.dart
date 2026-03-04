@@ -14,7 +14,7 @@ class ModernSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).primaryColor.withOpacity(0.8),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -22,7 +22,7 @@ class ModernSearchBar extends StatelessWidget {
       child: TextField(
         onSubmitted: onSearch,
         decoration: InputDecoration(
-          icon: const Icon(Icons.search, color: Colors.blue),
+          icon: Icon(Icons.search, color: Theme.of(context).primaryColor),
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
           border: InputBorder.none,

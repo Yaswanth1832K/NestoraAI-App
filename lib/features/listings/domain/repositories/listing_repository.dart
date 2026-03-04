@@ -13,6 +13,8 @@ class ListingFilter extends Equatable {
   final String? furnishing;
   final List<String>? amenities;
   final String? propertyType;
+  final String? allowedTenants; // Bachelors, Family, etc.
+  final bool? isVerified;
 
   ListingFilter({
     this.searchQuery,
@@ -24,6 +26,8 @@ class ListingFilter extends Equatable {
     this.furnishing,
     this.amenities,
     this.propertyType,
+    this.allowedTenants,
+    this.isVerified,
   });
 
   ListingFilter copyWith({
@@ -47,6 +51,8 @@ class ListingFilter extends Equatable {
       furnishing: furnishing ?? this.furnishing,
       amenities: amenities ?? this.amenities,
       propertyType: propertyType ?? this.propertyType,
+      allowedTenants: allowedTenants ?? this.allowedTenants,
+      isVerified: isVerified ?? this.isVerified,
     );
   }
 
@@ -61,6 +67,8 @@ class ListingFilter extends Equatable {
         furnishing,
         amenities,
         propertyType,
+        allowedTenants,
+        isVerified,
       ];
 }
 
