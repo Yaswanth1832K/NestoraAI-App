@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:house_rental/app.dart';
 import 'package:house_rental/firebase_options.dart';
+import 'package:house_rental/features/rent_payments/data/services/stripe_service.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -16,6 +17,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Stripe SDK
+  StripeService.init();
 
   // Offline resilience: cache listings when network fails (mobile: default true)
   FirebaseFirestore.instance.settings = const Settings(

@@ -10,6 +10,7 @@ import 'package:house_rental/features/chat/domain/usecases/get_messages_stream_u
 import 'package:house_rental/features/chat/domain/usecases/get_or_create_chat_room_usecase.dart';
 import 'package:house_rental/features/chat/domain/usecases/send_message_usecase.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
+import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
 
 final chatRemoteDataSourceProvider = Provider<ChatRemoteDataSource>((ref) {
@@ -50,5 +51,6 @@ final chatRoomStreamProvider = StreamProvider.family<ChatRoomEntity?, String>((r
 
 /// Bookings for a chat room (visit requests created from chat). Uses visit request repository.
 final bookingStreamProvider = StreamProvider.family<List<VisitRequestEntity>, String>((ref, chatRoomId) {
-  return ref.watch(visitRequestRepositoryProvider).getBookingsByChatId(chatRoomId);
+  final userId = ref.watch(authStateProvider).value?.uid ?? '';
+  return ref.watch(visitRequestRepositoryProvider).getBookingsByChatId(chatRoomId, userId);
 });

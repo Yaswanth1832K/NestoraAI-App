@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/ai_services/data/datasources/ai_remote_datasource.dart';
 import 'package:house_rental/features/ai_services/domain/usecases/natural_language_search_usecase.dart';
@@ -28,6 +29,21 @@ final naturalLanguageSearchUseCaseProvider =
 
 final predictPriceUseCaseProvider = Provider<PredictPriceUseCase>((ref) {
   return PredictPriceUseCase(ref.read(aiRemoteDataSourceProvider));
+});
+
+final listingPredictedPriceProvider = FutureProvider.family<double, ListingEntity>((ref, listing) async {
+  final useCase = ref.read(predictPriceUseCaseProvider);
+  final result = await useCase(
+    city: listing.city,
+    sqft: listing.sqft,
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+  );
+  
+  return result.fold(
+    (failure) => throw failure,
+    (price) => price,
+  );
 });
 
 final getRecommendationsUseCaseProvider = Provider<GetRecommendationsUseCase>((ref) {

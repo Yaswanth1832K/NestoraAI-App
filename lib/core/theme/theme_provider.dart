@@ -8,7 +8,7 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
 class ThemeNotifier extends StateNotifier<ThemeMode> {
   // Default to system, but we can make it light based on previous request if needed.
   // User wanted a toggle, so starting with system is safe, or Light as default.
-  ThemeNotifier() : super(ThemeMode.light);
+  ThemeNotifier() : super(ThemeMode.dark);
 
   void toggleTheme() {
     state = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;

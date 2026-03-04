@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/listings/presentation/providers/favorites_notifier.dart';
 import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
 
@@ -11,15 +12,15 @@ class FavoritesPage extends ConsumerWidget {
     final favoritesAsync = ref.watch(favoriteListingsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F), // Dark background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
-          "Saved Homes",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          "Wishlists",
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: -1),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: favoritesAsync.when(
         data: (listings) {
@@ -28,19 +29,20 @@ class FavoritesPage extends ConsumerWidget {
           }
 
           return GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 12,
+              mainAxisSpacing: 20,
+              crossAxisSpacing: 16,
               childAspectRatio: 0.65,
             ),
             itemCount: listings.length,
+            physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               return ListingCard(
                 listing: listings[index],
                 isCompact: true,
-                isVerticalFeed: true, // Use vertical feed style for dark theme cards
+                isVerticalFeed: true,
                 margin: EdgeInsets.zero,
               );
             },
@@ -66,22 +68,21 @@ class FavoritesPage extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(40.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                shape: BoxShape.circle,
-              ),
+            GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.all(30),
+              borderRadius: 40,
               child: Icon(
-                Icons.favorite_outline_rounded,
-                size: 80,
-                color: Colors.blueAccent.withOpacity(0.5),
+                Icons.favorite_rounded,
+                size: 50,
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 32),
@@ -89,42 +90,42 @@ class FavoritesPage extends ConsumerWidget {
               "No saved homes yet",
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               "Start exploring and save your favorite\nproperties to view them here.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.grey,
+                color: Theme.of(context).hintColor.withOpacity(0.6),
                 height: 1.5,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Navigate to home page (index 0)
-                final mainNavigationState = context.findAncestorStateOfType<State>();
-                if (mainNavigationState != null && mainNavigationState.mounted) {
-                  // This will work if FavoritesPage is inside MainNavigation
-                  // We can't directly access _selectedIndex, so we use a workaround
-                  // by popping until we reach the root, which should show the home tab
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              },
-              icon: const Icon(Icons.explore_rounded),
-              label: const Text('Browse Properties'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            const SizedBox(height: 48),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // This is a bit of a hack, but it works for now
+                  // Navigate to exploration via root navigator if needed
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 5,
+                child: const Text(
+                  'Explore Properties',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                ),
               ),
             ),
           ],

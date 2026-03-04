@@ -32,6 +32,8 @@ class ListingModel extends ListingEntity {
     super.availableDates,
     super.aiSummaryBullets,
     super.safety,
+    super.allowedTenants,
+    super.isVerified,
   });
 
   factory ListingModel.fromJson(Map<String, dynamic> json) {
@@ -89,6 +91,8 @@ class ListingModel extends ListingEntity {
           ? List<String>.from(json['aiSummaryBullets'] as List)
           : null,
       safety: json['safety'] as String?,
+      allowedTenants: json['allowedTenants'] as String?,
+      isVerified: json['isVerified'] as bool? ?? false,
     );
   }
 
@@ -129,6 +133,8 @@ class ListingModel extends ListingEntity {
       availableDates: entity.availableDates,
       aiSummaryBullets: entity.aiSummaryBullets,
       safety: entity.safety,
+      allowedTenants: entity.allowedTenants,
+      isVerified: entity.isVerified,
     );
   }
 
@@ -165,6 +171,8 @@ class ListingModel extends ListingEntity {
           .toList(),
       if (aiSummaryBullets != null) 'aiSummaryBullets': aiSummaryBullets,
       if (safety != null) 'safety': safety,
+      'isVerified': isVerified,
+      if (allowedTenants != null) 'allowedTenants': allowedTenants,
     };
   }
 

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class CommuteService {
   // Hardcoded for now as per instructions, can be centralized later
-  static const apiKey = "AIzaSyAipJ7rbIwAF0Cpn1rhvLAAbZxsGVyYhc4";
+  static const apiKey = "AIzaSyB4BeMYF7wdjoqzeoVb3P8-H4GYoNdMeIU";
 
   Future<String?> getCommuteTime({
     required double propertyLat,

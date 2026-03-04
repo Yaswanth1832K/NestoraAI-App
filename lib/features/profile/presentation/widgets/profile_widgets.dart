@@ -20,18 +20,24 @@ class ProfileSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 24, bottom: 16),
+          padding: const EdgeInsets.only(top: 32, bottom: 16, left: 4),
           child: Text(
             title,
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
               color: isDark ? Colors.white : Colors.black,
+              letterSpacing: -0.5,
             ),
           ),
         ),
-        Column(
-          children: children,
+        GlassContainer.standard(
+          context: context,
+          padding: EdgeInsets.zero,
+          borderRadius: 24,
+          child: Column(
+            children: children,
+          ),
         ),
       ],
     );
@@ -46,6 +52,7 @@ class ProfileMenuItem extends StatelessWidget {
   final bool isDark;
   final Widget? trailing;
   final Color? iconColor;
+  final bool showDivider;
 
   const ProfileMenuItem({
     super.key,
@@ -56,28 +63,39 @@ class ProfileMenuItem extends StatelessWidget {
     required this.isDark,
     this.trailing,
     this.iconColor,
+    this.showDivider = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final textColor = isDark ? Colors.white : const Color(0xFF222222);
-    final subTextColor = isDark ? Colors.grey.shade400 : const Color(0xFF717171);
+    final subTextColor = isDark ? Colors.white54 : const Color(0xFF717171);
     
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
+            border: showDivider 
+                ? Border(bottom: BorderSide(color: isDark ? Colors.white12 : Colors.black12, width: 0.5))
+                : null,
           ),
           child: Row(
             children: [
-              Icon(
-                icon,
-                size: 28, // Matches Airbnb thin stroke icons visually better
-                color: iconColor ?? (isDark ? Colors.white : const Color(0xFF222222)),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (iconColor ?? (isDark ? Colors.white : Colors.black)).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: iconColor ?? (isDark ? Colors.white : const Color(0xFF222222)),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -88,8 +106,8 @@ class ProfileMenuItem extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400, // Standard weight
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         color: textColor,
                       ),
                     ),
@@ -98,8 +116,9 @@ class ProfileMenuItem extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: subTextColor,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -111,8 +130,8 @@ class ProfileMenuItem extends StatelessWidget {
               else
                 Icon(
                   Icons.chevron_right_rounded,
-                  size: 28,
-                  color: isDark ? Colors.white54 : const Color(0xFF717171),
+                  size: 24,
+                  color: isDark ? Colors.white30 : Colors.black26,
                 ),
             ],
           ),

@@ -53,27 +53,35 @@ class GlassContainer extends StatelessWidget {
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        borderRadius: borderRadius ?? BorderRadius.circular(16),
+        borderRadius: borderRadius ?? BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: borderRadius ?? BorderRadius.circular(16),
+        borderRadius: borderRadius ?? BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
-            padding: padding ?? const EdgeInsets.all(16),
+            padding: padding ?? const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: baseColor.withOpacity(opacity),
-              borderRadius: borderRadius ?? BorderRadius.circular(16),
-              border: border ?? Border.all(
-                color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-                width: 1.5,
+              borderRadius: borderRadius ?? BorderRadius.circular(20),
+              border: Border.all(
+                color: (isDark ? Colors.white : Colors.white).withOpacity(isDark ? 0.12 : 0.2),
+                width: 1.0,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  (isDark ? Colors.white : Colors.white).withOpacity(isDark ? 0.15 : 0.4),
+                  (isDark ? Colors.white : Colors.white).withOpacity(isDark ? 0.02 : 0.1),
+                ],
               ),
             ),
             child: child,

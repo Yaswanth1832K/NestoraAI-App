@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
-import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
-import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
 import 'package:intl/intl.dart';
-import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:go_router/go_router.dart';
+import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/chat/domain/entities/chat_room_entity.dart';
-import 'package:house_rental/core/theme/theme_provider.dart';
+import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
+import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 
 class ChatInboxPage extends ConsumerWidget {
   const ChatInboxPage({super.key});
@@ -14,29 +15,35 @@ class ChatInboxPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
-    final bgColor = Theme.of(context).scaffoldBackgroundColor;
     
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: null, // Title is in body
-        backgroundColor: bgColor,
+        title: const Text(
+          'Messages',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: -1),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          _buildTopIcon(Icons.search, isDark),
-          const SizedBox(width: 12),
-          _buildTopIcon(Icons.settings_outlined, isDark),
-          const SizedBox(width: 24),
+          Container(
+            margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+            child: GlassContainer.standard(
+              context: context,
+              borderRadius: 15,
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.search_rounded, size: 22),
+                onPressed: () {},
+              ),
+            ),
+          ),
         ],
       ),
       body: authState.when(
         data: (user) {
           if (user == null) {
-            return const Center(
-              child: Text('Please login to view messages', style: TextStyle(color: Colors.black)),
-            );
+            return const Center(child: Text('Please login to view messages'));
           }
           
           final chatRoomsAsync = ref.watch(userChatRoomsProvider(user.uid));
@@ -44,125 +51,104 @@ class ChatInboxPage extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                child: Text(
-                  'Messages',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                    letterSpacing: -1,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    _buildFilterChip('All', isSelected: true, isDark: isDark),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Travelling', isSelected: false, isDark: isDark),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Support', isSelected: false, isDark: isDark),
+                    _buildFilterChip(context, 'All', isSelected: true),
+                    const SizedBox(width: 12),
+                    _buildFilterChip(context, 'Travelling', isSelected: false),
+                    const SizedBox(width: 12),
+                    _buildFilterChip(context, 'Support', isSelected: false),
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
               Expanded(
                 child: chatRoomsAsync.when(
                   data: (chatRooms) {
                     if (chatRooms.isEmpty) {
-                      return _buildEmptyState();
+                      return _buildEmptyState(context);
                     }
                     
                     return ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       itemCount: chatRooms.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.black12),
+                      physics: const BouncingScrollPhysics(),
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         return ChatRoomTile(
                           chatRoom: chatRooms[index],
                           currentUserId: user.uid,
-                          isDark: isDark,
                         );
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF385C))),
-                  error: (error, stack) => Center(child: Text('Error: $error', style: const TextStyle(color: Colors.red))),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(child: Text('Error: $error')),
                 ),
               ),
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF385C))),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
       ),
     );
   }
 
-  Widget _buildTopIcon(IconData icon, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade900 : Colors.grey.shade50,
-        shape: BoxShape.circle,
-        border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
-      ),
-      child: Icon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
-    );
-  }
-
-  Widget _buildFilterChip(String label, {required bool isSelected, required bool isDark}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected 
-            ? (isDark ? Colors.white : Colors.black) 
-            : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected 
-              ? (isDark ? Colors.black : Colors.white) 
-              : (isDark ? Colors.grey.shade300 : Colors.black87),
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          fontSize: 14,
+  Widget _buildFilterChip(BuildContext context, String label, {required bool isSelected}) {
+    final primaryColor = Theme.of(context).primaryColor;
+    return GestureDetector(
+      onTap: () {},
+      child: GlassContainer.standard(
+        context: context,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        borderRadius: 20,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? primaryColor : Theme.of(context).hintColor.withOpacity(0.6),
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+            fontSize: 14,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+        padding: const EdgeInsets.all(40.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.forum_outlined, size: 48, color: Colors.grey.shade500),
-            const SizedBox(height: 24),
-            Text(
-              'You don\'t have any messages',
-              style: TextStyle(
-                fontSize: 18, 
-                color: Colors.grey.shade400, 
-                fontWeight: FontWeight.bold,
-              ),
+            GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.all(30),
+              borderRadius: 40,
+              child: Icon(Icons.forum_rounded, size: 50, color: Theme.of(context).primaryColor),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 32),
             const Text(
-              'When you receive a new message, it will\nappear here.',
+              'No messages yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'When you contact a host or receive an inquiry, your conversations will appear here.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF717171), 
+                color: Theme.of(context).hintColor.withOpacity(0.6),
                 fontSize: 15,
-                height: 1.4,
+                fontWeight: FontWeight.w600,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 80), // To center it nicely like the image
           ],
         ),
       ),
@@ -173,60 +159,82 @@ class ChatInboxPage extends ConsumerWidget {
 class ChatRoomTile extends ConsumerWidget {
   final ChatRoomEntity chatRoom;
   final String currentUserId;
-  final bool isDark;
 
   const ChatRoomTile({
     super.key,
     required this.chatRoom,
     required this.currentUserId,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Determine title logically
     final isRoommate = chatRoom.type == 'roommate';
     final otherUserId = chatRoom.participants.firstWhere(
       (id) => id != currentUserId,
       orElse: () => '',
     );
+    final primaryColor = Theme.of(context).primaryColor;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      leading: _buildAvatar(isRoommate),
-      title: _buildTitle(ref, isRoommate, otherUserId),
-      subtitle: _buildSubtitle(),
-      trailing: _buildTrailing(),
+    return InkWell(
       onTap: () => _navigateToChat(context, ref, isRoommate, otherUserId),
+      borderRadius: BorderRadius.circular(24),
+      child: GlassContainer.standard(
+        context: context,
+        borderRadius: 24,
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            _buildAvatar(context, isRoommate, otherUserId, ref),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitle(ref, isRoommate, otherUserId),
+                  const SizedBox(height: 6),
+                  _buildSubtitle(context),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildTrailing(context, primaryColor),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildAvatar(bool isRoommate) {
-    return CircleAvatar(
-      radius: 28,
-      backgroundColor: isRoommate ? Colors.purple.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+  Widget _buildAvatar(BuildContext context, bool isRoommate, String otherUserId, WidgetRef ref) {
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: isRoommate ? Colors.purple.withOpacity(0.1) : primaryColor.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
       child: Icon(
         isRoommate ? Icons.person_rounded : Icons.home_rounded,
-        color: isRoommate ? Colors.purple : Colors.blueAccent,
+        color: isRoommate ? Colors.purple : primaryColor,
+        size: 26,
       ),
     );
   }
 
   Widget _buildTitle(WidgetRef ref, bool isRoommate, String otherUserId) {
-    final titleColor = isDark ? Colors.white : Colors.black;
     if (isRoommate) {
       final userProfile = ref.watch(userProfileProvider(otherUserId));
       return userProfile.when(
         data: (user) => Text(
           user?.displayName ?? 'Roommate Chat',
-          style: TextStyle(fontWeight: FontWeight.bold, color: titleColor, fontSize: 16),
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.5),
         ),
-        loading: () => const Text('Loading...', style: TextStyle(color: Colors.grey, fontSize: 14)),
-        error: (_, __) => Text('Roommate chat', style: TextStyle(color: titleColor, fontSize: 16)),
+        loading: () => const Text('...', style: TextStyle(fontWeight: FontWeight.bold)),
+        error: (_, __) => const Text('Roommate', style: TextStyle(fontWeight: FontWeight.bold)),
       );
     } else {
       if (chatRoom.listingId.isEmpty) {
-        return Text('Property Chat', style: TextStyle(fontWeight: FontWeight.bold, color: titleColor, fontSize: 16));
+        return const Text('Property Chat', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16));
       }
       final listing = ref.watch(listingProvider(chatRoom.listingId));
       return listing.when(
@@ -234,38 +242,31 @@ class ChatRoomTile extends ConsumerWidget {
           l.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontWeight: FontWeight.bold, color: titleColor, fontSize: 16),
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.5),
         ),
-        loading: () => const Text('Loading...', style: TextStyle(color: Colors.grey, fontSize: 14)),
-        error: (_, __) => Text('Property Chat', style: TextStyle(color: titleColor, fontSize: 16)),
+        loading: () => const Text('...', style: TextStyle(fontWeight: FontWeight.bold)),
+        error: (_, __) => const Text('Property', style: TextStyle(fontWeight: FontWeight.bold)),
       );
     }
   }
 
-  Widget _buildSubtitle() {
-    String subText = 'Chat';
-    if (chatRoom.lastMessage != null && chatRoom.lastMessage!.isNotEmpty) {
-      subText = chatRoom.lastMessage!;
-    } else {
-      subText = chatRoom.type == 'roommate' ? 'Direct message' : 'Property inquiry';
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 4.0),
-      child: Text(
-        subText,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+  Widget _buildSubtitle(BuildContext context) {
+    String subText = chatRoom.lastMessage ?? (chatRoom.type == 'roommate' ? 'Direct message' : 'Property inquiry');
+    return Text(
+      subText,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: Theme.of(context).hintColor.withOpacity(0.6),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
 
-  Widget _buildTrailing() {
+  Widget _buildTrailing(BuildContext context, Color primaryColor) {
     final hasUnread = chatRoom.lastMessageSenderId != null &&
-        chatRoom.lastMessageSenderId != currentUserId &&
-        chatRoom.lastMessage != null &&
-        chatRoom.lastMessage!.isNotEmpty;
+        chatRoom.lastMessageSenderId != currentUserId;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -274,16 +275,19 @@ class ChatRoomTile extends ConsumerWidget {
         if (chatRoom.lastTimestamp != null)
           Text(
             _formatDate(chatRoom.lastTimestamp!),
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.5), fontSize: 11, fontWeight: FontWeight.w700),
           ),
         if (hasUnread) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Container(
             width: 10,
             height: 10,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFF385C),
+            decoration: BoxDecoration(
+              color: primaryColor,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: primaryColor.withOpacity(0.4), blurRadius: 6, spreadRadius: 1),
+              ],
             ),
           ),
         ],
@@ -297,7 +301,7 @@ class ChatRoomTile extends ConsumerWidget {
     if (diff.inDays == 0) return DateFormat.Hm().format(date);
     if (diff.inDays == 1) return 'Yesterday';
     if (diff.inDays < 7) return DateFormat.E().format(date);
-    return DateFormat('dd/MM/yy').format(date);
+    return DateFormat('dd/MM').format(date);
   }
 
   void _navigateToChat(BuildContext context, WidgetRef ref, bool isRoommate, String otherUserId) async {
@@ -311,15 +315,6 @@ class ChatRoomTile extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ChatPage(
-          chatRoomId: chatRoom.id,
-          title: title,
-        ),
-      ),
-    );
+    context.push('/chat-detail', extra: {'chatRoomId': chatRoom.id, 'title': title});
   }
 }

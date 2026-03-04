@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/reviews/domain/entities/review_entity.dart';
 import 'package:house_rental/features/reviews/presentation/providers/review_providers.dart';
-import 'package:uuid/uuid.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final String listingId;
@@ -42,7 +43,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
     try {
       final review = ReviewEntity(
-        id: const Uuid().v4(),
+        id: Uuid().v4(),
         listingId: widget.listingId,
         listingTitle: widget.listingTitle,
         ownerId: widget.ownerId,
@@ -94,128 +95,114 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Audit finding: Screen had hardcoded dark background. 
-    // Using Theme.of(context) for market-ready theming.
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Write a Review", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Write a Review',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: -1),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "How was your visit to ${widget.listingTitle}?",
+              "How was your stay at ${widget.listingTitle}?",
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Your authentic feedback helps the community find their perfect home.",
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+                color: Theme.of(context).hintColor.withOpacity(0.6),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              "Your feedback helps others find their perfect home.",
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-            ),
-            const SizedBox(height: 32),
-            Center(
+            const SizedBox(height: 40),
+            GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.all(24),
+              borderRadius: 30,
               child: Column(
                 children: [
-                  Text(
-                    "Overall Rating",
-                    style: TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black54, 
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w500
-                    ),
+                  const Text(
+                    "Overall Experience",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
-                      return IconButton(
-                        icon: Icon(
-                          index < _rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                          color: Colors.amber,
-                          size: 48,
+                      final isSelected = index < _rating;
+                      return GestureDetector(
+                        onTap: () => setState(() => _rating = index + 1),
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 200),
+                          scale: isSelected ? 1.1 : 1.0,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(
+                              isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                              color: isSelected ? Colors.amber : Theme.of(context).hintColor.withOpacity(0.2),
+                              size: 44,
+                            ),
+                          ),
                         ),
-                        onPressed: () => setState(() => _rating = index + 1),
                       );
                     }),
                   ),
+                  const SizedBox(height: 12),
                   Text(
-                    _getRatingText(_rating),
-                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                    _getRatingText(_rating).toUpperCase(),
+                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 12),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
-            Text(
-              "Share more details",
-              style: TextStyle(
-                fontSize: 18, 
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+            const Text(
+              "Share your thoughts",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            ),
+            const SizedBox(height: 16),
+            GlassContainer.standard(
+              context: context,
+              padding: EdgeInsets.zero,
+              borderRadius: 24,
+              child: TextField(
+                controller: _commentController,
+                maxLines: 5,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: "What did you love about the place?",
+                  hintStyle: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.4)),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(20),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _commentController,
-              maxLines: 5,
-              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-              decoration: InputDecoration(
-                hintText: "What did you like or dislike about the property or the owner?",
-                hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400),
-                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.grey.shade200,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.grey.shade200,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 48),
             SizedBox(
               width: double.infinity,
-              height: 56,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _submitReview,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
+                  backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 0,
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Submit Review",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
+                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("Submit Review", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
               ),
             ),
           ],

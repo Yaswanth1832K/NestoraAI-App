@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:house_rental/features/ai_services/data/property_chat_service.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/ai_services/data/property_chat_service.dart';
 
 class AIAssistantSheet extends StatefulWidget {
   final ListingEntity listing;
@@ -63,98 +64,102 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    final primaryColor = Theme.of(context).primaryColor;
+    return GlassContainer.standard(
+      context: context,
+      borderRadius: 30, // Higher top radius in implementation maybe, but let's keep it consistent
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           // Handle bar
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: Theme.of(context).dividerColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+          const SizedBox(height: 20),
 
           // Title
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(10),
+                  color: primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Icon(Icons.smart_toy, color: Colors.blue),
+                child: Icon(Icons.auto_awesome_rounded, color: primaryColor, size: 24),
               ),
               const SizedBox(width: 12),
               const Text(
-                "Nestora AI Assistant",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                "Nestora AI",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Messages
           Expanded(
             child: _messages.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 64, color: Colors.grey.shade300),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Ask me anything about this property!',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded,
+                              size: 60, color: Theme.of(context).hintColor.withOpacity(0.2)),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Ask me anything!',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            _SuggestedQuestion(
-                              text: 'Is this price reasonable?',
-                              onTap: () {
-                                _controller.text = 'Is this price reasonable?';
-                                _askAI();
-                              },
-                            ),
-                            _SuggestedQuestion(
-                              text: 'Good for students?',
-                              onTap: () {
-                                _controller.text = 'Is this area good for students?';
-                                _askAI();
-                              },
-                            ),
-                            _SuggestedQuestion(
-                              text: 'What to ask owner?',
-                              onTap: () {
-                                _controller.text = 'What questions should I ask the owner?';
-                                _askAI();
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'AI-powered insights about this home.',
+                            style: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.6), fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 32),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              _SuggestedQuestion(
+                                text: 'Price Analysis',
+                                onTap: () {
+                                  _controller.text = 'Is this price reasonable for the area?';
+                                  _askAI();
+                                },
+                              ),
+                              _SuggestedQuestion(
+                                text: 'Area Info',
+                                onTap: () {
+                                  _controller.text = 'Tell me about the neighborhood.';
+                                  _askAI();
+                                },
+                              ),
+                              _SuggestedQuestion(
+                                text: 'Key Features',
+                                onTap: () {
+                                  _controller.text = 'What are the standout features?';
+                                  _askAI();
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 20),
                     itemCount: _messages.length,
+                    physics: const BouncingScrollPhysics(),
                     itemBuilder: (context, index) {
                       final message = _messages[index];
                       final isUser = message['role'] == 'user';
@@ -168,64 +173,63 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
 
           if (_loading)
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                   SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'AI is thinking...',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    'Thinking...',
+                    style: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.6), fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                 ],
               ),
             ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Input
           SafeArea(
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 15,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: "Ask about this property...",
-                      hintStyle: TextStyle(color: Colors.grey.shade500),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+                  child: GlassContainer.standard(
+                    context: context,
+                    padding: EdgeInsets.zero,
+                    borderRadius: 24,
+                    child: TextField(
+                      controller: _controller,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: "Type a message...",
+                        hintStyle: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.4)),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _askAI(),
                     ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _askAI(),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: _loading ? null : _askAI,
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: _loading ? null : _askAI,
+                  child: Container(
+                    height: 52,
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 10, spreadRadius: 1),
+                      ],
+                    ),
+                    child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 28),
                   ),
                 ),
               ],
@@ -245,44 +249,41 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.smart_toy, size: 16, color: Colors.blue),
+              child: Icon(Icons.auto_awesome_rounded, size: 14, color: primaryColor),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
           ],
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser ? Colors.blue : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(16).copyWith(
-                  bottomRight:
-                      isUser ? const Radius.circular(4) : const Radius.circular(16),
-                  bottomLeft:
-                      isUser ? const Radius.circular(16) : const Radius.circular(4),
-                ),
-              ),
+            child: GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              borderRadius: 20,
               child: Text(
                 text,
                 style: TextStyle(
-                  color: isUser ? Colors.white : Colors.black87,
+                  color: isUser ? primaryColor : null,
+                  fontWeight: isUser ? FontWeight.w900 : FontWeight.w600,
                   fontSize: 15,
+                  height: 1.4,
                 ),
               ),
             ),
           ),
+          if (isUser) const SizedBox(width: 8),
         ],
       ),
     );
@@ -299,19 +300,17 @@ class _SuggestedQuestion extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue.shade200),
-          borderRadius: BorderRadius.circular(20),
-          color: Colors.blue.shade50,
-        ),
+      borderRadius: BorderRadius.circular(15),
+      child: GlassContainer.standard(
+        context: context,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        borderRadius: 15,
         child: Text(
           text,
-          style: const TextStyle(
-            color: Colors.blue,
+          style: TextStyle(
+            color: Theme.of(context).primaryColor,
             fontSize: 13,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
