@@ -83,9 +83,10 @@ class _BookingSpinPageState extends ConsumerState<BookingSpinPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // close dialog
-              if (Navigator.of(context).canPop()) {
-                Navigator.pop(context); // Return to previous screen
-              }
+              context.pop(); // return to previous screen natively (closes rent_payments modal)
+              // Wait, instead of context.pop we may need to pop twice or use a specific router method to get back home
+              // Let's just pop the current page so they fall back to the Rent Payments UI
+              Navigator.of(context).pop(); 
             },
             child: const Text('Claim & Finish', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFFF385C))),
           ),
@@ -123,20 +124,11 @@ class _BookingSpinPageState extends ConsumerState<BookingSpinPage> {
                 child: FortuneWheel(
                   selected: selected.stream,
                   items: [
-                    for (int i = 0; i < items.length; i++)
+                    for (var it in items)
                       FortuneItem(
-                        child: Text(
-                          items[i], 
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold, 
-                            fontSize: 14,
-                            color: Colors.white,
-                          )
-                        ),
-                        style: FortuneItemStyle(
-                          color: i % 2 == 0 
-                              ? const Color(0xFFFF385C) 
-                              : const Color(0xFFBD1E59),
+                        child: Text(it, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        style: const FortuneItemStyle(
+                          color: Color(0xFFFF385C), // Airbnbish red
                           borderColor: Colors.white,
                           borderWidth: 2,
                         ),

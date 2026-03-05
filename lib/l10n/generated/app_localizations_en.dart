@@ -82,4 +82,110 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logOut => 'Log out';
+
+  @override
+  String get where => 'Where?';
+
+  @override
+  String get when => 'When';
+
+  @override
+  String get who => 'Who';
+
+  @override
+  String get clearAll => 'Clear all';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get searchDestinations => 'Search destinations';
+
+  @override
+  String get recentSearches => 'Recent searches';
+
+  @override
+  String get suggestedDestinations => 'Suggested destinations';
+
+  @override
+  String get guests => 'Guests';
+
+  @override
+  String get bookingAvailable => 'Available this weekend';
+
+  @override
+  String get homes => 'Homes';
+
+  @override
+  String get experiences => 'Experiences';
+
+  @override
+  String get services => 'Services';
+
+  @override
+  String get anywhere => 'Anywhere';
+
+  @override
+  String get anyWeek => 'Any week';
+
+  @override
+  String get addDates => 'Add dates';
+
+  @override
+  String get addGuests => 'Add guests';
+
+  @override
+  String get noRecentSearches => 'No recent searches';
+
+  @override
+  String get sampleDateRange => '6-8 Mar';
+
+  @override
+  String get nearby => 'Nearby';
+
+  @override
+  String get hyderabad => 'Hyderabad';
+
+  @override
+  String get goa => 'Goa';
+
+  @override
+  String get findWhatsAroundYou => 'Find what\'s around you';
+
+  @override
+  String get greatForWeekendGetaway => 'Great for a weekend getaway';
+
+  @override
+  String get sunAndSand => 'Sun and sand';
+
+  @override
+  String get chooseYourTravelDates => 'Choose your travel dates';
+
+  @override
+  String get pickDates => 'Pick Dates';
+
+  @override
+  String get numberOfPeople => 'Number of people';
+
+  @override
+  String rentalsIn(Object city, Object count) {
+    return '$count rentals in $city';
+  }
+
+  @override
+  String get allHomes => 'All Homes';
+
+  @override
+  String get homeServices => 'Home Services';
+
+  @override
+  String get expertHelp => 'Expert help at your doorstep';
+
+  @override
+  String get showAll => 'Show all';
+
+  @override
+  String availableInCity(Object city) {
+    return 'Available in $city this weekend';
+  }
 }

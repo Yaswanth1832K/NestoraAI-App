@@ -6,6 +6,8 @@ import 'package:house_rental/features/listings/data/models/review_model.dart';
 import 'package:house_rental/features/listings/domain/entities/review_entity.dart';
 import 'package:house_rental/features/listings/domain/repositories/review_repository.dart';
 
+import 'package:house_rental/features/listings/domain/utils/demo_listings_data.dart';
+
 class ReviewRepositoryImpl implements ReviewRepository {
   final FirebaseFirestore _firestore;
 
@@ -13,6 +15,9 @@ class ReviewRepositoryImpl implements ReviewRepository {
 
   @override
   Future<Either<Failure, void>> addReview(ReviewEntity review) async {
+    if (review.listingId.startsWith('demo_')) {
+      return const Right(null); // Silent success for demo
+    }
     try {
       final reviewModel = ReviewModel(
         id: review.id,
@@ -59,6 +64,9 @@ class ReviewRepositoryImpl implements ReviewRepository {
 
   @override
   Stream<List<ReviewEntity>> getReviews(String listingId) {
+    if (listingId.startsWith('demo_')) {
+      return Stream.value(DemoListingsData.generateReviews(listingId));
+    }
     return _firestore
         .collection('reviews')
         .where('listingId', isEqualTo: listingId)

@@ -15,6 +15,13 @@ class ListingFilter extends Equatable {
   final String? propertyType;
   final String? allowedTenants; // Bachelors, Family, etc.
   final bool? isVerified;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final int? guests;
+  final double? minRating;
+  final double? minSqft;
+  final double? maxSqft;
+  final bool? availableNow;
 
   ListingFilter({
     this.searchQuery,
@@ -28,6 +35,13 @@ class ListingFilter extends Equatable {
     this.propertyType,
     this.allowedTenants,
     this.isVerified,
+    this.startDate,
+    this.endDate,
+    this.guests,
+    this.minRating,
+    this.minSqft,
+    this.maxSqft,
+    this.availableNow,
   });
 
   ListingFilter copyWith({
@@ -40,6 +54,13 @@ class ListingFilter extends Equatable {
     String? furnishing,
     List<String>? amenities,
     String? propertyType,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? guests,
+    double? minRating,
+    double? minSqft,
+    double? maxSqft,
+    bool? availableNow,
   }) {
     return ListingFilter(
       searchQuery: searchQuery ?? this.searchQuery,
@@ -53,6 +74,13 @@ class ListingFilter extends Equatable {
       propertyType: propertyType ?? this.propertyType,
       allowedTenants: allowedTenants ?? this.allowedTenants,
       isVerified: isVerified ?? this.isVerified,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      guests: guests ?? this.guests,
+      minRating: minRating ?? this.minRating,
+      minSqft: minSqft ?? this.minSqft,
+      maxSqft: maxSqft ?? this.maxSqft,
+      availableNow: availableNow ?? this.availableNow,
     );
   }
 
@@ -69,6 +97,13 @@ class ListingFilter extends Equatable {
         propertyType,
         allowedTenants,
         isVerified,
+        startDate,
+        endDate,
+        guests,
+        minRating,
+        minSqft,
+        maxSqft,
+        availableNow,
       ];
 }
 

@@ -1,0 +1,5 @@
+﻿Analyzing 2 items...                                            
+
+warning - Unused import: 'package:house_rental/features/auth/domain/usecases/update_user_role_usecase.dart' - lib\features\profile\presentation\pages\profile_page.dart:7:8 - unused_import
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\profile\presentation\pages\profile_page.dart:234:23 - deprecated_member_use
+

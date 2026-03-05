@@ -10,8 +10,6 @@ import 'package:house_rental/features/listings/presentation/providers/listings_p
 import 'package:house_rental/features/reviews/presentation/review_screen.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
 import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
-import 'package:go_router/go_router.dart';
-import 'package:house_rental/core/router/app_router.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   final String chatRoomId;
@@ -287,14 +285,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: () {
-            context.push(
-              AppRouter.review,
-              extra: {
-                'listingId': request.listingId,
-                'listingTitle': request.listingTitle,
-                'ownerId': request.ownerId,
-                'bookingId': request.id,
-              },
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReviewScreen(
+                  listingId: request.listingId,
+                  listingTitle: request.listingTitle,
+                  ownerId: request.ownerId,
+                  bookingId: request.id,
+                ),
+              ),
             );
           },
           icon: const Icon(Icons.rate_review_outlined, size: 18),

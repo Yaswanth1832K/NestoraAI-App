@@ -27,13 +27,25 @@ class ChatInboxPage extends ConsumerWidget {
         elevation: 0,
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+            margin: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
             child: GlassContainer.standard(
               context: context,
               borderRadius: 15,
               padding: EdgeInsets.zero,
               child: IconButton(
                 icon: const Icon(Icons.search_rounded, size: 22),
+                onPressed: () {},
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+            child: GlassContainer.standard(
+              context: context,
+              borderRadius: 15,
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.settings_outlined, size: 22),
                 onPressed: () {},
               ),
             ),

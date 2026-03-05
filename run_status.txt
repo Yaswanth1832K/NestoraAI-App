@@ -1,0 +1,50 @@
+﻿"synthetic-package" no 
+longer has any effect and 
+should be removed. See http:/
+/flutter.dev/to/flutter-gen-d
+eprecation
+At line:1 char:1
++ flutter run -d chrome 
+--no-pub > run_output.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (D:\hema  
+  nth_flut...gen-deprecati   
+ on:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+"bn": 34 untranslated message(s).
+"hi": 34 untranslated message(s).
+"ml": 35 untranslated message(s).
+"or": 34 untranslated message(s).
+"ta": 1 untranslated message(s).
+"te": 35 untranslated message(s).
+To see a detailed report, use the untranslated-messages-file 
+option in the l10n.yaml file:
+untranslated-messages-file: desiredFileName.txt
+<other option>: <other selection> 
+
+
+This will generate a JSON format file containing all messages that 
+need to be translated.
+Waiting for connection from debug service on Chrome...             20.3s
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+This app is linked to the debug service: ws://127.0.0.1:60043/7PLhn-8mwNA=/ws
+Debug service listening on ws://127.0.0.1:60043/7PLhn-8mwNA=/ws
+A Dart VM Service on Chrome is available at: http://127.0.0.1:60043/7PLhn-8mwNA=
+The Flutter DevTools debugger and profiler on Chrome is available at: http://127.0.0.1:60043/7PLhn-8mwNA=/devtools/?uri=ws://127.0.0.1:60043/7PLhn-8mwNA=/ws
+Starting application from main method in: org-dartlang-app:/web_entrypoint.dart.
+≡ƒöÇ Router Redirect: location=/splash, isLoading=true, hasUser=false
+≡ƒöÇ Router Redirect: location=/splash, isLoading=true, hasUser=false

@@ -212,6 +212,12 @@ class ProfilePage extends ConsumerWidget {
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
+                      icon: Icons.card_giftcard_outlined,
+                      title: "My Rewards & Coupons",
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rewards coming soon!'))),
+                      isDark: isDark,
+                    ),
+                    ProfileMenuItem(
                       icon: Icons.account_balance_wallet_rounded,
                       title: "Rent Payments",
                       onTap: () => context.push(AppRouter.rentPayments),

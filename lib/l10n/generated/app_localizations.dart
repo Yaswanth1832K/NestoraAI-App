@@ -257,6 +257,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Log out'**
   String get logOut;
+
+  /// No description provided for @where.
+  ///
+  /// In en, this message translates to:
+  /// **'Where?'**
+  String get where;
+
+  /// No description provided for @when.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get when;
+
+  /// No description provided for @who.
+  ///
+  /// In en, this message translates to:
+  /// **'Who'**
+  String get who;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clearAll;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @searchDestinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Search destinations'**
+  String get searchDestinations;
+
+  /// No description provided for @recentSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get recentSearches;
+
+  /// No description provided for @suggestedDestinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested destinations'**
+  String get suggestedDestinations;
+
+  /// No description provided for @guests.
+  ///
+  /// In en, this message translates to:
+  /// **'Guests'**
+  String get guests;
+
+  /// No description provided for @bookingAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available this weekend'**
+  String get bookingAvailable;
+
+  /// No description provided for @homes.
+  ///
+  /// In en, this message translates to:
+  /// **'Homes'**
+  String get homes;
+
+  /// No description provided for @experiences.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiences'**
+  String get experiences;
+
+  /// No description provided for @services.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get services;
+
+  /// No description provided for @anywhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere'**
+  String get anywhere;
+
+  /// No description provided for @anyWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Any week'**
+  String get anyWeek;
+
+  /// No description provided for @addDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Add dates'**
+  String get addDates;
+
+  /// No description provided for @addGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Add guests'**
+  String get addGuests;
+
+  /// No description provided for @noRecentSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent searches'**
+  String get noRecentSearches;
+
+  /// No description provided for @sampleDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'6-8 Mar'**
+  String get sampleDateRange;
+
+  /// No description provided for @nearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby'**
+  String get nearby;
+
+  /// No description provided for @hyderabad.
+  ///
+  /// In en, this message translates to:
+  /// **'Hyderabad'**
+  String get hyderabad;
+
+  /// No description provided for @goa.
+  ///
+  /// In en, this message translates to:
+  /// **'Goa'**
+  String get goa;
+
+  /// No description provided for @findWhatsAroundYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Find what\'s around you'**
+  String get findWhatsAroundYou;
+
+  /// No description provided for @greatForWeekendGetaway.
+  ///
+  /// In en, this message translates to:
+  /// **'Great for a weekend getaway'**
+  String get greatForWeekendGetaway;
+
+  /// No description provided for @sunAndSand.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun and sand'**
+  String get sunAndSand;
+
+  /// No description provided for @chooseYourTravelDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your travel dates'**
+  String get chooseYourTravelDates;
+
+  /// No description provided for @pickDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Dates'**
+  String get pickDates;
+
+  /// No description provided for @numberOfPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of people'**
+  String get numberOfPeople;
+
+  /// No description provided for @rentalsIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} rentals in {city}'**
+  String rentalsIn(Object city, Object count);
+
+  /// No description provided for @allHomes.
+  ///
+  /// In en, this message translates to:
+  /// **'All Homes'**
+  String get allHomes;
+
+  /// No description provided for @homeServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Services'**
+  String get homeServices;
+
+  /// No description provided for @expertHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Expert help at your doorstep'**
+  String get expertHelp;
+
+  /// No description provided for @showAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get showAll;
+
+  /// No description provided for @availableInCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Available in {city} this weekend'**
+  String availableInCity(Object city);
 }
 
 class _AppLocalizationsDelegate

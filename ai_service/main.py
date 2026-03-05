@@ -24,20 +24,27 @@ import os
 # Configure Gemini API
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB4BeMYF7wdjoqzeoVb3P8-H4GYoNdMeIU")
 
-
-if "YOUR_GEMINI_API_KEY" in GEMINI_API_KEY:
-    print("⚠️ WARNING: GEMINI_API_KEY is using a placeholder. AI Chat Features will fail.")
+is_gemini_ready = False
+if "YOUR_GEMINI_API_KEY" in GEMINI_API_KEY or GEMINI_API_KEY == "AIzaSyAXtq9pTAFk9WKDm0chDq2y-4F7KTgqaas":
+    print("⚠️ WARNING: GEMINI_API_KEY is using a placeholder. AI Chat features may be limited.")
 else:
-    print(f"✅ Gemini API Key configured: {GEMINI_API_KEY[:4]}...{GEMINI_API_KEY[-4:]}")
-
-genai.configure(api_key=GEMINI_API_KEY)
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        is_gemini_ready = True
+        print(f"✅ Gemini API Key configured: {GEMINI_API_KEY[:4]}...{GEMINI_API_KEY[-4:]}")
+    except Exception as e:
+        print(f"❌ Error configuring Gemini: {e}")
 
 class SearchQuery(BaseModel):
     query: str
 
 @app.get("/")
 def home():
-    return {"status": "AI service running"}
+    return {
+        "status": "AI service running",
+        "notifications": "Active" if os.path.exists("serviceAccountKey.json") else "Disabled (missing key)",
+        "ai_ready": is_gemini_ready
+    }
 
 @app.post("/search/natural-language")
 def natural_language_search(data: SearchQuery):

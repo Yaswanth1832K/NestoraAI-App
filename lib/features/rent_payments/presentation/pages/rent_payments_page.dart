@@ -9,8 +9,6 @@ import 'package:house_rental/features/notifications/domain/services/notification
 import 'package:house_rental/features/rent_payments/data/services/stripe_service.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import 'package:go_router/go_router.dart';
-import 'package:house_rental/core/router/app_router.dart';
 
 // ── Colors ──────────────────────────────────────────────────────
 const _kPurple   = Color(0xFF7C5CBF);
@@ -514,50 +512,17 @@ class _StripeCheckoutSheetState extends ConsumerState<_StripeCheckoutSheet> {
         Text('₹${widget.amount.toStringAsFixed(0)} paid via Stripe',
             style: const TextStyle(color: Colors.white54, fontSize: 13)),
         const SizedBox(height: 24),
-        
-        // Reward Promo
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.amber.withOpacity(0.3)),
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+            decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [_kPurple, _kPurpleG]),
+                borderRadius: BorderRadius.circular(14)),
+            child: const Text('Done', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
           ),
-          child: const Row(children: [
-            Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
-            SizedBox(width: 8),
-            Expanded(child: Text('You earned a free spin!', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold))),
-          ]),
         ),
-        const SizedBox(height: 24),
-
-        Row(children: [
-           Expanded(
-             child: TextButton(
-               onPressed: () => Navigator.pop(context),
-               child: const Text('Back', style: TextStyle(color: Colors.white38, fontWeight: FontWeight.bold)),
-             ),
-           ),
-           const SizedBox(width: 12),
-           Expanded(
-             flex: 2,
-             child: GestureDetector(
-               onTap: () {
-                 Navigator.pop(context);
-                 context.push(AppRouter.bookingSpin);
-               },
-               child: Container(
-                 padding: const EdgeInsets.symmetric(vertical: 14),
-                 alignment: Alignment.center,
-                 decoration: BoxDecoration(
-                     gradient: const LinearGradient(colors: [_kPurple, _kPurpleG]),
-                     borderRadius: BorderRadius.circular(14)),
-                 child: const Text('SPIN & WIN', style: TextStyle(
-                     color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
-               ),
-             ),
-           ),
-        ]),
       ]),
     ));
   }
