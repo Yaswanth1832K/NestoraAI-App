@@ -1,0 +1,97 @@
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
+
+/// Page size for cursor-based pagination. Kept small to reduce reads.
+const int kListingsPageSize = 12;
+
+/// State for paginated home/search feed: accumulated items, loading flags, next cursor.
+class PaginatedListingsState {
+  final List<ListingEntity> items;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? error;
+  final String? nextCursor;
+
+  const PaginatedListingsState({
+    this.items = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.error,
+    this.nextCursor,
+  });
+
+  bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
+}
+
+class PaginatedListingsNotifier extends StateNotifier<PaginatedListingsState> {
+  final Ref _ref;
+
+  PaginatedListingsNotifier(this._ref) : super(const PaginatedListingsState());
+
+  ListingFilter? _currentFilter;
+
+  /// Load first page (resets list). Use for initial load and pull-to-refresh.
+  Future<void> loadInitial({ListingFilter? filter}) async {
+    _currentFilter = filter;
+    state = const PaginatedListingsState(isLoading: true);
+    await _fetchPage(lastListingId: null, append: false);
+  }
+
+  /// Load next page. No-op if already loading more or no cursor.
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+    final cursor = state.nextCursor;
+    state = PaginatedListingsState(
+      items: state.items,
+      nextCursor: cursor,
+      isLoadingMore: true,
+      error: state.error,
+    );
+    await _fetchPage(lastListingId: cursor, append: true);
+  }
+
+  Future<void> _fetchPage({required String? lastListingId, required bool append}) async {
+    final useCase = _ref.read(getListingsUseCaseProvider);
+    final result = await useCase(
+      filter: _currentFilter,
+      limit: kListingsPageSize,
+      lastListingId: lastListingId,
+    );
+    result.fold(
+      (failure) => state = PaginatedListingsState(
+        items: append ? state.items : [],
+        error: failure.message,
+        nextCursor: append ? state.nextCursor : null,
+      ),
+      (list) {
+        final newItems = append ? [...state.items, ...list] : list;
+        final next = list.length >= kListingsPageSize && list.isNotEmpty
+            ? list.last.id
+            : null;
+        state = PaginatedListingsState(
+          items: newItems,
+          nextCursor: next,
+          error: null,
+          isLoading: false,
+          isLoadingMore: false,
+        );
+      },
+    );
+  }
+
+  void clearError() {
+    state = PaginatedListingsState(
+      items: state.items,
+      nextCursor: state.nextCursor,
+      isLoading: state.isLoading,
+      isLoadingMore: state.isLoadingMore,
+    );
+  }
+}
+
+final paginatedListingsProvider =
+    StateNotifierProvider<PaginatedListingsNotifier, PaginatedListingsState>((ref) {
+  return PaginatedListingsNotifier(ref);
+});

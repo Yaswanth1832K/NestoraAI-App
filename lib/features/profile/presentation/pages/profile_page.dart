@@ -9,6 +9,10 @@ import 'package:house_rental/features/profile/presentation/widgets/profile_widge
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/l10n/generated/app_localizations.dart';
 import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/core/providers/firebase_provider.dart';
+import 'package:house_rental/features/listings/data/models/listing_model.dart';
+import 'package:house_rental/features/listings/domain/utils/demo_listings_data.dart';
+import 'package:house_rental/features/listings/presentation/providers/paginated_listings_notifier.dart';
 
 final notificationsProvider = StateProvider<bool>((ref) => true);
 
@@ -283,6 +287,58 @@ class ProfilePage extends ConsumerWidget {
                         activeColor: AppColors.primary,
                       ),
                     ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+
+              // DEVELOPER TOOLS (Restoring properties)
+              ProfileSection(
+                title: "Developer Tools",
+                isDark: isDark,
+                children: [
+                  ProfileMenuItem(
+                    icon: Icons.auto_fix_high_rounded,
+                    title: "Seed Demo Listings",
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Seed Database"),
+                          content: const Text("This will generate 20+ houses across different locations and save them to Firestore. This will restore the properties you generated earlier. Continue?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Confirm")),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seeding properties... please wait.')));
+                        try {
+                          final firestore = ref.read(firestoreProvider);
+                          // Use the helper we know exists
+                          final cities = ["Mumbai", "Bangalore", "Hyderabad", "Chennai", "Delhi", "Goa", "Kochi", "Coimbatore", "Vijayawada", "Dindigul", "Madurai", "Trichy"];
+                          int count = 0;
+                          for (var city in cities) {
+                            final demos = DemoListingsData.generateDemoListings(city, 2);
+                            for (var d in demos) {
+                              await firestore.collection('listings').doc(d.id).set(ListingModel.fromEntity(d).toJson());
+                              count++;
+                            }
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Successfully seeded $count properties!')));
+                          // Refresh listings
+                          ref.invalidate(paginatedListingsProvider);
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Seeding failed: $e')));
+                        }
+                      }
+                    },
+                    isDark: isDark,
+                    iconColor: Colors.purpleAccent,
+                    showDivider: false,
                   ),
                 ],
               ),

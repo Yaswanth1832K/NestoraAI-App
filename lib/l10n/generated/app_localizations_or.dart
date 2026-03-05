@@ -12,7 +12,7 @@ class AppLocalizationsOr extends AppLocalizations {
   String get profileTitle => 'ପ୍ରୋଫାଇଲ୍';
 
   @override
-  String get editProfile => 'ପ୍ରୋଫାଇଲ୍ ସଂପାଦନ କରନ୍ତୁ';
+  String get editProfile => 'ପ୍ରୋଫାଇଲ୍ ଏଡିଟ୍ କରନ୍ତୁ';
 
   @override
   String get settings => 'ସେଟିଂସମୂହ';
@@ -27,7 +27,7 @@ class AppLocalizationsOr extends AppLocalizations {
   String get loginAndSecurity => 'ଲଗଇନ୍ ଏବଂ ସୁରକ୍ଷା';
 
   @override
-  String get notifications => 'ବିଜ୍ଞପ୍ତି';
+  String get notifications => 'ସୂଚନାମୂହ';
 
   @override
   String get darkMode => 'ଡାର୍କ ମୋଡ୍';
@@ -39,16 +39,16 @@ class AppLocalizationsOr extends AppLocalizations {
   String get myListings => 'ମୋର ଲିଷ୍ଟିଂ';
 
   @override
-  String get visitRequests => 'ପରିଦର୍ଶନ ଅନୁରୋଧ';
+  String get visitRequests => 'ଭ୍ରମଣ ଅନୁରୋଧ';
 
   @override
-  String get myVisits => 'ମୋର ପରିଦର୍ଶନ';
+  String get myVisits => 'ମୋର ଭ୍ରମଣ';
 
   @override
-  String get rentalPreferences => 'ଭଡା ପସନ୍ଦ';
+  String get rentalPreferences => 'ରୁମ ଭଡା ପସନ୍ଦ';
 
   @override
-  String get savedProperties => 'ସଂରକ୍ଷିତ ସମ୍ପତ୍ତି';
+  String get savedProperties => 'ସେଭ୍ ହୋଇଥିବା ସମ୍ପତ୍ତି';
 
   @override
   String get financialAndMessages => 'ଆର୍ଥିକ ଏବଂ ବାର୍ତ୍ତା';
@@ -57,7 +57,7 @@ class AppLocalizationsOr extends AppLocalizations {
   String get paymentsAndPayouts => 'ପେମେଣ୍ଟ ଏବଂ ପେଆଉଟ୍';
 
   @override
-  String get messageSettings => 'ବାର୍ତ୍ତା ସେଟିଂସମୂହ';
+  String get messageSettings => 'ମେସେଜ୍ ସେଟିଂସମୂହ';
 
   @override
   String get support => 'ସହାୟତା';
@@ -69,7 +69,7 @@ class AppLocalizationsOr extends AppLocalizations {
   String get safetyCenter => 'ସୁରକ୍ଷା କେନ୍ଦ୍ର';
 
   @override
-  String get reportConcern => 'ଅଭିଯୋଗ କରନ୍ତୁ';
+  String get reportConcern => 'କଉଣସି ସମସ୍ୟା ଜଣାନ୍ତୁ';
 
   @override
   String get legal => 'ଆଇନଗତ';
@@ -84,108 +84,263 @@ class AppLocalizationsOr extends AppLocalizations {
   String get logOut => 'ଲଗ୍ ଆଉଟ୍';
 
   @override
-  String get where => 'Where?';
+  String get where => 'କେଉଁଠି?';
 
   @override
-  String get when => 'When';
+  String get when => 'କେବେ';
 
   @override
-  String get who => 'Who';
+  String get who => 'କିଏ';
 
   @override
-  String get clearAll => 'Clear all';
+  String get clearAll => 'ସବୁ ସଫା କରନ୍ତୁ';
 
   @override
-  String get search => 'Search';
+  String get search => 'ଖୋଜନ୍ତୁ';
 
   @override
-  String get searchDestinations => 'Search destinations';
+  String get searchDestinations => 'ଗନ୍ତବ୍ୟ ସ୍ଥାନ ଖୋଜନ୍ତୁ';
 
   @override
-  String get recentSearches => 'Recent searches';
+  String get recentSearches => 'ସାମ୍ପ୍ରତିକ ଅନୁସନ୍ଧାନ';
 
   @override
-  String get suggestedDestinations => 'Suggested destinations';
+  String get suggestedDestinations => 'ପ୍ରସ୍ତାବିତ ଗନ୍ତବ୍ୟ ସ୍ଥାନ';
 
   @override
-  String get guests => 'Guests';
+  String get guests => 'ଅତିଥି';
 
   @override
-  String get bookingAvailable => 'Available this weekend';
+  String get bookingAvailable => 'ଏହି ସପ୍ତାହ ଶେଷରେ ଉପଲବ୍ଧ';
 
   @override
-  String get homes => 'Homes';
+  String get homes => 'ଘର';
 
   @override
-  String get experiences => 'Experiences';
+  String get experiences => 'ଅନୁଭୂତି';
 
   @override
-  String get services => 'Services';
+  String get services => 'ସେବା';
 
   @override
-  String get anywhere => 'Anywhere';
+  String get anywhere => 'ଯେକୌଣସି ସ୍ଥାନରେ';
 
   @override
-  String get anyWeek => 'Any week';
+  String get anyWeek => 'ଯେକୌଣସି ସପ୍ତାହ';
 
   @override
-  String get addDates => 'Add dates';
+  String get addDates => 'ତାରିଖ ଯୋଡନ୍ତୁ';
 
   @override
-  String get addGuests => 'Add guests';
+  String get addGuests => 'ଅତିଥି ଯୋଡନ୍ତୁ';
 
   @override
-  String get noRecentSearches => 'No recent searches';
+  String get noRecentSearches => 'କୌଣସି ସାମ୍ପ୍ରତିକ ଅନୁସନ୍ଧାନ ନାହିଁ';
 
   @override
-  String get sampleDateRange => '6-8 Mar';
+  String get sampleDateRange => '୬-୮ ମାର୍ଚ୍ଚ';
 
   @override
-  String get nearby => 'Nearby';
+  String get nearby => 'ପାଖାପାଖି';
 
   @override
-  String get hyderabad => 'Hyderabad';
+  String get hyderabad => 'ହାଇଦ୍ରାବାଦ';
 
   @override
-  String get goa => 'Goa';
+  String get goa => 'ଗୋଆ';
 
   @override
-  String get findWhatsAroundYou => 'Find what\'s around you';
+  String get findWhatsAroundYou => 'ଆପଣଙ୍କ ଚାରିପାଖରେ କ’ଣ ଅଛି ଖୋଜନ୍ତୁ';
 
   @override
-  String get greatForWeekendGetaway => 'Great for a weekend getaway';
+  String get greatForWeekendGetaway => 'ଛୁଟିଦିନ ପାଇଁ ଭଲ';
 
   @override
-  String get sunAndSand => 'Sun and sand';
+  String get sunAndSand => 'ସୂର୍ଯ୍ୟ ଏବଂ ବାଲି';
 
   @override
-  String get chooseYourTravelDates => 'Choose your travel dates';
+  String get chooseYourTravelDates => 'ଆପଣଙ୍କ ଭ୍ରମଣ ତାରିଖ ବାଛନ୍ତୁ';
 
   @override
-  String get pickDates => 'Pick Dates';
+  String get pickDates => 'ତାରିଖ ବାଛନ୍ତୁ';
 
   @override
-  String get numberOfPeople => 'Number of people';
+  String get numberOfPeople => 'ଲୋକଙ୍କ ସଂଖ୍ୟା';
 
   @override
   String rentalsIn(Object city, Object count) {
-    return '$count rentals in $city';
+    return '$city ରେ $count ଟି ଭଡା ଘର';
   }
 
   @override
-  String get allHomes => 'All Homes';
+  String get allHomes => 'ସମସ୍ତ ଘର';
 
   @override
-  String get homeServices => 'Home Services';
+  String get homeServices => 'ହୋମ୍ ସେବା';
 
   @override
-  String get expertHelp => 'Expert help at your doorstep';
+  String get expertHelp => 'ଆପଣଙ୍କ ଦ୍ୱାର ପାଖରେ ବିଶେଷଜ୍ଞ ସହାୟତା';
 
   @override
-  String get showAll => 'Show all';
+  String get showAll => 'ସବୁ ଦେଖାନ୍ତୁ';
 
   @override
   String availableInCity(Object city) {
-    return 'Available in $city this weekend';
+    return 'ଏହି ସପ୍ତାହ ଶେଷରେ $city ରେ ଉପଲବ୍ଧ';
   }
+
+  @override
+  String get authTitle => 'Nestora';
+
+  @override
+  String get authTagline => 'ଶାନଦାର ଭଡା। ସ୍ମାର୍ଟ ଲିଭିଂ।';
+
+  @override
+  String get signIn => 'ସାଇନ୍ ଇନ୍';
+
+  @override
+  String get signUp => 'ସାଇନ୍ ଅପ୍';
+
+  @override
+  String get emailAddress => 'ଇମେଲ୍ ଠିକଣା';
+
+  @override
+  String get emailHint => 'hello@example.com';
+
+  @override
+  String get password => 'ପାସୱାର୍ଡ';
+
+  @override
+  String get passwordHint => '••••••••';
+
+  @override
+  String get rememberMe => 'ମୋତେ ମନେ ରଖନ୍ତୁ';
+
+  @override
+  String get forgotPassword => 'ପାସୱାର୍ଡ ଭୁଲିଗଲେ କି?';
+
+  @override
+  String get continueAsGuest => 'ଅତିଥି ଭାବରେ ଜାରି ରଖନ୍ତୁ →';
+
+  @override
+  String get fullName => 'ପୂରା ନାମ';
+
+  @override
+  String get nameHint => 'ଆମେ ଆପଣଙ୍କୁ କ’ଣ ଡାକିବୁ?';
+
+  @override
+  String get joinAs => 'ଭାବରେ ଯୋଗ ଦିଅନ୍ତୁ';
+
+  @override
+  String get tenantRole => 'ଭଡାଟିଆ';
+
+  @override
+  String get ownerRole => 'ମାଲିକ';
+
+  @override
+  String get createAccount => 'ଖାତା ଖୋଲନ୍ତୁ';
+
+  @override
+  String get termsAndPrivacy =>
+      'ଏକ ଖାତା ଖୋଲି ଆପଣ ଆମର ନିୟମ ଏବଂ ଗୋପନୀୟତା ନୀତି ସହିତ ସମ୍ମତ ହେଉଛନ୍ତି';
+
+  @override
+  String get orContinueWith => 'କିମ୍ବା ଏହା ସହିତ ଜାରି ରଖନ୍ତୁ';
+
+  @override
+  String get passwordMatchError => 'ପାସୱାର୍ଡ ମେଳ ଖାଉ ନାହିଁ';
+
+  @override
+  String get passwordLengthError => 'ପାସୱାର୍ଡ ଅତିକମରେ ୬ ଟି ଅକ୍ଷର ହେବା ଉଚିତ';
+
+  @override
+  String get fillFieldsError => 'ଦୟାକରି ସମସ୍ତ ଘର ପୂରଣ କରନ୍ତୁ';
+
+  @override
+  String get resetPassword => 'ପାସୱାର୍ଡ ପୁନଃ ସେଟ୍ କରନ୍ତୁ';
+
+  @override
+  String get resetPasswordInstruction =>
+      'ରିସେଟ୍ ଲିଙ୍କ୍ ପାଇବାକୁ ଆପଣଙ୍କ ଇମେଲ୍ ପ୍ରବେଶ କରନ୍ତୁ।';
+
+  @override
+  String get sendLink => 'ଲିଙ୍କ୍ ପଠାନ୍ତୁ';
+
+  @override
+  String get cancel => 'ବାତିଲ୍';
+
+  @override
+  String get resetLinkSent =>
+      'ରିସେଟ୍ ଲିଙ୍କ୍ ପଠାଗଲା! ଆପଣଙ୍କ ଇନବକ୍ସ ଯାଞ୍ଚ କରନ୍ତୁ।';
+
+  @override
+  String get property => 'ସମ୍ପତ୍ତି';
+
+  @override
+  String get featuredProperties => 'ଫିଚର୍ଡ ପ୍ରପର୍ଟି';
+
+  @override
+  String get viewAll => 'ସବୁ ଦେଖନ୍ତୁ';
+
+  @override
+  String get availableNow => 'ଏବେ ଉପଲବ୍ଧ';
+
+  @override
+  String get noPropertiesYet => 'ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ପ୍ରପର୍ଟି ନାହିଁ';
+
+  @override
+  String get showMap => 'ମାନଚିତ୍ର ଦେଖାନ୍ତୁ';
+
+  @override
+  String get whereTo => 'କେଉଁଆଡକୁ ଯିବେ?';
+
+  @override
+  String get payments => 'ପେମେଣ୍ଟ';
+
+  @override
+  String get buy => 'Buy';
+
+  @override
+  String get rent => 'Rent';
+
+  @override
+  String get commercial => 'Commercial';
+
+  @override
+  String get trending => 'Trending';
+
+  @override
+  String get luxe => 'Luxe';
+
+  @override
+  String get apartments => 'Apartments';
+
+  @override
+  String get villas => 'Villas';
+
+  @override
+  String get plots => 'Plots';
+
+  @override
+  String get oneHundredOwnerProperties =>
+      '100% Owner Properties · Zero Brokerage';
+
+  @override
+  String get zeroBrokerageVerified =>
+      'Zero brokerage properties verified by Nestora';
+
+  @override
+  String get postFree => 'Post Free';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get region => 'Region';
+
+  @override
+  String get selectRegion => 'Select Region';
+
+  @override
+  String get searchCountries => 'Search countries...';
 }

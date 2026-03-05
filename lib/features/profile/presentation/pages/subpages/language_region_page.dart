@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/core/providers/locale_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:house_rental/l10n/generated/app_localizations.dart';
 import 'package:house_rental/core/utils/countries.dart';
 
 class LanguageRegionPage extends ConsumerStatefulWidget {
@@ -63,11 +64,11 @@ class _LanguageRegionPageState extends ConsumerState<LanguageRegionPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text("Select Region", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.selectRegion, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   TextField(
                     decoration: InputDecoration(
-                      hintText: "Search countries...",
+                      hintText: AppLocalizations.of(context)!.searchCountries,
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -115,12 +116,12 @@ class _LanguageRegionPageState extends ConsumerState<LanguageRegionPage> {
     final currentLocale = ref.watch(localeProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Language and Region")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.languageAndRegion)),
       body: ListView(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text("Language", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Text(AppLocalizations.of(context)!.language, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           ),
           _buildLanguageTile("English", "en", currentLocale),
           _buildLanguageTile("Hindi (हिन्दी)", "hi", currentLocale),
@@ -131,12 +132,12 @@ class _LanguageRegionPageState extends ConsumerState<LanguageRegionPage> {
           _buildLanguageTile("Odia (ଓଡ଼ିଆ)", "or", currentLocale),
           
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text("Region", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Text(AppLocalizations.of(context)!.region, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           ),
           ListTile(
-            title: const Text("Region"),
+            title: Text(AppLocalizations.of(context)!.region),
             subtitle: Text(_selectedRegion),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: _showRegionPicker,

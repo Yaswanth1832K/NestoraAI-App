@@ -424,12 +424,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildInput() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade50,
         border: Border(
-          top: BorderSide(color: Colors.grey.withOpacity(0.1)),
+          top: BorderSide(color: Colors.grey.withOpacity(0.15)),
         ),
       ),
       child: SafeArea(
@@ -438,10 +439,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             Expanded(
               child: TextField(
                 controller: _messageController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                decoration: InputDecoration(
                   hintText: 'Type a message...',
-                  hintStyle: TextStyle(color: Colors.grey),
+                  hintStyle: TextStyle(
+                      color: isDark ? Colors.grey : Colors.grey.shade500),
                   border: InputBorder.none,
                 ),
                 maxLines: null,
@@ -450,7 +452,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.send, color: Colors.blueAccent),
+              icon: Icon(Icons.send_rounded,
+                  color: Theme.of(context).primaryColor),
               onPressed: () => _sendMessage(),
             ),
           ],

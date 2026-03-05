@@ -188,4 +188,158 @@ class AppLocalizationsEn extends AppLocalizations {
   String availableInCity(Object city) {
     return 'Available in $city this weekend';
   }
+
+  @override
+  String get authTitle => 'Nestora';
+
+  @override
+  String get authTagline => 'Elegant Rentals. Smarter Living.';
+
+  @override
+  String get signIn => 'SIGN IN';
+
+  @override
+  String get signUp => 'SIGN UP';
+
+  @override
+  String get emailAddress => 'EMAIL ADDRESS';
+
+  @override
+  String get emailHint => 'hello@example.com';
+
+  @override
+  String get password => 'PASSWORD';
+
+  @override
+  String get passwordHint => '••••••••';
+
+  @override
+  String get rememberMe => 'Remember Me';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get continueAsGuest => 'Continue as Guest →';
+
+  @override
+  String get fullName => 'FULL NAME';
+
+  @override
+  String get nameHint => 'What should we call you?';
+
+  @override
+  String get joinAs => 'JOIN AS';
+
+  @override
+  String get tenantRole => 'Tenant';
+
+  @override
+  String get ownerRole => 'Owner';
+
+  @override
+  String get createAccount => 'CREATE ACCOUNT';
+
+  @override
+  String get termsAndPrivacy =>
+      'By creating an account you agree to our Terms & Privacy Policy';
+
+  @override
+  String get orContinueWith => 'OR CONTINUE WITH';
+
+  @override
+  String get passwordMatchError => 'Passwords do not match';
+
+  @override
+  String get passwordLengthError => 'Password must be at least 6 characters';
+
+  @override
+  String get fillFieldsError => 'Please fill in all fields';
+
+  @override
+  String get resetPassword => 'Reset Password';
+
+  @override
+  String get resetPasswordInstruction =>
+      'Enter your email to receive a reset link.';
+
+  @override
+  String get sendLink => 'Send Link';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get resetLinkSent => 'Reset link sent! Check your inbox.';
+
+  @override
+  String get property => 'Property';
+
+  @override
+  String get featuredProperties => 'Featured Properties';
+
+  @override
+  String get viewAll => 'View all';
+
+  @override
+  String get availableNow => 'Available now';
+
+  @override
+  String get noPropertiesYet => 'No properties yet';
+
+  @override
+  String get showMap => 'Show map';
+
+  @override
+  String get whereTo => 'Where to?';
+
+  @override
+  String get payments => 'Payments';
+
+  @override
+  String get buy => 'Buy';
+
+  @override
+  String get rent => 'Rent';
+
+  @override
+  String get commercial => 'Commercial';
+
+  @override
+  String get trending => 'Trending';
+
+  @override
+  String get luxe => 'Luxe';
+
+  @override
+  String get apartments => 'Apartments';
+
+  @override
+  String get villas => 'Villas';
+
+  @override
+  String get plots => 'Plots';
+
+  @override
+  String get oneHundredOwnerProperties =>
+      '100% Owner Properties · Zero Brokerage';
+
+  @override
+  String get zeroBrokerageVerified =>
+      'Zero brokerage properties verified by Nestora';
+
+  @override
+  String get postFree => 'Post Free';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get region => 'Region';
+
+  @override
+  String get selectRegion => 'Select Region';
+
+  @override
+  String get searchCountries => 'Search countries...';
 }

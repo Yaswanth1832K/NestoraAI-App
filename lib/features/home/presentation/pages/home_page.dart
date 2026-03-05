@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/l10n/generated/app_localizations.dart';
 
 // ══════════════════════════════════════════════════════════════
 //  HOME PAGE  –  3-tab: Property | Home Services | Payments
@@ -38,9 +39,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   // ── 3 top-level tab cards ─────────────────────────────────
   Widget _topTabs(bool isDark) {
     final tabs = [
-      {'label': 'Property',      'icon': Icons.home_rounded},
-      {'label': 'Home Services', 'icon': Icons.handyman_rounded},
-      {'label': 'Payments',      'icon': Icons.credit_card_rounded},
+      {'label': AppLocalizations.of(context)!.property,      'icon': Icons.home_rounded},
+      {'label': AppLocalizations.of(context)!.homeServices, 'icon': Icons.handyman_rounded},
+      {'label': AppLocalizations.of(context)!.payments,      'icon': Icons.credit_card_rounded},
     ];
     final activeBg   = AppColors.primary;
     final inactiveBg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight2;
@@ -206,9 +207,19 @@ class _PropertyTab extends ConsumerStatefulWidget {
 class _PropertyTabState extends ConsumerState<_PropertyTab> {
   int _sub = 1;   // 0=Buy  1=Rent  2=Commercial
   final _scroll = ScrollController();
+  // Raw English key — used for filter logic (independent of locale display)
   String _selectedCat = 'Trending';
 
-  static const _subtabs  = ['Buy', 'Rent', 'Commercial'];
+  // English display labels for localized subtabs (same order as _subtabs())
+  static const _subKeys = ['Buy', 'Rent', 'Commercial'];
+  // English labels matching the category pills (must stay in sync with pill list)
+  static const _catKeys = ['Trending', 'Luxe', 'Apartments', 'Villas', 'Commercial', 'Plots'];
+
+  static List<String> _subtabs(BuildContext context) => [
+    AppLocalizations.of(context)!.buy,
+    AppLocalizations.of(context)!.rent,
+    AppLocalizations.of(context)!.commercial,
+  ];
 
   @override
   void initState() {
@@ -222,18 +233,68 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
     }
   }
 
-  void _onCatSelected(String cat) {
-    if (_selectedCat == cat) return;
-    setState(() => _selectedCat = cat);
-    
-    // Trigger real filter logic
-    ref.read(paginatedListingsProvider.notifier).loadInitial(
-      filter: ListingFilter(
-        propertyType: (cat == 'Trending' || cat == 'Luxe') ? null : cat,
-        isVerified: cat == 'Trending' ? true : null,
-        maxPrice: cat == 'Luxe' ? 500000 : null,
-      ),
+  /// Build a filter from the current subtab + category combination.
+  ListingFilter _activeFilter() {
+    // --- Category mapping ---
+    String? propertyType;
+    double? minPrice;
+    double? maxPrice;
+    bool? isVerified;
+    int? minBedrooms;
+
+    switch (_selectedCat) {
+      case 'Trending':
+        isVerified = true;          // Only verified / popular
+        break;
+      case 'Luxe':
+        minPrice = 80000;           // High-end properties
+        break;
+      case 'Apartments':
+        propertyType = 'Apartment';
+        break;
+      case 'Villas':
+        propertyType = 'Villa';
+        break;
+      case 'Commercial':
+        propertyType = 'Commercial';
+        break;
+      case 'Plots':
+        propertyType = 'Plot';      // Demoed as Plot type
+        break;
+    }
+
+    // --- Subtab mapping (overrides price band for Rent vs Buy) ---
+    switch (_subKeys[_sub]) {
+      case 'Buy':
+        // No price ceiling override — show all price ranges
+        break;
+      case 'Rent':
+        // Rental range: cap at reasonable monthly rent
+        maxPrice = maxPrice ?? 150000;
+        break;
+      case 'Commercial':
+        propertyType = 'Commercial'; // Subtab always wins for property type
+        break;
+    }
+
+    return ListingFilter(
+      propertyType: propertyType,
+      isVerified: isVerified,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
     );
+  }
+
+  void _onSubSelected(int idx) {
+    if (_sub == idx) return;
+    setState(() => _sub = idx);
+    ref.read(paginatedListingsProvider.notifier).loadInitial(filter: _activeFilter());
+  }
+
+  void _onCatSelected(String catKey) {
+    if (_selectedCat == catKey) return;
+    setState(() => _selectedCat = catKey);
+    ref.read(paginatedListingsProvider.notifier).loadInitial(filter: _activeFilter());
   }
 
   @override
@@ -262,7 +323,7 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Center(
-                      child: Text('100% Owner Properties · Zero Brokerage',
+                      child: Text(AppLocalizations.of(context)!.oneHundredOwnerProperties,
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                               color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)),
                     ),
@@ -277,10 +338,10 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppColors.s24),
                     child: Row(
-                      children: _subtabs.asMap().entries.map((e) {
+                      children: _subtabs(context).asMap().entries.map((e) {
                           final isSel = _sub == e.key;
                           return Expanded(child: GestureDetector(
-                            onTap: () => setState(() => _sub = e.key),
+                            onTap: () => _onSubSelected(e.key),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -312,14 +373,24 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: AppColors.s24, vertical: 4),
-                      children: ['Trending', 'Luxe', 'Apartments', 'Villas', 'Commercial', 'Plots'].map((c) {
-                        final sel = _selectedCat == c;
+                      // Pair localized display label with its raw English key
+                      children: [
+                        [AppLocalizations.of(context)!.trending,   'Trending'],
+                        [AppLocalizations.of(context)!.luxe,       'Luxe'],
+                        [AppLocalizations.of(context)!.apartments, 'Apartments'],
+                        [AppLocalizations.of(context)!.villas,     'Villas'],
+                        [AppLocalizations.of(context)!.commercial, 'Commercial'],
+                        [AppLocalizations.of(context)!.plots,      'Plots'],
+                      ].map((pair) {
+                        final displayLabel = pair[0];
+                        final key = pair[1];
+                        final sel = _selectedCat == key;
                         return Padding(
                           padding: const EdgeInsets.only(right: AppColors.s12),
                           child: FilterChip(
-                            label: Text(c),
+                            label: Text(displayLabel),
                             selected: sel,
-                            onSelected: (v) => _onCatSelected(c),
+                            onSelected: (_) => _onCatSelected(key),
                             backgroundColor: isDark ? AppColors.surfaceDark2 : AppColors.surfaceLight2,
                             selectedColor: AppColors.primary,
                             checkmarkColor: Colors.white,
@@ -370,12 +441,12 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                                   child: Row(children: [
                                     const Icon(Icons.verified_user_rounded, color: Colors.blueAccent, size: 18),
                                     const SizedBox(width: 8),
-                                    Expanded(child: Text('Zero brokerage properties verified by Nestora',
+                                    Expanded(child: Text(AppLocalizations.of(context)!.zeroBrokerageVerified,
                                         style: TextStyle(color: sub, fontSize: 11, fontWeight: FontWeight.w700))),
                                     TextButton(
                                       onPressed: () => context.push(AppRouter.postProperty),
                                       style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                                      child: const Text('Post Free', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 11)),
+                                      child: Text(AppLocalizations.of(context)!.postFree, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 11)),
                                     ),
                                   ]),
                                 ),
@@ -399,8 +470,8 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                                             Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
                                             const SizedBox(width: 12),
                                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                              Text('Where to?', style: TextStyle(color: txt, fontSize: 13, fontWeight: FontWeight.w900)),
-                                              Text('Anywhere · Any week · Add guests', style: TextStyle(color: sub, fontSize: 11, fontWeight: FontWeight.w500)),
+                                              Text(AppLocalizations.of(context)!.whereTo, style: TextStyle(color: txt, fontSize: 13, fontWeight: FontWeight.w900)),
+                                              Text('${AppLocalizations.of(context)!.anywhere} · ${AppLocalizations.of(context)!.anyWeek} · ${AppLocalizations.of(context)!.addGuests}', style: TextStyle(color: sub, fontSize: 11, fontWeight: FontWeight.w500)),
                                             ])),
                                           ]),
                                         ),
@@ -428,13 +499,13 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(AppColors.s24, AppColors.s32, AppColors.s24, AppColors.s16),
                                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                                    Text('Featured Properties',
+                                    Text(AppLocalizations.of(context)!.featuredProperties,
                                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900,
                                             letterSpacing: -0.5, color: txt)),
                                     GestureDetector(
                                       onTap: () => context.push(AppRouter.search),
-                                      child: const Row(children: [
-                                        Text('View all', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 13)),
+                                      child: Row(children: [
+                                        Text(AppLocalizations.of(context)!.viewAll, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 13)),
                                         SizedBox(width: 2),
                                         Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 18),
                                       ]),
@@ -504,34 +575,52 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                               Icon(Icons.home_work_outlined, size: 60,
                                   color: isDark ? Colors.white12 : Colors.black12),
                               const SizedBox(height: 12),
-                              Text('No properties yet',
+                               Text(AppLocalizations.of(context)!.noPropertiesYet,
                                   style: TextStyle(color: isDark ? Colors.white38 : Colors.black38,
                                       fontWeight: FontWeight.w600)),
                             ]),
                           )),
                         )
                       else
-                        SliverToBoxAdapter(
+                      SliverToBoxAdapter(
                           child: Center(
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 1100),
                               child: Padding(
                                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                                child: Column(
-                                  children: List.generate(state.items.length + (state.hasMore ? 1 : 0), (i) {
-                                    if (i == state.items.length) {
-                                      return const Padding(padding: EdgeInsets.all(24),
-                                          child: Center(child: CircularProgressIndicator(color: AppColors.primary)));
-                                    }
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
-                                        child: ListingCard(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    // Always 4 columns; fall back to 2 on very narrow screens
+                                    final cols = constraints.maxWidth > 600 ? 4 : 2;
+                                    final cardWidth = (constraints.maxWidth - (cols - 1) * 12) / cols;
+                                    return GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: cols,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                        // aspect ratio keeps cards a good proportion
+                                        childAspectRatio: cardWidth / 380,
+                                      ),
+                                      itemCount: state.items.length + (state.hasMore ? 1 : 0),
+                                      itemBuilder: (ctx, i) {
+                                        if (i == state.items.length) {
+                                          return const Center(
+                                            child: Padding(
+                                              padding: EdgeInsets.all(16),
+                                              child: CircularProgressIndicator(color: AppColors.primary),
+                                            ),
+                                          );
+                                        }
+                                        return ListingCard(
                                           listing: state.items[i],
                                           isVerticalFeed: true,
                                           margin: EdgeInsets.zero,
-                                        ),
-                                      );
-                                  }),
+                                        );
+                                      },
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -562,11 +651,11 @@ class _PropertyTabState extends ConsumerState<_PropertyTab> {
                   BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 8))
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   Text('Show map', 
-                    style: TextStyle(
+                   Text(AppLocalizations.of(context)!.showMap, 
+                    style: const TextStyle(
                       color: Colors.white, 
                       fontWeight: FontWeight.w900, 
                       fontSize: 14,

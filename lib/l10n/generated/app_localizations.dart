@@ -461,6 +461,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available in {city} this weekend'**
   String availableInCity(Object city);
+
+  /// No description provided for @authTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nestora'**
+  String get authTitle;
+
+  /// No description provided for @authTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Elegant Rentals. Smarter Living.'**
+  String get authTagline;
+
+  /// No description provided for @signIn.
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN IN'**
+  String get signIn;
+
+  /// No description provided for @signUp.
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN UP'**
+  String get signUp;
+
+  /// No description provided for @emailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'EMAIL ADDRESS'**
+  String get emailAddress;
+
+  /// No description provided for @emailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'hello@example.com'**
+  String get emailHint;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'PASSWORD'**
+  String get password;
+
+  /// No description provided for @passwordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'••••••••'**
+  String get passwordHint;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember Me'**
+  String get rememberMe;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get forgotPassword;
+
+  /// No description provided for @continueAsGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as Guest →'**
+  String get continueAsGuest;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'FULL NAME'**
+  String get fullName;
+
+  /// No description provided for @nameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should we call you?'**
+  String get nameHint;
+
+  /// No description provided for @joinAs.
+  ///
+  /// In en, this message translates to:
+  /// **'JOIN AS'**
+  String get joinAs;
+
+  /// No description provided for @tenantRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant'**
+  String get tenantRole;
+
+  /// No description provided for @ownerRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get ownerRole;
+
+  /// No description provided for @createAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATE ACCOUNT'**
+  String get createAccount;
+
+  /// No description provided for @termsAndPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'By creating an account you agree to our Terms & Privacy Policy'**
+  String get termsAndPrivacy;
+
+  /// No description provided for @orContinueWith.
+  ///
+  /// In en, this message translates to:
+  /// **'OR CONTINUE WITH'**
+  String get orContinueWith;
+
+  /// No description provided for @passwordMatchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordMatchError;
+
+  /// No description provided for @passwordLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordLengthError;
+
+  /// No description provided for @fillFieldsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all fields'**
+  String get fillFieldsError;
+
+  /// No description provided for @resetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get resetPassword;
+
+  /// No description provided for @resetPasswordInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email to receive a reset link.'**
+  String get resetPasswordInstruction;
+
+  /// No description provided for @sendLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Link'**
+  String get sendLink;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @resetLinkSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset link sent! Check your inbox.'**
+  String get resetLinkSent;
+
+  /// No description provided for @property.
+  ///
+  /// In en, this message translates to:
+  /// **'Property'**
+  String get property;
+
+  /// No description provided for @featuredProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured Properties'**
+  String get featuredProperties;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAll;
+
+  /// No description provided for @availableNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Available now'**
+  String get availableNow;
+
+  /// No description provided for @noPropertiesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No properties yet'**
+  String get noPropertiesYet;
+
+  /// No description provided for @showMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show map'**
+  String get showMap;
+
+  /// No description provided for @whereTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to?'**
+  String get whereTo;
+
+  /// No description provided for @payments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get payments;
+
+  /// No description provided for @buy.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get buy;
+
+  /// No description provided for @rent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rent'**
+  String get rent;
+
+  /// No description provided for @commercial.
+  ///
+  /// In en, this message translates to:
+  /// **'Commercial'**
+  String get commercial;
+
+  /// No description provided for @trending.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending'**
+  String get trending;
+
+  /// No description provided for @luxe.
+  ///
+  /// In en, this message translates to:
+  /// **'Luxe'**
+  String get luxe;
+
+  /// No description provided for @apartments.
+  ///
+  /// In en, this message translates to:
+  /// **'Apartments'**
+  String get apartments;
+
+  /// No description provided for @villas.
+  ///
+  /// In en, this message translates to:
+  /// **'Villas'**
+  String get villas;
+
+  /// No description provided for @plots.
+  ///
+  /// In en, this message translates to:
+  /// **'Plots'**
+  String get plots;
+
+  /// No description provided for @oneHundredOwnerProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'100% Owner Properties · Zero Brokerage'**
+  String get oneHundredOwnerProperties;
+
+  /// No description provided for @zeroBrokerageVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero brokerage properties verified by Nestora'**
+  String get zeroBrokerageVerified;
+
+  /// No description provided for @postFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Free'**
+  String get postFree;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @region.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get region;
+
+  /// No description provided for @selectRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Region'**
+  String get selectRegion;
+
+  /// No description provided for @searchCountries.
+  ///
+  /// In en, this message translates to:
+  /// **'Search countries...'**
+  String get searchCountries;
 }
 
 class _AppLocalizationsDelegate

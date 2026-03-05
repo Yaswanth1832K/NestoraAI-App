@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:house_rental/core/router/app_router.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/listings/presentation/providers/favorites_notifier.dart';
 import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
@@ -10,17 +13,32 @@ class FavoritesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favoritesAsync = ref.watch(favoriteListingsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
-          "Wishlists",
+          'Wishlists',
           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: -1),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+            child: GlassContainer.standard(
+              context: context,
+              borderRadius: 15,
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.search_rounded, size: 22),
+                onPressed: () => context.push(AppRouter.search),
+              ),
+            ),
+          ),
+        ],
       ),
       body: favoritesAsync.when(
         data: (listings) {
@@ -28,39 +46,110 @@ class FavoritesPage extends ConsumerWidget {
             return _buildEmptyState(context);
           }
 
-          return GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 16,
-              childAspectRatio: 0.65,
-            ),
-            itemCount: listings.length,
+          return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              return ListingCard(
-                listing: listings[index],
-                isCompact: true,
-                isVerticalFeed: true,
-                margin: EdgeInsets.zero,
-              );
-            },
+            child: Center(
+              child: ConstrainedBox(
+                // Match the 1100 px max-width used across the home page
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Count header ───────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16, top: 8),
+                        child: Row(
+                          children: [
+                            Text(
+                              '${listings.length} saved ${listings.length == 1 ? 'property' : 'properties'}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => context.push(AppRouter.search),
+                              child: Text(
+                                'Browse more',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── 4-column grid — identical to home page ─
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Exactly 4 columns on wide screens, 2 on mobile
+                          final cols = constraints.maxWidth > 600 ? 4 : 2;
+                          final spacing = 12.0;
+                          final cardWidth =
+                              (constraints.maxWidth - (cols - 1) * spacing) / cols;
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: cols,
+                              crossAxisSpacing: spacing,
+                              mainAxisSpacing: spacing,
+                              // Same aspect ratio formula as the home page grid
+                              childAspectRatio: cardWidth / 380,
+                            ),
+                            itemCount: listings.length,
+                            itemBuilder: (context, index) {
+                              return ListingCard(
+                                listing: listings[index],
+                                // isVerticalFeed=true so the card fills its cell
+                                isVerticalFeed: true,
+                                margin: EdgeInsets.zero,
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text("Error loading favorites: $err"),
-              TextButton(
-                onPressed: () => ref.refresh(favoriteListingsProvider),
-                child: const Text("Retry"),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    size: 48, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                Text(
+                  'Could not load saved homes\n$err',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: () => ref.refresh(favoriteListingsProvider),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -87,7 +176,7 @@ class FavoritesPage extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             const Text(
-              "No saved homes yet",
+              'No saved homes yet',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
@@ -96,7 +185,7 @@ class FavoritesPage extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "Start exploring and save your favorite\nproperties to view them here.",
+              'Start exploring and save your favorite\nproperties to view them here.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -108,11 +197,13 @@ class FavoritesPage extends ConsumerWidget {
             const SizedBox(height: 48),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // This is a bit of a hack, but it works for now
-                  // Navigate to exploration via root navigator if needed
-                },
+              child: ElevatedButton.icon(
+                onPressed: () => context.go(AppRouter.home),
+                icon: const Icon(Icons.explore_rounded),
+                label: const Text(
+                  'Explore Properties',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
@@ -121,10 +212,6 @@ class FavoritesPage extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   elevation: 0,
-                ),
-                child: const Text(
-                  'Explore Properties',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                 ),
               ),
             ),

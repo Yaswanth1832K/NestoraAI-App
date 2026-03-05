@@ -8,6 +8,7 @@ import 'package:house_rental/features/auth/presentation/providers/auth_providers
 import 'package:uuid/uuid.dart';
 import 'package:house_rental/features/notifications/domain/entities/notification_entity.dart';
 import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:house_rental/l10n/generated/app_localizations.dart';
 
 // ── Brand colors ──────────────────────────────────────────────
 const _kPurple     = Color(0xFF7C5CBF);
@@ -62,7 +63,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
   // ── Actions ──────────────────────────────────────────────────
   Future<void> _login() async {
     if (_loginEmail.text.trim().isEmpty || _loginPassword.text.isEmpty) {
-      return setState(() => _error = 'Please fill in all fields');
+      return setState(() => _error = AppLocalizations.of(context)!.fillFieldsError);
     }
     setState(() { _loading = true; _error = null; });
     final res = await ref.read(signInUseCaseProvider).call(
@@ -84,13 +85,13 @@ class _AuthPageState extends ConsumerState<AuthPage>
   Future<void> _signup() async {
     if (_regName.text.trim().isEmpty || _regEmail.text.trim().isEmpty ||
         _regPassword.text.isEmpty) {
-      return setState(() => _error = 'Please fill in all fields');
+      return setState(() => _error = AppLocalizations.of(context)!.fillFieldsError);
     }
     if (_regPassword.text != _regConfirm.text) {
-      return setState(() => _error = 'Passwords do not match');
+      return setState(() => _error = AppLocalizations.of(context)!.passwordMatchError);
     }
     if (_regPassword.text.length < 6) {
-      return setState(() => _error = 'Password must be at least 6 characters');
+      return setState(() => _error = AppLocalizations.of(context)!.passwordLengthError);
     }
     setState(() { _loading = true; _error = null; });
     final res = await ref.read(signUpUseCaseProvider).call(
@@ -116,17 +117,17 @@ class _AuthPageState extends ConsumerState<AuthPage>
       AlertDialog(
         backgroundColor: _kCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text('Reset Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+        title: Text(AppLocalizations.of(context)!.resetPassword, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Enter your email to receive a reset link.',
-              style: TextStyle(color: Colors.white60, fontSize: 13)),
+          Text(AppLocalizations.of(context)!.resetPasswordInstruction,
+              style: const TextStyle(color: Colors.white60, fontSize: 13)),
           const SizedBox(height: 18),
           TextField(
             controller: emailCtrl,
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'Email address',
+              hintText: AppLocalizations.of(context)!.emailHint,
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true, fillColor: _kCard2,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -138,19 +139,19 @@ class _AuthPageState extends ConsumerState<AuthPage>
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
+              child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white38))),
           GestureDetector(
             onTap: () async {
               if (emailCtrl.text.trim().isEmpty) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reset link sent! Check your inbox.'),
+                  SnackBar(content: Text(AppLocalizations.of(context)!.resetLinkSent),
                       backgroundColor: _kPurple));
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(color: _kPurple, borderRadius: BorderRadius.circular(10)),
-              child: const Text('Send Link', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              child: Text(AppLocalizations.of(context)!.sendLink, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
             ),
           ),
         ],
@@ -305,8 +306,8 @@ class _HeroSection extends StatelessWidget {
             RichText(
               text: TextSpan(
                 children: [
-                  const TextSpan(
-                    text: 'Nestora',
+                  TextSpan(
+                    text: AppLocalizations.of(context)!.authTitle,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
@@ -327,7 +328,7 @@ class _HeroSection extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Elegant Rentals. Smarter Living.',
+              AppLocalizations.of(context)!.authTagline,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: 16,
@@ -375,7 +376,7 @@ class _TabSelector extends StatelessWidget {
         labelColor: Colors.white,
         unselectedLabelColor: Colors.white38,
         labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.8),
-        tabs: const [Tab(text: 'SIGN IN'), Tab(text: 'SIGN UP')],
+        tabs: [Tab(text: AppLocalizations.of(context)!.signIn), Tab(text: AppLocalizations.of(context)!.signUp)],
       ),
     );
   }
@@ -488,12 +489,11 @@ class _PrimaryBtn extends StatelessWidget {
   }
 }
 
-// ── Social divider ─────────────────────────────────────────────
-Widget _orDivider() => const Row(children: [
-  Expanded(child: Divider(color: Colors.white10, thickness: 1.5)),
-  Padding(padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Text('OR CONTINUE WITH', style: TextStyle(color: Colors.white24, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5))),
-  Expanded(child: Divider(color: Colors.white10, thickness: 1.5)),
+Widget _orDivider(BuildContext context) => Row(children: [
+  const Expanded(child: Divider(color: Colors.white10, thickness: 1.5)),
+  Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Text(AppLocalizations.of(context)!.orContinueWith, style: const TextStyle(color: Colors.white24, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5))),
+  const Expanded(child: Divider(color: Colors.white10, thickness: 1.5)),
 ]);
 
 // ── Social button ──────────────────────────────────────────────
@@ -545,20 +545,20 @@ class _LoginForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Padding(
-        padding: EdgeInsets.only(left: 4, bottom: 8),
-        child: Text('EMAIL ADDRESS', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(AppLocalizations.of(context)!.emailAddress, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
-      _Field(ctrl: emailCtrl, hint: 'hello@example.com',
+      _Field(ctrl: emailCtrl, hint: AppLocalizations.of(context)!.emailHint,
           icon: Icons.alternate_email_rounded, keyboard: TextInputType.emailAddress),
 
       const SizedBox(height: 20),
-      const Padding(
-        padding: EdgeInsets.only(left: 4, bottom: 8),
-        child: Text('PASSWORD', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(AppLocalizations.of(context)!.password, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
       _Field(
-        ctrl: pwCtrl, hint: '••••••••',
+        ctrl: pwCtrl, hint: AppLocalizations.of(context)!.passwordHint,
         icon: Icons.lock_rounded, obscure: !pwVisible,
         suffix: IconButton(
           icon: Icon(pwVisible ? Icons.visibility_off_rounded : Icons.visibility_rounded,
@@ -584,25 +584,25 @@ class _LoginForm extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('Remember Me', style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(AppLocalizations.of(context)!.rememberMe, style: const TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w600)),
             ],
           ),
           TextButton(
             onPressed: onForgot,
-            child: const Text('Forgot Password?',
-                style: TextStyle(color: _kPurpleGlow, fontWeight: FontWeight.w800, fontSize: 14)),
+            child: Text(AppLocalizations.of(context)!.forgotPassword,
+                style: const TextStyle(color: _kPurpleGlow, fontWeight: FontWeight.w800, fontSize: 14)),
           ),
         ],
       ),
 
       const SizedBox(height: 24),
-      _PrimaryBtn(label: 'SIGN IN', onTap: onLogin, loading: loading),
+      _PrimaryBtn(label: AppLocalizations.of(context)!.signIn, onTap: onLogin, loading: loading),
       const SizedBox(height: 24),
       Center(
         child: TextButton(
           onPressed: onGuest,
-          child: const Text('Continue as Guest →',
-              style: TextStyle(color: Colors.white38, fontWeight: FontWeight.w700, fontSize: 14)),
+          child: Text(AppLocalizations.of(context)!.continueAsGuest,
+              style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.w700, fontSize: 14)),
         ),
       ),
     ]);
@@ -631,27 +631,27 @@ class _SignupForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Padding(
-        padding: EdgeInsets.only(left: 4, bottom: 8),
-        child: Text('FULL NAME', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(AppLocalizations.of(context)!.fullName, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
-      _Field(ctrl: nameCtrl, hint: 'What should we call you?', icon: Icons.person_rounded),
+      _Field(ctrl: nameCtrl, hint: AppLocalizations.of(context)!.nameHint, icon: Icons.person_rounded),
 
       const SizedBox(height: 20),
-      const Padding(
-        padding: EdgeInsets.only(left: 4, bottom: 8),
-        child: Text('EMAIL ADDRESS', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(AppLocalizations.of(context)!.emailAddress, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
-      _Field(ctrl: emailCtrl, hint: 'hello@example.com',
+      _Field(ctrl: emailCtrl, hint: AppLocalizations.of(context)!.emailHint,
           icon: Icons.alternate_email_rounded, keyboard: TextInputType.emailAddress),
 
       const SizedBox(height: 20),
-      const Padding(
-        padding: EdgeInsets.only(left: 4, bottom: 8),
-        child: Text('PASSWORD', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(AppLocalizations.of(context)!.password, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
       _Field(
-        ctrl: pwCtrl, hint: 'Min. 6 characters',
+        ctrl: pwCtrl, hint: AppLocalizations.of(context)!.passwordHint,
         icon: Icons.lock_rounded, obscure: !pwVisible,
         suffix: IconButton(
           icon: Icon(pwVisible ? Icons.visibility_off_rounded : Icons.visibility_rounded,
@@ -661,24 +661,24 @@ class _SignupForm extends StatelessWidget {
       ),
 
       const SizedBox(height: 24),
-      const Text('JOIN AS', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      Text(AppLocalizations.of(context)!.joinAs, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: _RoleChip(selected: role == 'renter', label: 'Tenant',
+        Expanded(child: _RoleChip(selected: role == 'renter', label: AppLocalizations.of(context)!.tenantRole,
             icon: Icons.home_rounded, onTap: () => onRoleChange('renter'))),
         const SizedBox(width: 16),
-        Expanded(child: _RoleChip(selected: role == 'owner', label: 'Owner',
+        Expanded(child: _RoleChip(selected: role == 'owner', label: AppLocalizations.of(context)!.ownerRole,
             icon: Icons.vpn_key_rounded, onTap: () => onRoleChange('owner'))),
       ]),
 
       const SizedBox(height: 32),
-      _PrimaryBtn(label: 'CREATE ACCOUNT', onTap: onSignup, loading: loading),
+      _PrimaryBtn(label: AppLocalizations.of(context)!.createAccount, onTap: onSignup, loading: loading),
       const SizedBox(height: 24),
 
-      const Center(
-        child: Text('By creating an account you agree to our Terms & Privacy Policy',
+      Center(
+        child: Text(AppLocalizations.of(context)!.termsAndPrivacy,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white24, fontSize: 11)),
+            style: const TextStyle(color: Colors.white24, fontSize: 11)),
       ),
     ]);
   }

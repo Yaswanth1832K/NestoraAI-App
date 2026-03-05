@@ -91,7 +91,7 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        width: widget.isVerticalFeed ? double.infinity : 300.0,
+        width: widget.isVerticalFeed ? double.infinity : null,
         margin: widget.margin ?? EdgeInsets.only(right: AppColors.s24, bottom: AppColors.s32),
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -113,9 +113,30 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
                   child: SizedBox(
-                    height: widget.isCompact ? 160 : 220, // Stable height to prevent overflows
+                    height: widget.isCompact ? 160 : 220,
                     width: double.infinity,
                     child: _buildImageGallery(isDark),
+                  ),
+                ),
+                // Dot indicators
+                Positioned(
+                  bottom: 8,
+                  right: 12,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(3, (i) {
+                      final active = _currentImageIndex == i;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.only(left: 4),
+                        width: active ? 16 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: active ? Colors.white : Colors.white54,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      );
+                    }),
                   ),
                 ),
                 
@@ -362,21 +383,67 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
     );
   }
 
+  /// A large, diverse pool of curated Unsplash house/apartment photos.
+  static const _fallbackPool = [
+    'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80',
+    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+    'https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=800&q=80',
+    'https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80',
+    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=80',
+    'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
+    'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?w=800&q=80',
+    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&q=80',
+    'https://images.unsplash.com/photo-1556020685-ae41abfc9365?w=800&q=80',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    'https://images.unsplash.com/photo-1504615755583-2916b52192a3?w=800&q=80',
+    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
+    'https://images.unsplash.com/photo-1464146072230-91cabc968266?w=800&q=80',
+    'https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?w=800&q=80',
+    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+    'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&q=80',
+    'https://images.unsplash.com/photo-1559767949-0faa5c7e9992?w=800&q=80',
+    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80',
+    'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80',
+    'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800&q=80',
+  ];
+
+  /// Returns exactly 3 unique image URLs for this card.
+  /// Starts from the listing's own images (de-duped), then fills gaps
+  /// from the fallback pool using a deterministic offset from the listing id
+  /// so every card gets a different set of fallbacks.
+  List<String> _buildThreeImages() {
+    // De-duplicate listing images while preserving order.
+    final seen = <String>{};
+    final unique = widget.listing.allImages.where((u) => u.isNotEmpty && seen.add(u)).toList();
+
+    final result = unique.take(3).toList();
+
+    if (result.length < 3) {
+      // Deterministic offset based on listing id hash so cards differ from each other.
+      final offset = widget.listing.id.hashCode.abs() % _fallbackPool.length;
+      var idx = offset;
+      while (result.length < 3) {
+        final candidate = _fallbackPool[idx % _fallbackPool.length];
+        if (!result.contains(candidate)) result.add(candidate);
+        idx++;
+      }
+    }
+
+    return result;
+  }
+
   Widget _buildImageGallery(bool isDark) {
-    final urls = widget.listing.allImages;
+    final urls = _buildThreeImages();
     final placeholder = Shimmer.fromColors(
       baseColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFEBEBEB),
       highlightColor: isDark ? const Color(0xFF222222) : const Color(0xFFF5F5F5),
       child: Container(color: Colors.white),
     );
 
-    if (urls.isEmpty) {
-      return Container(
-        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
-        child: Icon(Icons.home_rounded, size: 48, color: isDark ? Colors.white10 : Colors.black12),
-      );
-    }
-    
     return PageView.builder(
       controller: _pageController,
       physics: const BouncingScrollPhysics(),

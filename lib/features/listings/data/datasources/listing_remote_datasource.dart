@@ -4,6 +4,7 @@ import 'package:house_rental/core/errors/exceptions.dart';
 import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
 import 'package:house_rental/features/listings/data/models/listing_model.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/utils/demo_listings_data.dart';
 
 abstract interface class ListingRemoteDataSource {
   Future<List<ListingModel>> getListings({
@@ -98,6 +99,41 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
 
       final querySnapshot = await query.limit(limit).get();
 
+      if (querySnapshot.docs.isEmpty && lastListingId == null) {
+        // Fallback to demo data — pass the active filter so results differ by selection
+        final cities = DemoListingsData.cityCenters.keys.take(8).toList();
+        List<ListingModel> allDemo = [];
+        for (var city in cities) {
+          allDemo.addAll(
+            DemoListingsData.generateDemoListings(city, 3, filter: filter)
+                .map((e) => ListingModel.fromEntity(e)),
+          );
+        }
+        // In-memory filter for price/type (Firestore can't query local data)
+        if (filter != null) {
+          allDemo = allDemo.where((l) {
+            if (filter.propertyType != null && l.propertyType != filter.propertyType) return false;
+            if (filter.minPrice != null && l.price < filter.minPrice!) return false;
+            if (filter.maxPrice != null && l.price > filter.maxPrice!) return false;
+            if (filter.isVerified == true && !l.isVerified) {
+              // For demo, treat high-rating (>=4.5) as "verified"
+              if (l.averageRating < 4.5) return false;
+            }
+            return true;
+          }).toList();
+        }
+        // For Luxe with no results, fall back to high price band
+        if (allDemo.isEmpty && filter?.minPrice != null) {
+          allDemo = DemoListingsData.cityCenters.keys
+              .take(4)
+              .expand((city) => DemoListingsData.generateDemoListings(city, 2)
+                  .map((e) => ListingModel.fromEntity(e)))
+              .toList();
+        }
+        allDemo.shuffle();
+        return allDemo.take(limit).toList();
+      }
+
       return querySnapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id; // Fallback handle: ensure ID is present from document ID
@@ -113,12 +149,27 @@ class ListingRemoteDataSourceImpl implements ListingRemoteDataSource {
     try {
       final docSnapshot = await _firestore.collection(FirestoreConstants.listings).doc(id).get();
       if (!docSnapshot.exists) {
+        // Fallback for demo properties
+        if (id.startsWith('demo_')) {
+          final parts = id.split('_');
+          if (parts.length >= 4) {
+             final rawCity = parts[1];
+             final city = DemoListingsData.cityCenters.keys.firstWhere(
+               (c) => c.toLowerCase() == rawCity.toLowerCase(),
+               orElse: () => rawCity,
+             );
+             final listings = DemoListingsData.generateDemoListings(city, 20);
+             final listing = listings.firstWhere((l) => l.id == id, orElse: () => throw const ServerException(message: 'Listing not found'));
+             return ListingModel.fromEntity(listing);
+          }
+        }
         throw const ServerException(message: 'Listing not found');
       }
       final data = docSnapshot.data() as Map<String, dynamic>;
       data['id'] = docSnapshot.id; // Map doc ID back to entity
       return ListingModel.fromJson(data);
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
