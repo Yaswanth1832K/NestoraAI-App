@@ -8,6 +8,7 @@ import 'package:house_rental/features/profile/presentation/pages/profile_page.da
 import 'package:house_rental/features/profile/presentation/pages/login_security_page.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
+import 'package:house_rental/features/reviews/presentation/review_screen.dart';
 import 'package:house_rental/features/listings/presentation/pages/post_property_page.dart';
 import 'package:house_rental/core/router/splash_screen.dart';
 import 'package:house_rental/features/visit_requests/presentation/pages/owner_requests_page.dart';
@@ -32,7 +33,8 @@ import 'package:house_rental/features/rent_payments/presentation/pages/home_loan
 import 'package:house_rental/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:house_rental/features/ai_services/presentation/recommendations_view.dart';
 import 'package:house_rental/core/navigation/main_navigation.dart';
-// import 'package:house_rental/features/chat/presentation/pages/inbox_page.dart'; // Removed old import to avoid conflict
+import 'package:house_rental/features/rewards/presentation/pages/my_rewards_page.dart';
+import 'package:house_rental/features/rewards/presentation/pages/booking_spin_page.dart';
 import 'package:flutter/material.dart';
 import 'package:house_rental/features/home/presentation/pages/home_page.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_page.dart';
@@ -246,6 +248,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRouter.aiRecommendations,
         builder: (context, state) => const RecommendationsView(),
       ),
+      GoRoute(
+        path: AppRouter.myRewards,
+        builder: (context, state) => const MyRewardsPage(),
+      ),
+      GoRoute(
+        path: AppRouter.bookingSpin,
+        builder: (context, state) => const BookingSpinPage(),
+      ),
+      GoRoute(
+        path: AppRouter.review,
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          return ReviewScreen(
+            listingId: extras['listingId'],
+            listingTitle: extras['listingTitle'],
+            ownerId: extras['ownerId'],
+            bookingId: extras['bookingId'],
+          );
+        },
+      ),
     ],
   );
 });
@@ -287,4 +309,7 @@ final class AppRouter {
   static const String rentalAgreements = '/rental-agreements';
   static const String homeLoans = '/home-loans';
   static const String aiRecommendations = '/ai-recommendations';
+  static const String myRewards = '/my-rewards';
+  static const String bookingSpin = '/booking-spin';
+  static const String review = '/review';
 }
