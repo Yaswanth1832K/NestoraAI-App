@@ -44,14 +44,30 @@ class ProfilePage extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    AppLocalizations.of(context)!.profileTitle,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 32,
-                      color: textColor,
-                      letterSpacing: -1,
-                    ),
+                  Row(
+                    children: [
+                      if (context.canPop()) ...[
+                        GlassContainer.standard(
+                          context: context,
+                          borderRadius: 40,
+                          padding: EdgeInsets.zero,
+                          child: IconButton(
+                            icon: Icon(Icons.arrow_back_rounded, size: 24, color: textColor),
+                            onPressed: () => context.pop(),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                      Text(
+                        AppLocalizations.of(context)!.profileTitle,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 32,
+                          color: textColor,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                    ],
                   ),
                   GlassContainer.standard(
                     context: context,

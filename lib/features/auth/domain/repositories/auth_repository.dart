@@ -36,4 +36,13 @@ abstract interface class AuthRepository {
 
   /// Update FCM token for push notifications
   Future<Either<Failure, void>> updateFcmToken(String token);
+
+  /// Sign in with Google
+  Future<Either<Failure, UserEntity>> signInWithGoogle();
+
+  /// Sign in with Facebook
+  Future<Either<Failure, UserEntity>> signInWithFacebook();
+
+  /// Sign in with Apple
+  Future<Either<Failure, UserEntity>> signInWithApple();
 }

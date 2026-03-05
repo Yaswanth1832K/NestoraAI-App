@@ -212,6 +212,51 @@ class _AuthPageState extends ConsumerState<AuthPage>
     );
   }
 
+  /// ── Google Sign-In ───────────────────────────────────────────
+  Future<void> _googleSignIn() async {
+    setState(() { _loading = true; _error = null; });
+    final result = await ref.read(signInWithGoogleProvider)();
+    if (!mounted) return;
+    setState(() => _loading = false);
+    // result is Either<Failure, UserEntity>
+    result.fold(
+      (failure) => setState(() => _error = failure.message),
+      (user) {
+        if (mounted) context.go(AppRouter.home);
+      },
+    );
+  }
+
+  /// ── Facebook Sign-In ─────────────────────────────────────────
+  Future<void> _facebookSignIn() async {
+    setState(() { _loading = true; _error = null; });
+    final result = await ref.read(signInWithFacebookProvider)();
+    if (!mounted) return;
+    setState(() => _loading = false);
+    // result is Either<Failure, UserEntity>
+    result.fold(
+      (failure) => setState(() => _error = failure.message),
+      (user) {
+        if (mounted) context.go(AppRouter.home);
+      },
+    );
+  }
+
+  /// ── Apple Sign-In ────────────────────────────────────────────
+  Future<void> _appleSignIn() async {
+    setState(() { _loading = true; _error = null; });
+    final result = await ref.read(signInWithAppleProvider)();
+    if (!mounted) return;
+    setState(() => _loading = false);
+    // result is Either<Failure, UserEntity>
+    result.fold(
+      (failure) => setState(() => _error = failure.message),
+      (user) {
+        if (mounted) context.go(AppRouter.home);
+      },
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -288,6 +333,40 @@ class _AuthPageState extends ConsumerState<AuthPage>
                           ],
                         ),
                       ),
+                    ),
+
+                    // ── Social sign-in divider + buttons ──────────
+                    const SizedBox(height: 28),
+                    _orDivider(context),
+                    const SizedBox(height: 20),
+
+                    // Google
+                    _SocialBtn(
+                      icon: Icons.g_mobiledata_rounded,
+                      label: 'Continue with Google',
+                      loading: _loading,
+                      onTap: _loading ? null : _googleSignIn,
+                      iconColor: const Color(0xFFEA4335),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Facebook
+                    _SocialBtn(
+                      icon: Icons.facebook_rounded,
+                      label: 'Continue with Facebook',
+                      loading: _loading,
+                      iconColor: const Color(0xFF1877F2),
+                      onTap: _loading ? null : _facebookSignIn,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Apple (iOS/macOS only in production, shown for all for UI completeness)
+                    _SocialBtn(
+                      icon: Icons.apple_rounded,
+                      label: 'Continue with Apple',
+                      loading: _loading,
+                      iconColor: Colors.white,
+                      onTap: _loading ? null : _appleSignIn,
                     ),
                   ]),
                 ),
@@ -554,25 +633,51 @@ class _SocialBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+  final Color iconColor;
+  final bool loading;
 
-  const _SocialBtn({required this.icon, required this.label, this.onTap});
+  const _SocialBtn({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.iconColor = Colors.white,
+    this.loading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: loading ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         height: 56,
         decoration: BoxDecoration(
           color: _kCard,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(
+            color: loading
+                ? _kPurple.withOpacity(0.4)
+                : Colors.white.withOpacity(0.07),
+          ),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 24, color: Colors.white),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
-        ]),
+        child: loading
+            ? const Center(
+                child: SizedBox(
+                  width: 22, height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5, color: Colors.white70,
+                  ),
+                ),
+              )
+            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(icon, size: 26, color: iconColor),
+                const SizedBox(width: 12),
+                Text(label,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
+              ]),
       ),
     );
   }

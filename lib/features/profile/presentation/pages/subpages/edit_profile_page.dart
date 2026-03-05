@@ -110,15 +110,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   _pickImage(ImageSource.gallery);
                 },
               ),
-              // Camera only available on non-web
-              if (!kIsWeb)
-                ListTile(
-                  leading: const Icon(Icons.photo_camera_rounded,
-                      color: AppColors.primary),
-                  title: const Text('Take a Photo',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded,
+                    color: AppColors.primary),
+                title: const Text('Take a Photo',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  if (kIsWeb) {
+                    _pickImage(ImageSource.camera);
+                  } else {
                     var status = await Permission.camera.status;
                     if (!status.isGranted) {
                       status = await Permission.camera.request();
@@ -146,8 +147,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                         ),
                       );
                     }
-                  },
-                ),
+                  }
+                },
+              ),
               if (_currentPhotoUrl != null || _pickedFile != null)
                 ListTile(
                   leading: const Icon(Icons.delete_outline_rounded,

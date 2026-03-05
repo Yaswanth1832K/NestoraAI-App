@@ -1,5 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter/foundation.dart';
 import 'package:house_rental/features/auth/data/models/user_model.dart';
 import 'package:house_rental/core/errors/exceptions.dart';
 
@@ -16,6 +20,12 @@ abstract interface class AuthRemoteDataSource {
   });
   Future<void> updateUserRole(String uid, String newRole);
   Future<void> updateFcmToken(String token);
+  /// Sign in with Google OAuth
+  Future<UserModel> signInWithGoogle();
+  /// Sign in with Facebook OAuth
+  Future<UserModel> signInWithFacebook();
+  /// Sign in with Apple OAuth
+  Future<UserModel> signInWithApple();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -165,6 +175,105 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'fcmToken': token,
         'lastActive': FieldValue.serverTimestamp(),
       });
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  // ── Google Sign-In ────────────────────────────────────────────
+  @override
+  Future<UserModel> signInWithGoogle() async {
+    try {
+      final googleSignIn = GoogleSignIn(
+        clientId: '629169100807-k0e0lks9pu8v46oj2ahk0714maqh8pra.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw const ServerException(message: 'Google Sign-In cancelled');
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final userCredential =
+          await _firebaseAuth.signInWithCredential(credential);
+      if (userCredential.user == null) {
+        throw const ServerException(message: 'Google Sign-In failed');
+      }
+      return await _ensureUserDocument(userCredential.user!);
+    } on ServerException {
+      rethrow;
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  // ── Facebook Sign-In ──────────────────────────────────────────
+  @override
+  Future<UserModel> signInWithFacebook() async {
+    try {
+      UserCredential userCredential;
+      if (kIsWeb) {
+        final provider = FacebookAuthProvider();
+        userCredential = await _firebaseAuth.signInWithPopup(provider);
+      } else {
+        final LoginResult facebookResult = await FacebookAuth.instance.login();
+        if (facebookResult.status == LoginStatus.success) {
+          final OAuthCredential credential = FacebookAuthProvider.credential(
+            facebookResult.accessToken!.tokenString,
+          );
+          userCredential = await _firebaseAuth.signInWithCredential(credential);
+        } else if (facebookResult.status == LoginStatus.cancelled) {
+          throw const ServerException(message: 'Facebook Sign-In cancelled');
+        } else {
+          throw ServerException(message: facebookResult.message ?? 'Facebook Sign-In failed');
+        }
+      }
+
+      if (userCredential.user == null) {
+        throw const ServerException(message: 'Facebook Sign-In failed');
+      }
+      return await _ensureUserDocument(userCredential.user!);
+    } on ServerException {
+      rethrow;
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  // ── Apple Sign-In ─────────────────────────────────────────────
+  @override
+  Future<UserModel> signInWithApple() async {
+    try {
+      UserCredential userCredential;
+      if (kIsWeb) {
+        final provider = AppleAuthProvider();
+        userCredential = await _firebaseAuth.signInWithPopup(provider);
+      } else {
+        final AuthorizationCredentialAppleID appleIdCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+        );
+
+        final OAuthProvider oAuthProvider = OAuthProvider('apple.com');
+        final AuthCredential credential = oAuthProvider.credential(
+          idToken: appleIdCredential.identityToken,
+          accessToken: appleIdCredential.authorizationCode,
+        );
+
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
+      }
+
+      if (userCredential.user == null) {
+        throw const ServerException(message: 'Apple Sign-In failed');
+      }
+      return await _ensureUserDocument(userCredential.user!);
+    } on ServerException {
+      rethrow;
     } catch (e) {
       throw ServerException(message: e.toString());
     }

@@ -204,4 +204,88 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, UserEntity>> signInWithGoogle() async {
+    try {
+      final user = await _remoteDataSource.signInWithGoogle();
+      // Send a welcome notification on first social login
+      try {
+        await _notificationRepository.addNotification(
+          user.uid,
+          NotificationEntity(
+            id: _uuid.v4(),
+            title: 'Welcome to Nestora!',
+            body: 'Signed in with Google. Explore properties or list your own!',
+            timestamp: DateTime.now(),
+            type: 'system',
+            isRead: false,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Notification Error (Google Sign-In): $e');
+      }
+      return Right(user);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, UserEntity>> signInWithFacebook() async {
+    try {
+      final user = await _remoteDataSource.signInWithFacebook();
+      // Send a welcome notification on first social login
+      try {
+        await _notificationRepository.addNotification(
+          user.uid,
+          NotificationEntity(
+            id: _uuid.v4(),
+            title: 'Welcome to Nestora!',
+            body: 'Signed in with Facebook. Explore properties or list your own!',
+            timestamp: DateTime.now(),
+            type: 'system',
+            isRead: false,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Notification Error (Facebook Sign-In): $e');
+      }
+      return Right(user);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, UserEntity>> signInWithApple() async {
+    try {
+      final user = await _remoteDataSource.signInWithApple();
+      // Send a welcome notification on first social login
+      try {
+        await _notificationRepository.addNotification(
+          user.uid,
+          NotificationEntity(
+            id: _uuid.v4(),
+            title: 'Welcome to Nestora!',
+            body: 'Signed in with Apple. Explore properties or list your own!',
+            timestamp: DateTime.now(),
+            type: 'system',
+            isRead: false,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Notification Error (Apple Sign-In): $e');
+      }
+      return Right(user);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 }

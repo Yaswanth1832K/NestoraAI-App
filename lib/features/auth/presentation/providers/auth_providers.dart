@@ -70,6 +70,21 @@ final updateFcmTokenUseCaseProvider = Provider<UpdateFcmTokenUseCase>((ref) {
   return UpdateFcmTokenUseCase(ref.read(authRepositoryProvider));
 });
 
+/// Callable provider that triggers Google OAuth → Firebase sign-in
+final signInWithGoogleProvider = Provider<Future<dynamic> Function()>((ref) {
+  return () => ref.read(authRepositoryProvider).signInWithGoogle();
+});
+
+/// Callable provider that triggers Facebook OAuth → Firebase sign-in
+final signInWithFacebookProvider = Provider<Future<dynamic> Function()>((ref) {
+  return () => ref.read(authRepositoryProvider).signInWithFacebook();
+});
+
+/// Callable provider that triggers Apple OAuth → Firebase sign-in
+final signInWithAppleProvider = Provider<Future<dynamic> Function()>((ref) {
+  return () => ref.read(authRepositoryProvider).signInWithApple();
+});
+
 // Role-based Providers (Real-time)
 final currentUserProvider = StreamProvider<UserEntity?>((ref) {
   final authState = ref.watch(authStateProvider);
