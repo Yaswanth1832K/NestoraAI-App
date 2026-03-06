@@ -17,6 +17,7 @@ class FavoritesPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text(
           'Wishlists',
@@ -88,34 +89,27 @@ class FavoritesPage extends ConsumerWidget {
                         ),
                       ),
 
-                      // ── 4-column grid — identical to home page ─
+                      // ── Grid logic — one per row on small mobile ─
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          // Guard against infinite width on first web frame
-                          final w = constraints.maxWidth.isFinite
-                              ? constraints.maxWidth
-                              : 800.0; // safe fallback
-                          final cols = w > 600 ? 4 : 2;
+                          final w = constraints.maxWidth.isFinite ? constraints.maxWidth : 800.0;
+                          final cols = w > 700 ? 4 : (w > 450 ? 2 : 1);
                           final spacing = 12.0;
-                          final cardWidth =
-                              (w - (cols - 1) * spacing) / cols;
+                          final cardWidth = (w - (cols - 1) * spacing) / cols;
 
                           return GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: cols,
                               crossAxisSpacing: spacing,
                               mainAxisSpacing: spacing,
-                              // Same aspect ratio formula as the home page grid
-                              childAspectRatio: cardWidth / 380,
+                              childAspectRatio: cardWidth / (cols == 1 ? 420 : 380),
                             ),
                             itemCount: listings.length,
                             itemBuilder: (context, index) {
                               return ListingCard(
                                 listing: listings[index],
-                                // isVerticalFeed=true so the card fills its cell
                                 isVerticalFeed: true,
                                 margin: EdgeInsets.zero,
                               );
@@ -123,7 +117,6 @@ class FavoritesPage extends ConsumerWidget {
                           );
                         },
                       ),
-
                     ],
                   ),
                 ),

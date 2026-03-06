@@ -5,32 +5,34 @@ import 'dart:math';
 
 class DemoListingsData {
   static final List<String> houseImages = [
-    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1600607687940-4e2a09695d51?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1613977257363-707ba9343219?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1600210491816-639c32e54011?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1600566753086-00f18fb6f3ea?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&q=80&w=1200',
   ];
 
   static final List<String> apartmentImages = [
-    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1600566753190-17f0bb2a6c3e?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1464890100898-a385f744067f?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1493246507139-91e8bef99c17?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&q=80&w=1200',
   ];
 
   static final List<String> villaImages = [
-    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800', 
-    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&q=80&w=800', 
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1511840636560-acee95b3a83f?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1605276374104-aa2a1e1b8543?auto=format&fit=crop&q=80&w=1200',
   ];
 
   static const Map<String, List<double>> cityCenters = {
@@ -78,21 +80,18 @@ class DemoListingsData {
     List<String> source;
     if (type == 'Apartment') {
       source = [
-        '1583608205776-bfd35f0d9f83', '1600566753190-17f0bb2a6c3e', '1493663284031-b7e3aefcae8e', '1502672260266-1c1ef2d93688',
-        '1512918728675-ed5a9ecdebfd', '1522708323590-d24dbb6b0267', '1464890100898-a385f744067f', '1515263487990-61b07816b324',
-        '1600585154340-be6161a56a0c', '1545324418-cc1a3fa10c00', '1574362844344-1427bc7b8d7c', '1564013799919-ab600027ffc6'
+        '1545324418-cc1a3fa10c00', '1522708323590-d24dbb6b0267', '1502672260266-1c1ef2d93688', '1512918728675-ed5a9ecdebfd',
+        '1493663284031-b7e3aefcae8e', '1515263487990-61b07816b324', '1545324418-cc1a3fa10c00', '1574362844344-1427bc7b8d7c'
       ];
     } else if (type == 'Villa') {
       source = [
         '1613490493576-7fde63acd811', '1512918728675-ed5a9ecdebfd', '1542314831-068cd1dbfeeb', '1600047509807-ba8f99d2cdde',
-        '1580587771525-78b9dba3b914', '1523217582562-b9e76fa35f11', '1510627498534-fc241ce42488', '1560185127614-f513d7894a4c',
-        '1600596542815-ffad4c1539a9', '1518780664697-55e3ad937233', '1582268611958-ebfd161ef9cf', '1605276374104-aa2a1e1b8543'
+        '1580587771525-78b9dba3b914', '1523217582562-b9e76fa35f11', '1510627498534-fc241ce42488', '1560185127614-f513d7894a4c'
       ];
     } else {
       source = [
         '1564013799919-ab600027ffc6', '1570129477492-45c003edd2be', '1512917774080-9991f1c4c750', '1600585154340-be6161a56a0c',
-        '1600596542815-ffad4c1539a9', '1600607687940-4e2a09695d51', '1518780664697-55e3ad937233', '1480074568708-e7b720bb3f09',
-        '1580587771525-78b9dba3b914', '1513584684374-8bab11786280', '1523217582562-b9e76fa35f11', '1583608205776-bfd35f0d9f83'
+        '1600596542815-ffad4c1539a9', '1600607687940-4e2a09695d51', '1518780664697-55e3ad937233', '1480074568708-e7b720bb3f09'
       ];
     }
     
@@ -106,7 +105,7 @@ class DemoListingsData {
     return urls.toSet().toList(); // Ensure uniqueness
   }
 
-  static List<ListingEntity> generateDemoListings(String city, int count, {String? category, ListingFilter? filter}) {
+  static List<ListingEntity> generateDemoListings(String city, int count, {String? category, ListingFilter? filter, String? ownerId}) {
     final types = ['Apartment', 'Villa', 'House'];
     final baseLat = (cityCenters[city]?[0] ?? 11.0168);
     final baseLng = (cityCenters[city]?[1] ?? 76.9558);
@@ -136,8 +135,8 @@ class DemoListingsData {
       final furnishing = furnishingOptions[i % 3];
 
       return ListingEntity(
-        id: 'demo_${city.toLowerCase()}_${type.toLowerCase()}_${i + 1}',
-        ownerId: 'owner_demo',
+        id: 'demo_${city.toLowerCase()}_${type.toLowerCase()}_${i + 1}_${ownerId ?? "demo"}',
+        ownerId: ownerId ?? 'owner_demo',
         title: '${type == 'Villa' ? 'Luxury' : 'Modern'} $type in $city',
         description: 'Experience premium living in the heart of $city. This $type offers state-of-the-art amenities, gorgeous interiors, and prime location convenience.',
         price: price,

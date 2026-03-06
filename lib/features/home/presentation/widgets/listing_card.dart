@@ -12,11 +12,14 @@ import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:intl/intl.dart';
 import 'package:house_rental/core/theme/app_colors.dart';
 import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
+import 'package:house_rental/features/location/location_provider.dart';
+import 'package:geolocator/geolocator.dart';
 
 class ListingCard extends ConsumerStatefulWidget {
   final ListingEntity listing;
   final bool isCompact;
   final bool isVerticalFeed;
+  final double? width;
   final EdgeInsetsGeometry? margin;
   final bool showFavoriteButton;
   final Widget? actionButton;
@@ -27,6 +30,7 @@ class ListingCard extends ConsumerStatefulWidget {
     required this.listing,
     this.isCompact = false,
     this.isVerticalFeed = false,
+    this.width,
     this.margin,
     this.showFavoriteButton = true,
     this.actionButton,
@@ -91,16 +95,16 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        width: widget.isVerticalFeed ? double.infinity : null,
+        width: widget.width ?? (widget.isVerticalFeed ? double.infinity : (widget.isCompact ? 200 : 300)),
         margin: widget.margin ?? EdgeInsets.only(right: AppColors.s24, bottom: AppColors.s32),
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 25,
-              offset: const Offset(0, 10),
+              color: isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -111,10 +115,9 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   child: SizedBox(
                     height: widget.isCompact ? 160 : 220,
-                    width: double.infinity,
                     child: _buildImageGallery(isDark),
                   ),
                 ),
@@ -208,10 +211,10 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                         const SizedBox(width: 8),
                         Text(
                           widget.listing.status.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimaryLight,
+                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -222,11 +225,12 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
               ],
             ),
             
-            Padding(
-              padding: EdgeInsets.all(AppColors.s16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  // Title, Location, and Price Section
+                  Padding(
+                    padding: EdgeInsets.all(AppColors.s16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   // Title & Owner Row
                   Row(
                     children: [
@@ -275,6 +279,42 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                           ),
                         ),
                       ),
+                      
+                      // --- Distance Badge ---
+                      ref.watch(userLocationProvider).when(
+                        data: (pos) {
+                          if (pos == null) return const SizedBox.shrink();
+                          final distMeters = Geolocator.distanceBetween(
+                            pos.latitude, pos.longitude, 
+                            widget.listing.latitude, widget.listing.longitude
+                          );
+                          final distKm = distMeters / 1000;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.near_me_rounded, size: 10, color: primaryColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${distKm.toStringAsFixed(1)} km',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: subTextColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+
                       if (widget.listing.averageRating > 0) ...[
                         const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
                         const SizedBox(width: 2),
@@ -290,42 +330,44 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                     ],
                   ),
                   
-                  SizedBox(height: AppColors.s16),
-                  
-                  // Price Tag (Dominant)
+                  const SizedBox(height: AppColors.s12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Price Tag (Dominant)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
                           color: primaryColor.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: RichText(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           text: TextSpan(
                             children: [
-                              TextSpan(
-                                text: '₹${NumberFormat('#,##,###').format(widget.listing.price)}',
-                                style: TextStyle(
-                                  color: primaryColor,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                                TextSpan(
+                                  text: '₹${NumberFormat('#,##,###').format(widget.listing.price)}',
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
-                              ),
-                              TextSpan(
-                                text: ' / month',
-                                style: TextStyle(
-                                  color: primaryColor.withOpacity(0.7),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                TextSpan(
+                                  text: ' /mo',
+                                  style: TextStyle(
+                                    color: primaryColor.withOpacity(0.7),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                       
+                      const SizedBox(width: 8),
+
                       // AI Price Prediction Badge
                       ref.watch(listingPredictedPriceProvider(widget.listing)).when(
                         data: (predictedPrice) {
@@ -347,18 +389,19 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  isFair ? 'FAIR PRICE' : 'OVERPRICED',
+                                  isFair ? 'FAIR' : 'HIGH',
                                   style: TextStyle(
                                     color: isFair ? Colors.orange : Colors.red,
-                                    fontSize: 8,
+                                    fontSize: 7,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
                                 Text(
-                                  'AI Expects: $priceStr',
+                                  'AI: $priceStr',
                                   style: TextStyle(
                                     color: isFair ? Colors.orange.withOpacity(0.8) : Colors.red.withOpacity(0.8),
                                     fontSize: 8,

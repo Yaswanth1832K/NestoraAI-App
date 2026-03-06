@@ -39,10 +39,11 @@ class SplashScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.home_rounded,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
+              Image.asset(
+                'assets/images/logo.png',
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 24),
               Text(

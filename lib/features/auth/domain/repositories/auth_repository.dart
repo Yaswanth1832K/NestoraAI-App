@@ -45,4 +45,7 @@ abstract interface class AuthRepository {
 
   /// Sign in with Apple
   Future<Either<Failure, UserEntity>> signInWithApple();
+
+  /// Send password reset email
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email);
 }

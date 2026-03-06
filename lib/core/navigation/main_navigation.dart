@@ -10,12 +10,9 @@ import 'package:house_rental/features/chat/presentation/pages/chat_inbox_page.da
 import 'package:house_rental/features/profile/presentation/pages/profile_page.dart';
 import 'package:house_rental/core/notifications/notification_service.dart';
 import 'package:house_rental/core/router/app_router.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
-
-// ── Brand colors ───────────────────────────────────────────────
-const _kPurple   = Color(0xFF7C5CBF);
-const _kDarkCard = Color(0xFF1C1C1C);
-const _kDarkBg   = Color(0xFF0D0D0D);
 
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
@@ -37,16 +34,12 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final barBg          = isDark ? _kDarkCard : Colors.white;
-    final iconActive     = _kPurple;
-    final iconInactive   = isDark ? Colors.white38 : Colors.black38;
 
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
 
-    // ── 5 pages in order: Home | Saved | Trips | Messages | Profile ──
     final pages = [
       const HomePage(),
       const FavoritesPage(),
@@ -58,56 +51,71 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     final isOwner = ref.watch(isOwnerProvider).value ?? false;
 
     return Scaffold(
-      backgroundColor: isDark ? _kDarkBg : const Color(0xFFF0F0F5),
-      body: IndexedStack(index: _selectedIndex, children: pages),
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          IndexedStack(index: _selectedIndex, children: pages),
+          
+          // ── Floating Glass Bottom Navigation ──
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 24,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: GlassContainer.standard(
+                  context: context,
+                  borderRadius: 32,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _NavItem(icon: Icons.grid_view_rounded, activeIcon: Icons.grid_view_rounded, label: 'Home', selected: _selectedIndex == 0, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(0)),
+                      _NavItem(icon: Icons.favorite_border_rounded, activeIcon: Icons.favorite_rounded, label: 'Saved', selected: _selectedIndex == 1, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(1)),
+                      
+                      if (isOwner)
+                        GestureDetector(
+                          onTap: () => context.push(AppRouter.postProperty),
+                          child: Container(
+                            height: 48, width: 48,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.purpleGradient,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.4),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                )
+                              ],
+                            ),
+                            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                          ),
+                        ),
 
-      // ── Floating post-property button (Visible to Owners only) ─
-      floatingActionButton: isOwner ? FloatingActionButton(
-        onPressed: () => context.push(AppRouter.postProperty),
-        backgroundColor: _kPurple,
-        elevation: 6,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-      ) : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-      bottomNavigationBar: BottomAppBar(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        height: 75,
-        color: barBg,
-        notchMargin: 10,
-        elevation: 0,
-        shape: const CircularNotchedRectangle(),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _NavItem(icon: Icons.grid_view_rounded, activeIcon: Icons.grid_view_rounded, label: 'Home', selected: _selectedIndex == 0, activeColor: iconActive, inactiveColor: iconInactive, onTap: () => _onItemTapped(0)),
-                _NavItem(icon: Icons.favorite_border_rounded, activeIcon: Icons.favorite_rounded, label: 'Saved', selected: _selectedIndex == 1, activeColor: iconActive, inactiveColor: iconInactive, onTap: () => _onItemTapped(1)),
-                if (isOwner)
-                  const Opacity(opacity: 0, child: Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Icon(Icons.add))), // Placeholder for FAB
-                _NavItem(icon: Icons.luggage_outlined, activeIcon: Icons.luggage_rounded, label: 'Trips', selected: _selectedIndex == 2, activeColor: iconActive, inactiveColor: iconInactive, onTap: () => _onItemTapped(2)),
-                _NavItem(icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Messages', selected: _selectedIndex == 3, activeColor: iconActive, inactiveColor: iconInactive, onTap: () => _onItemTapped(3)),
-                _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile', selected: _selectedIndex == 4, activeColor: iconActive, inactiveColor: iconInactive, onTap: () => _onItemTapped(4)),
-              ],
+                      _NavItem(icon: Icons.luggage_outlined, activeIcon: Icons.luggage_rounded, label: 'Trips', selected: _selectedIndex == 2, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(2)),
+                      _NavItem(icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Inbox', selected: _selectedIndex == 3, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(3)),
+                      _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile', selected: _selectedIndex == 4, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(4)),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-// ── Single nav bar item ──────────────────────────────────────────
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final bool selected;
   final Color activeColor;
-  final Color inactiveColor;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -116,23 +124,28 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.activeColor,
-    required this.inactiveColor,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final inactiveColor = isDark ? Colors.white38 : Colors.black38;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? activeColor.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 300),
               child: Icon(
                 selected ? activeIcon : icon,
                 key: ValueKey(selected),
@@ -140,16 +153,16 @@ class _NavItem extends StatelessWidget {
                 color: selected ? activeColor : inactiveColor,
               ),
             ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                color: selected ? activeColor : inactiveColor,
-                fontSize: 9.5,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            if (selected) ...[
+              const SizedBox(height: 2),
+              Container(
+                width: 4, height: 4,
+                decoration: BoxDecoration(
+                  color: activeColor,
+                  shape: BoxShape.circle,
+                ),
               ),
-              child: Text(label),
-            ),
+            ],
           ],
         ),
       ),

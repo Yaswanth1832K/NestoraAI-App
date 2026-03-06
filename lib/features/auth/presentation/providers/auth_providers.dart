@@ -15,6 +15,7 @@ import 'package:house_rental/features/auth/domain/usecases/update_password_useca
 import 'package:house_rental/features/auth/domain/usecases/update_user_role_usecase.dart';
 import 'package:house_rental/features/auth/domain/usecases/update_profile_usecase.dart';
 import 'package:house_rental/features/auth/domain/usecases/update_fcm_token_usecase.dart';
+import 'package:house_rental/features/auth/domain/usecases/send_password_reset_email.dart';
 import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 
 // Data Layer Providers
@@ -68,6 +69,10 @@ final updateUserRoleUseCaseProvider = Provider<UpdateUserRoleUseCase>((ref) {
 
 final updateFcmTokenUseCaseProvider = Provider<UpdateFcmTokenUseCase>((ref) {
   return UpdateFcmTokenUseCase(ref.read(authRepositoryProvider));
+});
+
+final sendPasswordResetEmailUseCaseProvider = Provider<SendPasswordResetEmail>((ref) {
+  return SendPasswordResetEmail(ref.read(authRepositoryProvider));
 });
 
 /// Callable provider that triggers Google OAuth → Firebase sign-in

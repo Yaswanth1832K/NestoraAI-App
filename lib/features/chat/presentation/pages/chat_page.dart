@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
 import 'package:house_rental/features/chat/domain/entities/chat_room_entity.dart';
 import 'package:house_rental/features/chat/domain/entities/message_entity.dart';
@@ -90,11 +93,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final messagesAsync = ref.watch(messagesStreamProvider(widget.chatRoomId));
     final chatRoomAsync = ref.watch(chatRoomStreamProvider(widget.chatRoomId));
     final currentUser = ref.watch(authStateProvider).value;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        title: Text(widget.title),
+        titleSpacing: 0,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: _buildAppBarTitle(chatRoomAsync),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -104,15 +122,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               child: messagesAsync.when(
                 data: (messages) {
                   if (messages.isEmpty) {
-                    return const Center(child: Text('No messages yet. Say hi!'));
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded, size: 64, color: isDark ? Colors.white10 : Colors.black12),
+                          const SizedBox(height: 16),
+                          const Text('No messages yet. Say hi!', 
+                            style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+                        ],
+                      ),
+                    );
                   }
                   return ListView.builder(
                     reverse: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: messages.length + 1, // +1 for the booking status header
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    itemCount: messages.length + 1,
                     itemBuilder: (context, index) {
                       if (index == messages.length) {
-                        // This is the top (status bar) since list is reversed
                         return _buildBookingStatus();
                       }
                       final message = messages[index];
@@ -125,25 +152,85 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 error: (e, st) => Center(child: Text('Error: $e')),
               ),
             ),
-            // Group transient bottom widgets with scroll safety
-            Flexible(
-              flex: 0,
-              child: SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildSuggestedReplies(messagesAsync, chatRoomAsync, currentUser),
-                    _buildTypingIndicator(chatRoomAsync, currentUser),
-                    _buildBookingRequestButton(),
-                  ],
-                ),
+            
+            // Bottm area
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSuggestedReplies(messagesAsync, chatRoomAsync, currentUser),
+                  _buildTypingIndicator(chatRoomAsync, currentUser),
+                  _buildBookingRequestButton(),
+                  _buildInput(),
+                ],
               ),
             ),
-            _buildInput(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAppBarTitle(AsyncValue<ChatRoomEntity?> chatRoomAsync) {
+    return chatRoomAsync.when(
+      data: (room) {
+        if (room == null) return Text(widget.title);
+        final isRoommate = room.type == 'roommate';
+        
+        return Row(
+          children: [
+            if (!isRoommate) ...[
+              ref.watch(listingProvider(room.listingId)).maybeWhen(
+                data: (l) => Container(
+                  width: 40, height: 40,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    image: l.allImages.isNotEmpty 
+                      ? DecorationImage(image: NetworkImage(l.allImages.first), fit: BoxFit.cover)
+                      : null,
+                    color: AppColors.primary.withOpacity(0.1),
+                  ),
+                  child: l.allImages.isEmpty ? const Icon(Icons.home_rounded, size: 20) : null,
+                ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                  ),
+                  if (!isRoommate) 
+                    Text(
+                      'Property Owner',
+                      style: TextStyle(
+                        fontSize: 11, 
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => Text(widget.title),
+      error: (_, __) => Text(widget.title),
     );
   }
 
@@ -160,23 +247,25 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             if (chatRoom == null || messages.isEmpty) return const SizedBox.shrink();
             if (currentUser.uid != chatRoom.ownerId) return const SizedBox.shrink();
             if (messages.first.senderId == currentUser.uid) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-              child: SingleChildScrollView(
+            return Container(
+              height: 45,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: ListView(
                 scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _suggestedReplies.map((reply) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ActionChip(
-                        label: Text(reply, style: const TextStyle(fontSize: 13)),
-                        onPressed: () => _sendText(reply),
-                        backgroundColor: Colors.grey.shade800,
-                        side: BorderSide(color: Colors.grey.shade600),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: _suggestedReplies.map((reply) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      label: Text(reply, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                      onPressed: () => _sendText(reply),
+                      backgroundColor: AppColors.surfaceDark2,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      side: BorderSide.none,
+                    ),
+                  );
+                }).toList(),
               ),
             );
           },
@@ -203,70 +292,96 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
         if (status == 'pending' && isOwner) {
           final updateStatus = ref.read(updateVisitStatusUseCaseProvider);
-          return Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF1A1A1A),
-            child: Row(
+          return GlassContainer.standard(
+            context: context,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 20,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
-                  child: Text(
-                    "New Visit Request",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+                const Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text(
+                      "New Visit Request",
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () => updateStatus.call(request, 'rejected'),
-                  child: const Text("Reject", style: TextStyle(color: Colors.redAccent)),
+                const SizedBox(height: 12),
+                Text(
+                  "Tenant requested a visit on ${DateFormat('EEEE, MMM d').format(request.date)}",
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => updateStatus.call(request, 'approved'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-                  child: const Text("Accept", style: TextStyle(color: Colors.white)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => updateStatus.call(request, 'rejected'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text("Decline"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => updateStatus.call(request, 'approved'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text("Accept"),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           );
         }
 
-        return Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              color: status == 'approved'
-                  ? Colors.green.withOpacity(0.1)
-                  : status == 'rejected'
-                      ? Colors.red.withOpacity(0.1)
-                      : Colors.blue.withOpacity(0.1),
-              child: Column(
-                children: [
-                  Text(
-                    "Visit Status: ${status.toString().toUpperCase()}",
-                    style: TextStyle(
-                      color: status == 'approved'
-                          ? Colors.greenAccent
-                          : status == 'rejected'
-                              ? Colors.redAccent
-                              : Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Visit Date: ${DateFormat('dd/MM/yyyy').format(request.date)}",
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+        final statusColor = status == 'approved' ? AppColors.success : (status == 'rejected' ? Colors.redAccent : AppColors.accentOrange);
+
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: statusColor.withOpacity(0.2)),
             ),
-            _buildReviewButtonFromRequest(request),
-          ],
+            child: Column(
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 14, color: statusColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Visit Status: ${status.toUpperCase()}",
+                      style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Scheduled for ${DateFormat('dd MMM yyyy').format(request.date)}",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade500),
+                ),
+                if (status == 'approved') _buildReviewButtonFromRequest(request),
+              ],
+            ),
+          ),
         );
       },
       loading: () => const SizedBox(),
@@ -280,32 +395,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (request.status != 'approved' || !isRenter) return const SizedBox();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ReviewScreen(
-                  listingId: request.listingId,
-                  listingTitle: request.listingTitle,
-                  ownerId: request.ownerId,
-                  bookingId: request.id,
-                ),
+      padding: const EdgeInsets.only(top: 12),
+      child: TextButton.icon(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReviewScreen(
+                listingId: request.listingId,
+                listingTitle: request.listingTitle,
+                ownerId: request.ownerId,
+                bookingId: request.id,
               ),
-            );
-          },
-          icon: const Icon(Icons.rate_review_outlined, size: 18),
-          label: const Text("Leave a Review"),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.amber,
-            side: const BorderSide(color: Colors.amber),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
+            ),
+          );
+        },
+        icon: const Icon(Icons.rate_review_outlined, size: 16),
+        label: const Text("Rate your visit", style: TextStyle(fontWeight: FontWeight.w800)),
+        style: TextButton.styleFrom(foregroundColor: AppColors.accentOrange),
       ),
     );
   }
@@ -318,77 +425,66 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return chatRoomAsync.when(
       data: (chatRoom) {
         if (chatRoom == null || currentUser?.uid != chatRoom.renterId) return const SizedBox();
-        
-        // Hide button if a booking already exists
         if (bookingsAsync.value?.isNotEmpty ?? false) return const SizedBox();
 
         return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                // Ensure listing data is loaded (Fix Race Condition)
-                final listing = await ref.read(listingProvider(chatRoom.listingId).future);
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: GestureDetector(
+            onTap: () async {
+              final listing = await ref.read(listingProvider(chatRoom.listingId).future);
+              final DateTime? date = await showDatePicker(
+                context: context,
+                initialDate: listing.availableDates.isNotEmpty 
+                    ? listing.availableDates.first 
+                    : DateTime.now().add(const Duration(days: 1)),
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                selectableDayPredicate: (DateTime day) {
+                  if (listing.availableDates.isEmpty) return true;
+                  return listing.availableDates.any((d) => 
+                    d.year == day.year && d.month == day.month && d.day == day.day);
+                },
+              );
+              if (date == null) return;
 
-                // Pick Date
-                final DateTime? date = await showDatePicker(
-                  context: context,
-                  initialDate: listing.availableDates.isNotEmpty 
-                      ? listing.availableDates.first 
-                      : DateTime.now().add(const Duration(days: 1)),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)), // Increased range
-                  selectableDayPredicate: (DateTime day) {
-                    // Only allow dates defined by the owner
-                    if (listing.availableDates.isEmpty) return true;
-                    return listing.availableDates.any((d) => 
-                      d.year == day.year && d.month == day.month && d.day == day.day);
-                  },
-                );
-
-                if (date == null) return;
-
-                final repo = ref.read(visitRequestRepositoryProvider);
-                final visitDate = DateTime(date.year, date.month, date.day);
-                final hasConflict = await repo.hasApprovedBookingForDate(chatRoom.listingId, visitDate);
-                if (hasConflict) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("This date is already booked and approved for someone else."),
-                        backgroundColor: Colors.redAccent,
-                      ),
-                    );
-                  }
-                  return;
-                }
-
-                final result = await repo.createBookingFromChat(
-                  listingId: chatRoom.listingId,
-                  ownerId: chatRoom.ownerId,
-                  renterId: chatRoom.renterId,
-                  chatId: widget.chatRoomId,
-                  visitDate: visitDate,
-                );
-                if (mounted) {
-                  result.fold(
-                    (failure) => ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to send request: ${failure.message}')),
-                    ),
-                    (_) => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Visit request sent successfully!")),
-                    ),
+              final repo = ref.read(visitRequestRepositoryProvider);
+              final visitDate = DateTime(date.year, date.month, date.day);
+              final hasConflict = await repo.hasApprovedBookingForDate(chatRoom.listingId, visitDate);
+              if (hasConflict) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("This date is already booked."), backgroundColor: Colors.redAccent),
                   );
-                }
-              },
-              icon: const Icon(Icons.calendar_today, size: 18),
-              label: const Text("Request Property Visit"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  return;
+              }
+
+              final result = await repo.createBookingFromChat(
+                listingId: chatRoom.listingId,
+                ownerId: chatRoom.ownerId,
+                renterId: chatRoom.renterId,
+                chatId: widget.chatRoomId,
+                visitDate: visitDate,
+              );
+              result.fold(
+                (f) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${f.message}'))),
+                (_) => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Visit request sent!"))),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                gradient: AppColors.purpleGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_today_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 10),
+                  Text("Schedule Property Visit", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                ],
               ),
             ),
           ),
@@ -408,12 +504,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         final updated = chatRoom.typingUpdatedAt;
         if (updated != null && DateTime.now().difference(updated).inSeconds > 5) return const SizedBox.shrink();
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade400)),
+              Text('Typing...', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
               const SizedBox(width: 8),
-              Text('Typing...', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+              SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary.withOpacity(0.5))),
             ],
           ),
         );
@@ -426,38 +522,41 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget _buildInput() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade50,
-        border: Border(
-          top: BorderSide(color: Colors.grey.withOpacity(0.15)),
-        ),
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark2 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(24),
+              ),
               child: TextField(
                 controller: _messageController,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                decoration: InputDecoration(
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                decoration: const InputDecoration(
                   hintText: 'Type a message...',
-                  hintStyle: TextStyle(
-                      color: isDark ? Colors.grey : Colors.grey.shade500),
                   border: InputBorder.none,
                 ),
                 maxLines: null,
-                onChanged: (val) => _onTyping(),
-                onSubmitted: (val) => _sendMessage(),
+                onChanged: (_) => _onTyping(),
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.send_rounded,
-                  color: Theme.of(context).primaryColor),
-              onPressed: () => _sendMessage(),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: AppColors.purpleGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -471,37 +570,38 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isMe ? Theme.of(context).primaryColor : const Color(0xFF2A2A2A),
-              borderRadius: BorderRadius.circular(16).copyWith(
-                bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-                bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
+              gradient: isMe ? AppColors.purpleGradient : null,
+              color: isMe ? null : (isDark ? AppColors.surfaceDark2 : Colors.grey.shade200),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(20),
+                topRight: const Radius.circular(20),
+                bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(0),
+                bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(20),
               ),
             ),
             child: Text(
               message.text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
+              style: TextStyle(
+                color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-            child: Text(
-              DateFormat('hh:mm a').format(message.createdAt),
-              style: const TextStyle(color: Colors.grey, fontSize: 10),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            DateFormat('hh:mm a').format(message.createdAt),
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600),
           ),
         ],
       ),

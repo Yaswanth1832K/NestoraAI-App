@@ -1,0 +1,32 @@
+﻿
+analyze_out.txt:209:w
+arning - Unused 
+import: 'package:hous
+e_rental/core/errors/
+exceptions.dart' - li
+b\features\listings\d
+ata\datasources\listi
+ng_remote_datasource.
+dart:4:8 - 
+unused_import
+analyze_out.txt:210: 
+ error - The method 
+'debugPrint' isn't 
+defined for the type 
+'ListingRemoteDataSou
+rceImpl' - lib\featur
+es\listings\data\data
+sources\listing_remot
+e_datasource.dart:88:
+7 - undefined_method
+analyze_out.txt:220:w
+arning - Unused 
+import: 'package:hous
+e_rental/core/errors/
+failures.dart' - lib\
+features\listings\pre
+sentation\pages\listi
+ng_details_page.dart:
+3:8 - unused_import
+
+

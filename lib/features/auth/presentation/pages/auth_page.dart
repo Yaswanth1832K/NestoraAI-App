@@ -104,13 +104,8 @@ class _AuthPageState extends ConsumerState<AuthPage>
     }
     setState(() { _loading = true; _error = null; });
 
-    // On web, set LOCAL persistence so the session survives browser close
-    // when Remember Me is checked.
-    if (kIsWeb) {
-      await FirebaseAuth.instance.setPersistence(
-        _rememberMe ? Persistence.LOCAL : Persistence.SESSION,
-      );
-    }
+    // On web, persistence is typically managed by the Firebase SDK directly.
+    // The previous setPersistence call was invalid on the UseCase.
 
     final res = await ref.read(signInUseCaseProvider).call(
         email: _loginEmail.text.trim(), password: _loginPassword.text.trim());
@@ -197,9 +192,18 @@ class _AuthPageState extends ConsumerState<AuthPage>
             onTap: () async {
               if (emailCtrl.text.trim().isEmpty) return;
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(AppLocalizations.of(context)!.resetLinkSent),
-                      backgroundColor: _kPurple));
+              
+              final result = await ref.read(sendPasswordResetEmailUseCaseProvider)(emailCtrl.text.trim());
+              
+              if (!mounted) return;
+              result.fold(
+                (failure) => ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(failure.message ?? 'An error occurred'), backgroundColor: Colors.redAccent)
+                ),
+                (_) => ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(AppLocalizations.of(context)!.resetLinkSent), backgroundColor: _kPurple)
+                ),
+              );
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -302,11 +306,9 @@ class _AuthPageState extends ConsumerState<AuthPage>
                     // Tab forms
                     AnimatedSize(
                       duration: const Duration(milliseconds: 300),
-                      child: SizedBox(
-                        child: IndexedStack(
-                          index: _tabCtrl.index,
-                          children: [
-                            _LoginForm(
+                      child: _tabCtrl.index == 0
+                          ? _LoginForm(
+                              key: const ValueKey('loginForm'),
                               emailCtrl: _loginEmail,
                               pwCtrl: _loginPassword,
                               pwVisible: _loginPwVisible,
@@ -317,8 +319,9 @@ class _AuthPageState extends ConsumerState<AuthPage>
                               loading: _loading,
                               rememberMe: _rememberMe,
                               onToggleRemember: () => setState(() => _rememberMe = !_rememberMe),
-                            ),
-                            _SignupForm(
+                            )
+                          : _SignupForm(
+                              key: const ValueKey('signupForm'),
                               nameCtrl: _regName,
                               emailCtrl: _regEmail,
                               pwCtrl: _regPassword,
@@ -330,15 +333,12 @@ class _AuthPageState extends ConsumerState<AuthPage>
                               onSignup: _loading ? null : _signup,
                               loading: _loading,
                             ),
-                          ],
-                        ),
-                      ),
                     ),
 
                     // ── Social sign-in divider + buttons ──────────
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 16),
                     _orDivider(context),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     // Google
                     _SocialBtn(
@@ -430,7 +430,12 @@ class _HeroSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white.withOpacity(0.2)),
                   ),
-                  child: const Icon(Icons.home_work_rounded, size: 40, color: Colors.white),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
@@ -693,6 +698,7 @@ class _LoginForm extends StatelessWidget {
   final VoidCallback? onLogin;
 
   const _LoginForm({
+    super.key,
     required this.emailCtrl, required this.pwCtrl,
     required this.pwVisible, required this.onTogglePw,
     required this.onLogin, required this.onForgot,
@@ -753,9 +759,8 @@ class _LoginForm extends StatelessWidget {
         ],
       ),
 
-      const SizedBox(height: 24),
+      const SizedBox(height: 12),
       _PrimaryBtn(label: AppLocalizations.of(context)!.signIn, onTap: onLogin, loading: loading),
-      const SizedBox(height: 24),
       Center(
         child: TextButton(
           onPressed: onGuest,
@@ -779,6 +784,7 @@ class _SignupForm extends StatelessWidget {
   final VoidCallback? onSignup;
 
   const _SignupForm({
+    super.key,
     required this.nameCtrl, required this.emailCtrl,
     required this.pwCtrl, required this.confirmCtrl,
     required this.pwVisible, required this.onTogglePw,
@@ -818,6 +824,16 @@ class _SignupForm extends StatelessWidget {
         ),
       ),
 
+      const SizedBox(height: 20),
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text('CONFIRM PASSWORD', style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      ),
+      _Field(
+        ctrl: confirmCtrl, hint: 'Re-enter your password',
+        icon: Icons.lock_outline_rounded, obscure: !pwVisible,
+      ),
+
       const SizedBox(height: 24),
       Text(AppLocalizations.of(context)!.joinAs, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
       const SizedBox(height: 12),
@@ -829,9 +845,9 @@ class _SignupForm extends StatelessWidget {
             icon: Icons.vpn_key_rounded, onTap: () => onRoleChange('owner'))),
       ]),
 
-      const SizedBox(height: 32),
+      const SizedBox(height: 16),
       _PrimaryBtn(label: AppLocalizations.of(context)!.createAccount, onTap: onSignup, loading: loading),
-      const SizedBox(height: 24),
+      const SizedBox(height: 16),
 
       Center(
         child: Text(AppLocalizations.of(context)!.termsAndPrivacy,

@@ -279,7 +279,10 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (context, scrollController) => AIAssistantSheet(listing: widget.listing),
+        builder: (context, scrollController) => AIAssistantSheet(
+          listing: widget.listing,
+          scrollController: scrollController,
+        ),
       ),
     );
   }

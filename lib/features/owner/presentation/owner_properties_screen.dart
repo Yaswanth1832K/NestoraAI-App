@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/core/router/app_router.dart';
@@ -6,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/home/presentation/widgets/listing_card.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
-import 'package:house_rental/features/listings/data/models/listing_model.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
@@ -116,23 +114,10 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('listings')
-            .where('ownerId', isEqualTo: user.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
-          }
-
-          final docs = snapshot.data!.docs;
-          final listings = docs.map((doc) => ListingModel.fromFirestore(doc)).toList();
-
+      body: ref.watch(getMyListingsProvider(user.uid)).when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text("Error: $error", style: const TextStyle(color: Colors.red))),
+        data: (listings) {
           final total = listings.length;
           final available = listings.where((l) => l.status == ListingEntity.statusAvailable || l.status == 'active').length;
           final rented = listings.where((l) => l.status == ListingEntity.statusRented).length;

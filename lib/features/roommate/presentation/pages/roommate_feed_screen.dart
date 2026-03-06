@@ -10,7 +10,7 @@ import 'package:house_rental/core/widgets/shimmer_container.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
-import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart';
+import 'package:house_rental/features/chat/presentation/providers/chat_providers.dart' as chat;
 
 class RoommateFeedScreen extends ConsumerStatefulWidget {
   const RoommateFeedScreen({super.key});
@@ -46,15 +46,29 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileAsync = ref.watch(userRoommateProfileProvider(user.uid));
 
-    return profileAsync.when(
-      data: (profile) {
-        if (profile == null) {
-          return _buildNoProfileState(isDark);
-        }
-        return _buildMatchesList(profile, isDark);
-      },
-      loading: () => _buildSkeletonMatches(isDark),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Roommates'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RoommateProfileScreen()),
+            ),
+          )
+        ],
+      ),
+      body: profileAsync.when(
+        data: (profile) {
+          if (profile == null) {
+            return _buildNoProfileState(isDark);
+          }
+          return _buildMatchesList(profile, isDark);
+        },
+        loading: () => _buildSkeletonMatches(isDark),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
     );
   }
 
@@ -450,9 +464,9 @@ class _RoommateFeedScreenState extends ConsumerState<RoommateFeedScreen> {
     result.fold(
       (failure) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failure.message ?? 'Unknown error'))),
       (chatRoom) {
-        // Navigate to chat page
+        // Navigate to chat detail page
         context.push(
-          AppRouter.chat,
+          '/chat-detail',
           extra: {'chatRoomId': chatRoom.id, 'title': otherUser.name},
         );
       },

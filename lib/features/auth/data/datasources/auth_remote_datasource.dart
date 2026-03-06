@@ -26,6 +26,8 @@ abstract interface class AuthRemoteDataSource {
   Future<UserModel> signInWithFacebook();
   /// Sign in with Apple OAuth
   Future<UserModel> signInWithApple();
+  /// Send password reset email
+  Future<void> sendPasswordResetEmail(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -184,27 +186,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn(
-        clientId: '629169100807-k0e0lks9pu8v46oj2ahk0714maqh8pra.apps.googleusercontent.com',
-        scopes: ['email', 'profile'],
-      );
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
-        throw const ServerException(message: 'Google Sign-In cancelled');
+      UserCredential userCredential;
+      if (kIsWeb) {
+        // On Web, use the Firebase popup flow which is more reliable 
+        // and doesn't require the People API to be manually enabled.
+        final provider = GoogleAuthProvider();
+        userCredential = await _firebaseAuth.signInWithPopup(provider);
+      } else {
+        final googleSignIn = GoogleSignIn(
+          clientId: '629169100807-k0e0lks9pu8v46oj2ahk0714maqh8pra.apps.googleusercontent.com',
+          scopes: ['email', 'profile'],
+        );
+        final googleUser = await googleSignIn.signIn();
+        if (googleUser == null) {
+          throw const ServerException(message: 'Google Sign-In cancelled');
+        }
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
       }
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final userCredential =
-          await _firebaseAuth.signInWithCredential(credential);
+
       if (userCredential.user == null) {
         throw const ServerException(message: 'Google Sign-In failed');
       }
       return await _ensureUserDocument(userCredential.user!);
     } on ServerException {
       rethrow;
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(message: e.message ?? 'Google Sign-In failed');
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -274,6 +286,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return await _ensureUserDocument(userCredential.user!);
     } on ServerException {
       rethrow;
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(message: e.message ?? 'Password reset failed');
     } catch (e) {
       throw ServerException(message: e.toString());
     }

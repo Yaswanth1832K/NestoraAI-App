@@ -84,6 +84,7 @@ class _ChatInboxPageState extends ConsumerState<ChatInboxPage> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: _searchOpen
@@ -290,8 +291,8 @@ class _ChatInboxPageState extends ConsumerState<ChatInboxPage> {
                     }
 
                     return ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.only(
+                          left: 20, right: 20, top: 10, bottom: 100),
                       itemCount: filtered.length,
                       physics: const BouncingScrollPhysics(),
                       separatorBuilder: (context, index) =>
@@ -518,7 +519,7 @@ class ChatRoomTile extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              _buildAvatar(context, isRoommate, primaryColor, hasUnread),
+              _buildAvatar(context, ref, isRoommate, primaryColor, hasUnread),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -539,49 +540,80 @@ class ChatRoomTile extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatar(BuildContext context, bool isRoommate,
+  Widget _buildAvatar(BuildContext context, WidgetRef ref, bool isRoommate,
       Color primaryColor, bool hasUnread) {
-    return Stack(
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: isRoommate
-                ? Colors.purple.withOpacity(0.1)
-                : primaryColor.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            isRoommate ? Icons.person_rounded : Icons.home_rounded,
-            color: isRoommate ? Colors.purple : primaryColor,
-            size: 26,
-          ),
-        ),
-        // Unread pulse dot
-        if (hasUnread)
-          Positioned(
-            top: 1,
-            right: 1,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: primaryColor,
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    width: 2),
-                boxShadow: [
-                  BoxShadow(
-                      color: primaryColor.withOpacity(0.4),
-                      blurRadius: 6,
-                      spreadRadius: 1),
-                ],
-              ),
+    if (isRoommate) {
+      return Stack(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.purple.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.person_rounded, color: Colors.purple, size: 26),
           ),
-      ],
+          if (hasUnread) _buildUnreadIndicator(context, primaryColor),
+        ],
+      );
+    }
+
+    final listingAsync = ref.watch(listingProvider(chatRoom.listingId));
+    return listingAsync.when(
+      data: (listing) => Stack(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              image: listing.allImages.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(listing.allImages.first),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              color: primaryColor.withOpacity(0.1),
+            ),
+            child: listing.allImages.isEmpty
+                ? Icon(Icons.home_rounded, color: primaryColor, size: 26)
+                : null,
+          ),
+          if (hasUnread) _buildUnreadIndicator(context, primaryColor),
+        ],
+      ),
+      loading: () => _buildEmptyAvatar(primaryColor),
+      error: (_, __) => _buildEmptyAvatar(primaryColor),
+    );
+  }
+
+  Widget _buildEmptyAvatar(Color primaryColor) {
+    return Container(
+      width: 56, height: 56,
+      decoration: BoxDecoration(
+        color: primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(Icons.home_rounded, color: primaryColor, size: 26),
+    );
+  }
+
+  Widget _buildUnreadIndicator(BuildContext context, Color primaryColor) {
+    return Positioned(
+      top: 0,
+      right: 0,
+      child: Container(
+        width: 14,
+        height: 14,
+        decoration: BoxDecoration(
+          color: primaryColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              width: 2),
+        ),
+      ),
     );
   }
 

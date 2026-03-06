@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import 'package:house_rental/features/trips/presentation/pages/trips_page.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_inbox_page.dart';
+import 'package:house_rental/features/roommate/presentation/pages/roommate_feed_screen.dart';
+import 'package:house_rental/features/roommate/presentation/pages/roommate_profile_screen.dart';
 import 'package:house_rental/features/profile/presentation/pages/profile_page.dart';
 import 'package:house_rental/features/profile/presentation/pages/login_security_page.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
@@ -31,6 +33,7 @@ import 'package:house_rental/features/rent_payments/presentation/pages/rental_ag
 import 'package:house_rental/features/rent_payments/presentation/pages/home_loans_page.dart';
 import 'package:house_rental/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:house_rental/features/ai_services/presentation/recommendations_view.dart';
+import 'package:house_rental/features/profile/presentation/pages/subpages/rewards_page.dart';
 import 'package:house_rental/core/navigation/main_navigation.dart';
 // import 'package:house_rental/features/chat/presentation/pages/inbox_page.dart'; // Removed old import to avoid conflict
 import 'package:flutter/material.dart';
@@ -68,13 +71,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplash = location == AppRouter.splash;
       final isAuth = location == AppRouter.login;
 
-      // 1. If not logged in and not on Auth page, go to Login
+      // 1. If not logged in, allow Home and Profile, else force Login
       if (user == null) {
-        if (!isAuth && !isSplash) {
+        final isHome = location == AppRouter.home;
+        final isProfile = location == AppRouter.profile;
+        if (!isAuth && !isSplash && !isHome && !isProfile) {
           debugPrint('🏠 Unauthorized access to $location: Force to LOGIN');
           return AppRouter.login;
         }
-        return null; // Stay on Login or Splash
+        return null; // Stay on Login, Splash, Home, or Profile
       }
 
       // 2. If logged in and on Auth/Splash page, go Home
@@ -246,6 +251,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRouter.aiRecommendations,
         builder: (context, state) => const RecommendationsView(),
       ),
+      GoRoute(
+        path: AppRouter.roommateFeed,
+        builder: (context, state) => const RoommateFeedScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.roommateProfile,
+        builder: (context, state) => const RoommateProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.rewards,
+        builder: (context, state) => const RewardsPage(),
+      ),
     ],
   );
 });
@@ -287,4 +304,7 @@ final class AppRouter {
   static const String rentalAgreements = '/rental-agreements';
   static const String homeLoans = '/home-loans';
   static const String aiRecommendations = '/ai-recommendations';
+  static const String roommateFeed = '/roommate-feed';
+  static const String roommateProfile = '/roommate-profile';
+  static const String rewards = '/rewards';
 }

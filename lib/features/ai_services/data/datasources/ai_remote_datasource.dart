@@ -46,7 +46,7 @@ class AIRemoteDataSourceImpl implements AIRemoteDataSource {
         body: jsonEncode({
           'query': query,
         }),
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -78,7 +78,7 @@ class AIRemoteDataSourceImpl implements AIRemoteDataSource {
           'bedrooms': bedrooms,
           'bathrooms': bathrooms,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -103,7 +103,7 @@ class AIRemoteDataSourceImpl implements AIRemoteDataSource {
           'user_preferences': data['preferences'],
           'available_properties': data['properties'],
         }),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
-import 'package:house_rental/features/auth/domain/usecases/update_user_role_usecase.dart';
+
 import 'package:house_rental/features/profile/presentation/widgets/profile_widgets.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/l10n/generated/app_localizations.dart';
@@ -33,10 +33,11 @@ class ProfilePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -234,7 +235,7 @@ class ProfilePage extends ConsumerWidget {
                     ProfileMenuItem(
                       icon: Icons.card_giftcard_outlined,
                       title: "My Rewards & Coupons",
-                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rewards coming soon!'))),
+                      onTap: () => context.push(AppRouter.rewards),
                       isDark: isDark,
                     ),
                     ProfileMenuItem(
@@ -300,7 +301,7 @@ class ProfilePage extends ConsumerWidget {
                         onChanged: (value) {
                           ref.read(themeProvider.notifier).setTheme(value ? ThemeMode.dark : ThemeMode.light);
                         },
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                       ),
                     ),
                   ),
@@ -337,8 +338,9 @@ class ProfilePage extends ConsumerWidget {
                           // Use the helper we know exists
                           final cities = ["Mumbai", "Bangalore", "Hyderabad", "Chennai", "Delhi", "Goa", "Kochi", "Coimbatore", "Vijayawada", "Dindigul", "Madurai", "Trichy"];
                           int count = 0;
+                          final userData = ref.read(currentUserProvider).value;
                           for (var city in cities) {
-                            final demos = DemoListingsData.generateDemoListings(city, 2);
+                            final demos = DemoListingsData.generateDemoListings(city, 2, ownerId: userData?.uid);
                             for (var d in demos) {
                               await firestore.collection('listings').doc(d.id).set(ListingModel.fromEntity(d).toJson());
                               count++;
@@ -390,14 +392,14 @@ class ProfilePage extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
-              // Logout Button
+              // Auth Buttons
               if (user != null)
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
-                      side: BorderSide(color: AppColors.primary),
+                      side: const BorderSide(color: AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -409,16 +411,27 @@ class ProfilePage extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => context.push(AppRouter.login),
+                    child: const Text(
+                      "Log In / Sign Up",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
                 ),
-              
-              const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  "Version 1.0.0",
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                ),
-              ),
-              const SizedBox(height: 40),
             ],
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ServiceBookingPage extends ConsumerStatefulWidget {
   final String serviceName;
@@ -68,9 +69,14 @@ class _ServiceBookingPageState extends ConsumerState<ServiceBookingPage> {
                   children: [
                     // Background Image
                     Positioned.fill(
-                      child: Image.network(
-                        widget.serviceImage ?? 'https://images.unsplash.com/photo-1581578731548-c64695cc6958?auto=format&fit=crop&q=80&w=800',
+                      child: CachedNetworkImage(
+                        imageUrl: widget.serviceImage ?? 'https://images.unsplash.com/photo-1581578731548-c64695cc6958?auto=format&fit=crop&q=80&w=800',
                         fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(color: Colors.grey.shade900),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey.shade900,
+                          child: Icon(widget.serviceIcon, color: Colors.white24, size: 50),
+                        ),
                       ),
                     ),
                     // Gradient Overlay
@@ -81,9 +87,9 @@ class _ServiceBookingPageState extends ConsumerState<ServiceBookingPage> {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.7),
-                            ],
+                               Colors.black.withOpacity(0.2),
+                               Colors.black.withOpacity(0.9),
+                             ],
                           ),
                         ),
                       ),

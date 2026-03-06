@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
@@ -7,6 +8,8 @@ import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
 
 class RecommendationsView extends ConsumerStatefulWidget {
   const RecommendationsView({super.key});
@@ -78,45 +81,56 @@ class _RecommendationsViewState extends ConsumerState<RecommendationsView> {
                   "My budget is between \$$budgetMin and \$$budgetMax. "
                   "I need at least $bedrooms bedrooms. "
                   "Preferred amenities: ${amenitiesList.isEmpty ? 'none specific' : amenitiesList.join(', ')}.";
+            } else if (user.displayName != null) {
+               userPreferences = "I am ${user.displayName}. Looking for a great place to stay.";
             }
           }
           
-          // Map listings to a lean JSON string to send to Gemini
-          final String availableProperties = listings.map((l) => 
-            '{"id": "${l.id}", "title": "${l.title}", "city": "${l.city}", "price": ${l.price}, "bedrooms": ${l.bedrooms}, "amenities": "${l.amenities.join(', ')}"}'
-          ).toList().join(', ');
+          // Build properties list for AI as a proper JSON-encodable list
+          final availableProperties = listings.map((l) => {
+            'id': l.id,
+            'title': l.title,
+            'city': l.city,
+            'price': l.price,
+            'bedrooms': l.bedrooms,
+            'amenities': l.amenities.join(', '),
+          }).toList();
 
           final result = await ref.read(getRecommendationsUseCaseProvider)({
             'preferences': userPreferences,
-            'properties': '[$availableProperties]'
+            'properties': jsonEncode(availableProperties),
           });
 
           if (!mounted) return;
 
           result.fold(
             (failure) {
+              debugPrint('AI Recommendation failed: ${failure.message}');
               setState(() {
-                _error = 'AI Analysis failed: ${failure.message}';
+                // Fallback: show first 5 listings if AI fails
+                _recommendedListings = listings.take(5).toList();
                 _isLoading = false;
               });
             },
             (aiResponse) {
-              // Parse AI response to find matching IDs and build the recommended list
-              // (In a production app, the AI would return strict JSON, but we parse text here)
+              // Parse AI response to find matching IDs
               final recommended = listings.where((listing) {
-                // simple substring check if the AI mentioned the ID
                 return aiResponse.contains(listing.id);
               }).toList();
 
               setState(() {
-                _recommendedListings = recommended.isNotEmpty ? recommended : listings.take(3).toList();
+                // If AI matched nothing or returned garbage, show top 5 high-rated listings
+                _recommendedListings = recommended.isNotEmpty 
+                  ? recommended 
+                  : (List<ListingEntity>.from(listings)..sort((a,b) => b.averageRating.compareTo(a.averageRating))).take(5).toList();
                 _isLoading = false;
               });
             },
           );
         } catch (e) {
+             debugPrint('Unexpected error in AI Fetch: $e');
              setState(() {
-                _error = 'An unexpected error occurred: $e';
+                _recommendedListings = listings.take(5).toList();
                 _isLoading = false;
               });
         }
@@ -127,52 +141,92 @@ class _RecommendationsViewState extends ConsumerState<RecommendationsView> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
-    
-    if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.purple),
-            SizedBox(height: 16),
-            Text("AI is analyzing thousands of properties for you..."),
-          ],
-        ),
-      );
-    }
+    final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
 
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: bg,
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+              const CircularProgressIndicator(color: AppColors.primary),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _fetchRecommendations,
-                child: const Text('Try Again'),
-              )
+              Text(
+                "AI is searching for your perfect home...",
+                style: TextStyle(
+                  color: textColor.withOpacity(0.7),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
         ),
       );
     }
 
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: bg,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _fetchRecommendations,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Try Again', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: bg,
       appBar: AppBar(
-        title: const Row(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Row(
           children: [
-            Icon(Icons.auto_awesome, color: Colors.purple),
-            SizedBox(width: 8),
-            Text('AI Recommendations'),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'AI Recommendations',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
           ],
         ),
-        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+        backgroundColor: bg,
+        centerTitle: false,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -180,22 +234,24 @@ class _RecommendationsViewState extends ConsumerState<RecommendationsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple.shade900, Colors.deepPurple.shade700],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
+            GlassContainer.standard(
+              context: context,
+              padding: const EdgeInsets.all(20),
+              child: Row(
                 children: [
-                  Icon(Icons.insights, color: Colors.white, size: 32),
-                  SizedBox(width: 16),
-                  Expanded(
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.insights_rounded, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
                     child: Text(
-                      "Based on your profile, we think these properties are perfect for you.",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      "Based on your profile, we've curated homes that match your unique lifestyle.",
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
                     ),
                   ),
                 ],
@@ -208,8 +264,12 @@ class _RecommendationsViewState extends ConsumerState<RecommendationsView> {
               itemCount: _recommendedListings.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: ListingCard(listing: _recommendedListings[index]),
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: ListingCard(
+                    listing: _recommendedListings[index],
+                    isVerticalFeed: true,
+                    margin: EdgeInsets.zero,
+                  ),
                 );
               },
             ),

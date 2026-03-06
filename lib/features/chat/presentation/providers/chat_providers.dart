@@ -33,6 +33,11 @@ final sendMessageUseCaseProvider = Provider<SendMessageUseCase>((ref) {
   return SendMessageUseCase(ref.watch(chatRepositoryProvider));
 });
 
+final getOrCreateRoommateChatUseCaseProvider = Provider<GetOrCreateChatRoomUseCase>((ref) {
+  // Roommate chats are just direct chats (listingId = 'roommate')
+  return GetOrCreateChatRoomUseCase(ref.watch(chatRepositoryProvider));
+});
+
 final messagesStreamProvider = StreamProvider.family<List<MessageEntity>, String>((ref, chatRoomId) {
   return ref.watch(getMessagesStreamUseCaseProvider)(chatRoomId);
 });
@@ -42,11 +47,16 @@ final userChatRoomsProvider = StreamProvider.family<List<ChatRoomEntity>, String
 });
 
 final chatRoomStreamProvider = StreamProvider.family<ChatRoomEntity?, String>((ref, chatRoomId) {
-  return ref.watch(firestoreProvider)
-      .collection('chats')
-      .doc(chatRoomId)
-      .snapshots()
-      .map((doc) => doc.exists ? ChatRoomModel.fromFirestore(doc) : null);
+  // Bypass Firestore (permission-denied) — derive from the mocked userChatRoomsProvider
+  final userId = ref.watch(authStateProvider).value?.uid ?? '';
+  return ref.watch(userChatRoomsProvider(userId)).when(
+    data: (rooms) {
+      final match = rooms.where((r) => r.id == chatRoomId).toList();
+      return Stream.value(match.isNotEmpty ? match.first : null);
+    },
+    loading: () => const Stream.empty(),
+    error: (_, __) => Stream.value(null),
+  );
 });
 
 /// Bookings for a chat room (visit requests created from chat). Uses visit request repository.

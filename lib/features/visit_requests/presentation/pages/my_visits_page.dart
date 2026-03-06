@@ -299,7 +299,7 @@ class _VisitRequestCard extends ConsumerWidget {
           SnackBar(content: Text('Error opening chat: ${failure.message}')),
         );
       },
-      (chatRoom) => context.push(AppRouter.chat, extra: {'chatRoomId': chatRoom.id, 'title': request.listingTitle}),
+      (chatRoom) => context.push('/chat-detail', extra: {'chatRoomId': chatRoom.id, 'title': request.listingTitle}),
     );
   }
 

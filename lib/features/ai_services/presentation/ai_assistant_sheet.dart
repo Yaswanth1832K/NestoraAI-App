@@ -5,8 +5,13 @@ import 'package:house_rental/features/ai_services/data/property_chat_service.dar
 
 class AIAssistantSheet extends StatefulWidget {
   final ListingEntity listing;
+  final ScrollController? scrollController;
 
-  const AIAssistantSheet({super.key, required this.listing});
+  const AIAssistantSheet({
+    super.key, 
+    required this.listing,
+    this.scrollController,
+  });
 
   @override
   State<AIAssistantSheet> createState() => _AIAssistantSheetState();
@@ -157,6 +162,7 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
                     ),
                   )
                 : ListView.builder(
+                    controller: widget.scrollController,
                     padding: const EdgeInsets.only(bottom: 20),
                     itemCount: _messages.length,
                     physics: const BouncingScrollPhysics(),

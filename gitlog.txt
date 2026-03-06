@@ -1,0 +1,101 @@
+﻿commit febe952ee3c2c8954c0671ed097b7fc508a43199
+Author: Yaswanth1832K <yaswanthjallipalli@gmail.com>
+Date:   2026-03-06T05:07:25+05:30
+
+    Merged FETCH_HEAD UI Updates and UI Overflows
+
+commit 2f03efa26bf4ea847c8993ea2675d45e6fcbd9e8
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T04:47:36+05:30
+
+    Latest UI enhancements and refactorings
+
+commit e5ca956582a75cfe0a1cb73eee2b5400a162bdeb
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T04:32:17+05:30
+
+    Eliminate BoxConstraints errors and fix Bottom Navigation overflow on narrow screens. Improve transition smoothness.
+
+commit fe7282f2a6222ba1dad0d3670333f9bda004ba00
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T04:24:50+05:30
+
+    Fix Trips page grid layout, uniform property cards, and bottom navigation FAB alignment.
+
+commit 27332630cf0d14fb2f4a6d7cd97d1dff05312d84
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T04:11:17+05:30
+
+    Enhance UI with premium motion design: Curtain theme transition, staggered reveal animations, and physics-based interactions. Fix localization imports and bottom navigation overflow.
+
+commit 8d4e8d7e25c9c8891f965c1d08b509aa44d1211e
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T01:48:37+05:30
+
+    feat: enhance social auth, add back button, and fix camera on web
+
+commit 8550685eaa50f48d1641f9d094956615e2a25fc7
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T01:00:05+05:30
+
+    fix: eliminate Unexpected null value and infinite width layout errors on web
+
+commit b40667290885802b9d58c75260a433f7ccf649fb
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T00:49:37+05:30
+
+    feat: implement real Remember Me on login page
+
+commit 33e0653501368862aaab2f5fc7042b94c15ac1ae
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T00:47:21+05:30
+
+    fix: profile photo upload working on web and native platforms
+
+commit 8e3b8e13c958925fabef8d8a59e07900f99ef22b
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-06T00:08:43+05:30
+
+    feat: major UI/UX improvements across all pages
+    
+    - Property grid: 4-column equal-width layout with 3-image slider per card
+    - Home filters: Buy/Rent/Commercial + category pills (Trending/Luxe/Apartments/Villas/Plots) now filter listings in real-time
+    - Messages page: working filter tabs (All/Property/Direct/Unread), inline search, unread badges, New Chat FAB, theme-adaptive chat input
+    - Wishlists page: 4-column grid matching home layout, count header, working Explore button
+    - Trips page: real trip cards from Firebase (image, name, city, date/time, status, price), Upcoming/Past/Canceled tabs, Cancel/Reschedule/Chat/View actions
+    - Map page: improved location button with error handling and visual feedback
+    - Localization: global language support across all pages including login
+
+commit e59d2bb06e5037928ca839e0cc98982db4f2d4ee
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-05T21:10:25+05:30
+
+    Merge latest changes from Yaswanth1832K/NestoraAI-App while preserving UI and integrating backend functionality
+
+commit 453b6b7fbda21ea735ee3fe5f9dcb855657c6d6a
+Author: hemanth45-gudi <hemanth.gudi45@gmail.com>
+Date:   2026-03-05T20:24:29+05:30
+
+    feat: integrate Spin & Win feature, add reviews navigation
+
+commit 09120cc95e154f8ae0336d175409e0e41af80552
+Merge: 685a0aa 916b4e6
+Author: Yaswanth Jallipalli <yaswanthjallipalli@gmail.com>
+Date:   2026-03-04T21:05:52+05:30
+
+    Merge pull request #2 from Yaswanth1832K/2026-02-23-2n7w
+    
+    feat: comprehensive UI improvements, bug fixes, and AI integration
+
+commit 916b4e61cba5259ba0f12c42692c19cc6c72b2ef
+Author: Yaswanth1832K <yaswanthjallipalli@gmail.com>
+Date:   2026-03-04T21:02:18+05:30
+
+    feat: comprehensive UI improvements, bug fixes, and AI integration
+
+commit 685a0aa055e8c46eb28dc2f5b03df46834f369a2
+Merge: e040385 e4ad897
+Author: Yaswanth1832K <yaswanthjallipalli@gmail.com>
+Date:   2026-02-23T16:38:47+05:30
+
+    Merge branch '2026-02-23-2n7w'
