@@ -5,6 +5,7 @@ class UserEntity extends Equatable {
   final String email;
   final String? displayName;
   final String? photoUrl;
+  final String? phoneNumber;
   final String? destination;
   final String role; // 'owner' or 'renter'
 
@@ -13,10 +14,11 @@ class UserEntity extends Equatable {
     required this.email,
     this.displayName,
     this.photoUrl,
+    this.phoneNumber,
     this.destination,
     this.role = 'renter', // Default to renter for safety
   });
 
   @override
-  List<Object?> get props => [uid, email, displayName, photoUrl, destination, role];
+  List<Object?> get props => [uid, email, displayName, photoUrl, phoneNumber, destination, role];
 }

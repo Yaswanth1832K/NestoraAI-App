@@ -33,6 +33,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Timer? _typingStopTimer;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authStateProvider).value;
+      if (user != null) {
+        ref.read(markAsReadUseCaseProvider)(
+          chatId: widget.chatRoomId,
+          userId: user.uid,
+        );
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _typingStopTimer?.cancel();
     _messageController.dispose();
@@ -459,6 +473,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
               final result = await repo.createBookingFromChat(
                 listingId: chatRoom.listingId,
+                listingTitle: listing.title,
+                listingImage: listing.allImages.isNotEmpty ? listing.allImages.first : '',
+                tenantName: currentUser?.displayName ?? 'Guest',
                 ownerId: chatRoom.ownerId,
                 renterId: chatRoom.renterId,
                 chatId: widget.chatRoomId,
@@ -521,42 +538,46 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Widget _buildInput() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark2 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: TextField(
-                controller: _messageController,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                decoration: const InputDecoration(
-                  hintText: 'Type a message...',
-                  border: InputBorder.none,
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark2 : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                maxLines: null,
-                onChanged: (_) => _onTyping(),
+                child: TextField(
+                  controller: _messageController,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  decoration: const InputDecoration(
+                    hintText: 'Type a message...',
+                    border: InputBorder.none,
+                  ),
+                  maxLines: 5,
+                  minLines: 1,
+                  onChanged: (_) => _onTyping(),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: AppColors.purpleGradient,
-                shape: BoxShape.circle,
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _sendMessage,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: AppColors.purpleGradient,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
               ),
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

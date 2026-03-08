@@ -1,11 +1,11 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:house_rental/core/network/api_client.dart';
 import 'package:flutter/foundation.dart';
-
 import 'package:house_rental/core/constants/api_constants.dart';
 
 class PropertyChatService {
-  String get baseUrl => ApiConstants.baseUrl;
+  final ApiClient _apiClient;
+
+  PropertyChatService(this._apiClient);
 
   Future<String> askAboutProperty({
     required String question,
@@ -18,9 +18,6 @@ class PropertyChatService {
     required double sqft,
   }) async {
     try {
-      debugPrint('🤖 Sending request to AI backend...');
-      debugPrint('URL: $baseUrl/chat/property');
-      
       final requestBody = {
         'question': question,
         'title': title,
@@ -32,22 +29,12 @@ class PropertyChatService {
         'sqft': sqft,
       };
       
-      debugPrint('Request body: $requestBody');
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/chat/property'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      ).timeout(
-        const Duration(seconds: 10), // Shorter timeout for better UX
+      final response = await _apiClient.post(
+        ApiConstants.propertyChat,
+        body: requestBody,
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['reply'] ?? 'I processed your request, but I don\'t have a specific answer right now.';
-      } else {
-        return _getFallbackResponse(question, title);
-      }
+      return response['reply'] ?? 'I processed your request, but I don\'t have a specific answer right now.';
     } catch (e) {
       debugPrint('❌ Error in PropertyChatService: $e');
       return _getFallbackResponse(question, title);

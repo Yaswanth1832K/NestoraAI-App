@@ -269,6 +269,7 @@ class _RecommendationsViewState extends ConsumerState<RecommendationsView> {
                     listing: _recommendedListings[index],
                     isVerticalFeed: true,
                     margin: EdgeInsets.zero,
+                    heroPrefix: 'recommendations',
                   ),
                 );
               },

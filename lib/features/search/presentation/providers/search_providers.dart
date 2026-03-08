@@ -3,6 +3,7 @@ import 'package:house_rental/features/listings/domain/entities/listing_entity.da
 import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/features/location/location_provider.dart';
 
 // Class to store user search preferences in memory
 class UserSearchPreferences {
@@ -72,7 +73,9 @@ final searchProvider = StateNotifierProvider<SearchNotifier, AsyncValue<List<Lis
 // Recommendations Provider
 final recommendationsProvider = FutureProvider<List<ListingEntity>>((ref) async {
   final preferences = ref.watch(userPreferencesProvider);
-  if (preferences.isEmpty) return [];
+  final location = ref.watch(userLocationProvider);
+  
+  if (preferences.isEmpty && location.city == null) return [];
 
   final repository = ref.read(listingRepositoryProvider);
   
@@ -80,6 +83,9 @@ final recommendationsProvider = FutureProvider<List<ListingEntity>>((ref) async 
     filter: ListingFilter(
       bedrooms: preferences.bedrooms,
       maxPrice: preferences.maxPrice,
+      city: location.city,
+      userLat: location.position?.latitude,
+      userLng: location.position?.longitude,
     ),
   );
 

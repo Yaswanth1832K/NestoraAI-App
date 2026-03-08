@@ -58,7 +58,7 @@ class MyVisitsPage extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(40.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -138,22 +138,33 @@ class _VisitRequestCard extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today_rounded, size: 14, color: primaryColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            DateFormat('EEE, MMM dd').format(request.date),
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(Icons.access_time_rounded, size: 14, color: primaryColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            request.time,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isVerySmall = MediaQuery.of(context).size.width < 340;
+                          return Row(
+                            children: [
+                              Icon(Icons.calendar_today_rounded, size: 12, color: primaryColor),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  DateFormat(isVerySmall ? 'MMM dd' : 'EEE, MMM dd').format(request.date),
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              SizedBox(width: isVerySmall ? 6 : 12),
+                              Icon(Icons.access_time_rounded, size: 12, color: primaryColor),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  request.time,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
                       ),
                       const SizedBox(height: 12),
                       Container(
@@ -192,51 +203,114 @@ class _VisitRequestCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 16),
-            Row(
-              children: [
-                if (request.status == 'pending') ...[
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _cancelRequest(context, ref, user?.uid),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.withOpacity(0.1),
-                        foregroundColor: Colors.red,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isVerySmall = MediaQuery.of(context).size.width < 380;
+                final bool hasThirdBtn = request.status == 'approved';
+                final bool hasFirstBtn = request.status == 'pending' || request.status == 'approved';
+
+                if (isVerySmall && (hasThirdBtn || hasFirstBtn)) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          if (hasFirstBtn)
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => _cancelRequest(context, ref, user?.uid),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.withOpacity(0.1),
+                                  foregroundColor: Colors.red,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: const Text('Cancel Visit', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                              ),
+                            ),
+                          if (hasFirstBtn) const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => _rescheduleRequest(context, ref),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor.withOpacity(0.1),
+                                foregroundColor: primaryColor,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Reschedule', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w900)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _rescheduleRequest(context, ref),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor.withOpacity(0.1),
-                      foregroundColor: primaryColor,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Reschedule', style: TextStyle(fontWeight: FontWeight.w900)),
-                  ),
-                ),
-                if (request.status == 'approved') ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _openChat(context, ref),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      if (hasThirdBtn) ...[
+                        const SizedBox(height: 10),
+                        ElevatedButton.icon(
+                          onPressed: () => _openChat(context, ref),
+                          icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                          label: const Text('Chat with Owner', style: TextStyle(fontWeight: FontWeight.w900)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ]
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    if (request.status == 'pending' || request.status == 'approved') ...[
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _cancelRequest(context, ref, user?.uid),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.withOpacity(0.1),
+                            foregroundColor: Colors.red,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
+                        ),
                       ),
-                      child: const Text('Chat', style: TextStyle(fontWeight: FontWeight.w900)),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _rescheduleRequest(context, ref),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor.withOpacity(0.1),
+                          foregroundColor: primaryColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Reschedule', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
+                      ),
                     ),
-                  ),
-                ],
-              ],
+                    if (request.status == 'approved') ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _openChat(context, ref),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Chat', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              }
             ),
           ],
         ),
@@ -249,7 +323,8 @@ class _VisitRequestCard extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Cancel Request"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("Cancel Request", style: TextStyle(fontWeight: FontWeight.w900)),
         content: const Text("Are you sure you want to cancel this visit request?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
@@ -259,7 +334,17 @@ class _VisitRequestCard extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      await ref.read(cancelVisitUseCaseProvider)(request, uid);
+      final result = await ref.read(cancelVisitUseCaseProvider)(request, uid);
+      if (context.mounted) {
+        result.fold(
+          (failure) => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to cancel: ${failure.message}'), backgroundColor: Colors.red),
+          ),
+          (_) => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Visit cancelled successfully'), backgroundColor: Colors.green),
+          ),
+        );
+      }
     }
   }
 
@@ -307,7 +392,8 @@ class _VisitRequestCard extends ConsumerWidget {
     switch (status) {
       case 'approved': return Colors.green;
       case 'rejected':
-      case 'cancelled': return Colors.red;
+      case 'cancelled': 
+      case 'canceled': return Colors.red;
       case 'pending': return Colors.orange;
       default: return Colors.grey;
     }

@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/heman/Downloads/Nestora-AI-main/Nestora-AI-main/linux"
+    "cmake.sourceDirectory": "C:/Users/heman/Downloads/Nestora-AI-main/Nestora-AI-main/linux",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

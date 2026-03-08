@@ -13,6 +13,8 @@ import 'package:house_rental/core/providers/firebase_provider.dart';
 import 'package:house_rental/features/listings/data/models/listing_model.dart';
 import 'package:house_rental/features/listings/domain/utils/demo_listings_data.dart';
 import 'package:house_rental/features/listings/presentation/providers/paginated_listings_notifier.dart';
+import 'package:house_rental/core/widgets/nestora_image.dart';
+import 'package:house_rental/core/theme/app_spacing.dart';
 
 final notificationsProvider = StateProvider<bool>((ref) => true);
 
@@ -98,15 +100,12 @@ class ProfilePage extends ConsumerWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.5), width: 2),
                         ),
-                        child: CircleAvatar(
-                          radius: 35,
-                          backgroundColor: isDark ? Colors.white10 : Colors.black12,
-                          backgroundImage: userData?.photoUrl != null
-                              ? NetworkImage(userData!.photoUrl!)
-                              : null,
-                          child: userData?.photoUrl == null
-                              ? Icon(Icons.person_rounded, size: 35, color: subTextColor)
-                              : null,
+                        child: NestoraImage(
+                          imageUrl: userData?.photoUrl ?? '',
+                          width: 70,
+                          height: 70,
+                          isCircle: true,
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -335,18 +334,16 @@ class ProfilePage extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seeding properties... please wait.')));
                         try {
                           final firestore = ref.read(firestoreProvider);
-                          // Use the helper we know exists
-                          final cities = ["Mumbai", "Bangalore", "Hyderabad", "Chennai", "Delhi", "Goa", "Kochi", "Coimbatore", "Vijayawada", "Dindigul", "Madurai", "Trichy"];
-                          int count = 0;
                           final userData = ref.read(currentUserProvider).value;
-                          for (var city in cities) {
-                            final demos = DemoListingsData.generateDemoListings(city, 2, ownerId: userData?.uid);
-                            for (var d in demos) {
-                              await firestore.collection('listings').doc(d.id).set(ListingModel.fromEntity(d).toJson());
-                              count++;
-                            }
+                          
+                          // Generate 20 properties in Coimbatore ONLY as requested
+                          final demos = DemoListingsData.generateDemoListings('Coimbatore', 20, ownerId: userData?.uid);
+                          int count = 0;
+                          for (var d in demos) {
+                            await firestore.collection('listings').doc(d.id).set(ListingModel.fromEntity(d).toJson());
+                            count++;
                           }
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Successfully seeded $count properties!')));
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Successfully seeded $count properties in Coimbatore!')));
                           // Refresh listings
                           ref.invalidate(paginatedListingsProvider);
                         } catch (e) {

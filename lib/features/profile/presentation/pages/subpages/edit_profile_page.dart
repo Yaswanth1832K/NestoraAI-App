@@ -14,6 +14,7 @@ import 'package:house_rental/features/notifications/domain/entities/notification
 import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:house_rental/core/widgets/glass_container.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -38,11 +39,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    final user = ref.read(authStateProvider).value;
-    _nameController  = TextEditingController(text: user?.displayName ?? '');
+    final user = ref.read(currentUserProvider).value;
+    _nameController = TextEditingController(text: user?.displayName ?? '');
     _phoneController = TextEditingController(text: user?.phoneNumber ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-    _currentPhotoUrl = user?.photoURL;
+    _currentPhotoUrl = user?.photoUrl;
   }
 
   @override
@@ -190,26 +191,45 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
       if (kIsWeb && _webImageBytes != null) {
         // Web upload via bytes
+        debugPrint("UploadImage: Starting putData upload (Web)...");
         uploadTask = storageRef.putData(
           _webImageBytes!,
           SettableMetadata(contentType: 'image/jpeg'),
         );
       } else if (_nativeImageFile != null) {
         // Native upload via File
+        debugPrint("UploadImage: Starting putFile upload (Native)...");
         uploadTask = storageRef.putFile(_nativeImageFile!);
       } else {
+        debugPrint("UploadImage: No new image data found.");
         return _currentPhotoUrl;
       }
 
-      final snapshot = await uploadTask;
-      return await snapshot.ref.getDownloadURL();
+      // Listen to progress
+      uploadTask.snapshotEvents.listen(
+        (TaskSnapshot snapshot) {
+          final progress = 100 * (snapshot.bytesTransferred / snapshot.totalBytes);
+          debugPrint("UploadImage: Progress ${progress.toStringAsFixed(2)}% (${snapshot.state})");
+        },
+        onError: (e) => debugPrint("UploadImage: Snapshot error: $e"),
+      );
+
+      // Wait for completion with timeout
+      debugPrint("UploadImage: Waiting for snapshot...");
+      final snapshot = await uploadTask.timeout(const Duration(seconds: 30));
+      debugPrint("UploadImage: Snapshot received. Getting URL...");
+      
+      final url = await snapshot.ref.getDownloadURL().timeout(const Duration(seconds: 15));
+      debugPrint("UploadImage: URL successfully retrieved.");
+      return url;
     } catch (e) {
+      debugPrint("UploadImage: EXCEPTION: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to upload image: $e')),
         );
       }
-      return null;
+      return null; // Safety: return null so we don't proceed with broken URL
     }
   }
 
@@ -252,65 +272,78 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    debugPrint("ProfileUpdate: Starting update process...");
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        debugPrint("ProfileUpdate: No user found! Aborting.");
+        setState(() => _isLoading = false);
+        return;
+      }
 
-    // 1. Upload image (returns new URL, existing URL, or null if removed)
-    final String? photoURL = await _uploadImage(user.uid);
+      // 1. Upload image (returns new URL, existing URL, or null if removed)
+      debugPrint("ProfileUpdate: Uploading image...");
+      final String? photoURL = await _uploadImage(user.uid);
+      debugPrint("ProfileUpdate: Image upload result: ${photoURL != null ? 'URL received' : 'Null'}");
 
-    // 2. Update email
-    await _updateEmail(user, _emailController.text.trim());
+      // 2. Update email
+      debugPrint("ProfileUpdate: Checking email update...");
+      await _updateEmail(user, _emailController.text.trim());
 
-    // 3. Update display name + photo in Auth + Firestore
-    final result = await ref.read(updateProfileUseCaseProvider).call(
-          displayName: _nameController.text.trim(),
-          phoneNumber: _phoneController.text.trim().isEmpty
-              ? null
-              : _phoneController.text.trim(),
-          photoURL: photoURL,
-        );
+      // 3. Update display name + photo in Auth + Firestore
+      debugPrint("ProfileUpdate: Calling updateProfileUseCase...");
+      final result = await ref.read(updateProfileUseCaseProvider).call(
+            displayName: _nameController.text.trim(),
+            phoneNumber: _phoneController.text.trim().isEmpty
+                ? null
+                : _phoneController.text.trim(),
+            photoURL: photoURL,
+          );
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      if (!mounted) return;
 
-    result.fold(
-      (failure) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Failed to update profile: ${failure.message}')),
-      ),
-      (_) {
-        // Push notification
-        const uuid = Uuid();
-        ref.read(addNotificationUseCaseProvider)(
-          user.uid,
-          NotificationEntity(
-            id: uuid.v4(),
-            title: 'Profile Updated',
-            body: 'Your profile information has been successfully updated.',
-            timestamp: DateTime.now(),
-            type: 'system',
-            isRead: false,
-          ),
-        );
+      result.fold(
+        (failure) {
+          debugPrint("ProfileUpdate: UseCase failed: ${failure.message}");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update profile: ${failure.message}')),
+          );
+        },
+        (_) {
+          debugPrint("ProfileUpdate: Success! Finalizing...");
+          // Evict old avatar from cache
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
 
-        // Evict old avatar from Flutter's image cache so profile page
-        // immediately shows the newly uploaded photo, not the cached stale one.
-        PaintingBinding.instance.imageCache.clear();
-        PaintingBinding.instance.imageCache.clearLiveImages();
-
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile updated successfully ✓'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Wait a tiny bit for the provider to update via Firestore stream
+          // before popping, to avoid stale data flicker
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) context.pop();
+          });
+        },
+      );
+    } catch (e, stack) {
+      debugPrint("ProfileUpdate: UNEXPECTED ERROR: $e");
+      debugPrint(stack.toString());
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully ✓'),
-            backgroundColor: Colors.green,
-          ),
+          SnackBar(content: Text('An unexpected error occurred: $e')),
         );
-        context.pop();
-      },
-    );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        debugPrint("ProfileUpdate: Loading state reset.");
+      }
+    }
   }
 
   // ── Avatar preview ────────────────────────────────────────────
@@ -332,175 +365,201 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authStateProvider).value;
+    final user = ref.watch(currentUserProvider).value;
     if (user == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
     final preview = _previewImage();
     final hasImage = preview != null;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Edit Profile',
-            style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('Personal Information',
+            style: TextStyle(fontWeight: FontWeight.w900, color: textColor, fontSize: 20)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textColor, size: 20),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // ── Avatar ───────────────────────────────────────
-              Center(
-                child: Stack(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
                   children: [
-                    GestureDetector(
-                      onTap: _showImagePickerOptions,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary
-                                .withOpacity(hasImage ? 0.6 : 0.2),
-                            width: 3,
+                    // ── Avatar ───────────────────────────────────────
+                    Center(
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: _showImagePickerOptions,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.5),
+                                  width: 2,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: isDark
+                                    ? Colors.white10
+                                    : Colors.black.withOpacity(0.05),
+                                backgroundImage: preview,
+                                child: !hasImage
+                                    ? Icon(Icons.person_rounded,
+                                        size: 60,
+                                        color: isDark
+                                            ? Colors.white38
+                                            : Colors.black26)
+                                    : null,
+                              ),
+                            ),
                           ),
-                          boxShadow: hasImage
-                              ? [
-                                  BoxShadow(
-                                      color: AppColors.primary
-                                          .withOpacity(0.25),
-                                      blurRadius: 16,
-                                      spreadRadius: 2)
-                                ]
-                              : [],
-                        ),
-                        child: CircleAvatar(
-                          radius: 56,
-                          backgroundColor: isDark
-                              ? Colors.white10
-                              : Colors.black.withOpacity(0.05),
-                          backgroundImage: preview,
-                          child: !hasImage
-                              ? Icon(Icons.person_rounded,
-                                  size: 56,
-                                  color: isDark
-                                      ? Colors.white38
-                                      : Colors.black26)
-                              : null,
-                        ),
+                          Positioned(
+                            bottom: 4,
+                            right: 4,
+                            child: GlassContainer.standard(
+                              context: context,
+                              borderRadius: 20,
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(Icons.camera_alt_rounded,
+                                  color: AppColors.primary, size: 18),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    // Camera badge
-                    Positioned(
-                      bottom: 2,
-                      right: 2,
-                      child: GestureDetector(
-                        onTap: _showImagePickerOptions,
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
+
+                    const SizedBox(height: 12),
+                    Text(
+                      'Change profile photo',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    GlassContainer.standard(
+                      context: context,
+                      padding: const EdgeInsets.all(24),
+                      borderRadius: 24,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldHeader('FULL NAME', isDark),
+                          TextFormField(
+                            controller: _nameController,
+                            style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
+                            decoration: _inputDecoration('Enter your name', Icons.person_outline_rounded, isDark),
+                            validator: (v) => v == null || v.isEmpty ? 'Name required' : null,
                           ),
-                          child: const Icon(Icons.camera_alt_rounded,
-                              color: Colors.white, size: 18),
+                          const SizedBox(height: 24),
+                          _buildFieldHeader('EMAIL ADDRESS', isDark),
+                          TextFormField(
+                            controller: _emailController,
+                            style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
+                            decoration: _inputDecoration('Enter email', Icons.email_outlined, isDark),
+                            validator: (v) => v == null || !v.contains('@') ? 'Invalid email' : null,
+                          ),
+                          const SizedBox(height: 24),
+                          _buildFieldHeader('PHONE NUMBER', isDark),
+                          TextFormField(
+                            controller: _phoneController,
+                            style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
+                            decoration: _inputDecoration('Optional', Icons.phone_outlined, isDark),
+                            keyboardType: TextInputType.phone,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // ── Save button ───────────────────────────────────
+                    SizedBox(
+                      width: double.infinity,
+                      height: 58,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                          shadowColor: AppColors.primary.withOpacity(0.5),
                         ),
+                        onPressed: _isLoading ? null : _updateProfile,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 3),
+                              )
+                            : const Text('Save Changes',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                       ),
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              // Pick photo hint
-              Text(
-                'Tap to change photo',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? Colors.white38 : Colors.black38,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ── Name ─────────────────────────────────────────
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Display Name',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  prefixIcon: const Icon(Icons.person_outline_rounded),
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Name cannot be empty' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // ── Email ─────────────────────────────────────────
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  prefixIcon: const Icon(Icons.email_outlined),
-                ),
-                validator: (v) => v == null || !v.contains('@')
-                    ? 'Invalid email'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-
-              // ── Phone ─────────────────────────────────────────
-              TextFormField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number (optional)',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-
-              const SizedBox(height: 36),
-
-              // ── Save button ───────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0,
-                  ),
-                  onPressed: _isLoading ? null : _updateProfile,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : const Text('Save Changes',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w900)),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFieldHeader(String label, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: isDark ? Colors.white38 : Colors.black38,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint, IconData icon, bool isDark) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26),
+      prefixIcon: Icon(icon, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+      filled: true,
+      fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 1.5),
       ),
     );
   }

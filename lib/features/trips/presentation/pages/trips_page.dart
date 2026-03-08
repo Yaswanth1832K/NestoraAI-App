@@ -25,7 +25,7 @@ class _TripsPageState extends ConsumerState<TripsPage>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -72,8 +72,7 @@ class _TripsPageState extends ConsumerState<TripsPage>
                 unselectedLabelStyle:
                     const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                 tabs: const [
-                  Tab(text: 'Upcoming'),
-                  Tab(text: 'Past'),
+                  Tab(text: 'Trips'),
                   Tab(text: 'Canceled'),
                 ],
               ),
@@ -117,29 +116,15 @@ class _TripsPageState extends ConsumerState<TripsPage>
         ),
       ),
       data: (all) {
-        final now = DateTime.now();
-
-        // Upcoming: pending + approved whose date is today or future
-        final upcoming = all
-            .where((r) =>
-                (r.status == 'pending' || r.status == 'approved') &&
-                !r.date.isBefore(
-                    DateTime(now.year, now.month, now.day)))
-            .toList()
-          ..sort((a, b) => a.date.compareTo(b.date));
-
-        // Past: approved/rejected whose visit date has passed
-        final past = all
-            .where((r) =>
-                r.date.isBefore(
-                    DateTime(now.year, now.month, now.day)) &&
-                r.status != 'cancelled')
+        // All non-canceled trips: past, pending, approved
+        final trips = all
+            .where((r) => r.status != 'cancelled' && r.status != 'canceled')
             .toList()
           ..sort((a, b) => b.date.compareTo(a.date));
 
         // Canceled: explicitly cancelled
         final canceled = all
-            .where((r) => r.status == 'cancelled')
+            .where((r) => r.status == 'cancelled' || r.status == 'canceled')
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -147,22 +132,12 @@ class _TripsPageState extends ConsumerState<TripsPage>
           controller: _tabCtrl,
           children: [
             _TripList(
-              trips: upcoming,
+              trips: trips,
               emptyIcon: Icons.map_rounded,
-              emptyTitle: 'No upcoming trips',
+              emptyTitle: 'No trips yet',
               emptySubtitle:
                   "When you're ready to plan your next stay, we're here to help.",
               emptyBtnLabel: 'Explore Nestora',
-              primaryColor: primaryColor,
-              isDark: isDark,
-            ),
-            _TripList(
-              trips: past,
-              emptyIcon: Icons.history_rounded,
-              emptyTitle: 'No past trips',
-              emptySubtitle:
-                  "You haven't taken any trips using Nestora yet.",
-              emptyBtnLabel: 'Find a home',
               primaryColor: primaryColor,
               isDark: isDark,
             ),
@@ -186,7 +161,7 @@ class _TripsPageState extends ConsumerState<TripsPage>
     return TabBarView(
       controller: _tabCtrl,
       children: List.generate(
-        3,
+        2,
         (_) => _EmptyTrips(
           icon: Icons.lock_outline_rounded,
           title: 'Login required',
@@ -282,17 +257,28 @@ class _TripCard extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
-      child: GlassContainer.standard(
-        context: context,
-        borderRadius: 24,
-        padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+          border: Border.all(
+            color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Hero image ──────────────────────────────────────
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               child: Stack(
                 children: [
                   SizedBox(
@@ -350,8 +336,10 @@ class _TripCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                              color: statusColor.withOpacity(0.4),
-                              blurRadius: 8)
+                            color: statusColor.withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
                         ],
                       ),
                       child: Text(
@@ -427,7 +415,9 @@ class _TripCard extends ConsumerWidget {
                   ],
 
                   // Date & time row
-                  Row(
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
                     children: [
                       _InfoPill(
                         icon: Icons.calendar_today_rounded,
@@ -436,7 +426,6 @@ class _TripCard extends ConsumerWidget {
                         primaryColor: primaryColor,
                         isDark: isDark,
                       ),
-                      const SizedBox(width: 10),
                       _InfoPill(
                         icon: Icons.access_time_rounded,
                         label: trip.time,
@@ -478,8 +467,8 @@ class _TripCard extends ConsumerWidget {
                   // ── Action buttons ──────────────────────────────
                   Row(
                     children: [
-                      // Cancel — only for pending
-                      if (trip.status == 'pending') ...[
+                      // Cancel — for pending or approved (future)
+                      if (trip.status == 'pending' || trip.status == 'approved') ...[
                         Expanded(
                           child: _ActionBtn(
                             label: 'Cancel',
@@ -505,8 +494,8 @@ class _TripCard extends ConsumerWidget {
                         ),
 
                       // Chat — approved trips
+                      // Chat — approved trips
                       if (trip.status == 'approved') ...[
-                        if (trip.status == 'pending') const SizedBox(width: 10),
                         const SizedBox(width: 10),
                         Expanded(
                           child: _ActionBtn(
@@ -521,8 +510,8 @@ class _TripCard extends ConsumerWidget {
                       // View details — past / cancelled
                       if (trip.status == 'rejected' ||
                           trip.status == 'cancelled' ||
-                          trip.date
-                              .isBefore(DateTime(DateTime.now().year,
+                          trip.status == 'canceled' ||
+                          trip.date.isBefore(DateTime(DateTime.now().year,
                                   DateTime.now().month, DateTime.now().day)))
                         Expanded(
                           child: _ActionBtn(
@@ -549,7 +538,8 @@ class _TripCard extends ConsumerWidget {
       case 'approved': return Colors.green;
       case 'pending':  return Colors.orange;
       case 'rejected': return Colors.red;
-      case 'cancelled': return Colors.grey;
+      case 'cancelled': 
+      case 'canceled': return Colors.grey;
       default: return Colors.blueGrey;
     }
   }
@@ -559,7 +549,8 @@ class _TripCard extends ConsumerWidget {
       case 'approved':  return '✓ Confirmed';
       case 'pending':   return '⏳ Pending';
       case 'rejected':  return '✗ Rejected';
-      case 'cancelled': return '✗ Cancelled';
+      case 'cancelled': 
+      case 'canceled': return '✗ Cancelled';
       default: return s.toUpperCase();
     }
   }
@@ -587,7 +578,17 @@ class _TripCard extends ConsumerWidget {
       ),
     );
     if (confirmed == true) {
-      await ref.read(cancelVisitUseCaseProvider)(trip, uid);
+      final result = await ref.read(cancelVisitUseCaseProvider)(trip, uid);
+      if (context.mounted) {
+        result.fold(
+          (failure) => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to cancel: ${failure.message}'), backgroundColor: Colors.red),
+          ),
+          (_) => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Trip cancelled successfully'), backgroundColor: Colors.green),
+          ),
+        );
+      }
     }
   }
 

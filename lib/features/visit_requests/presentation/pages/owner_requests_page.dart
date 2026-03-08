@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
 import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/features/notifications/domain/services/notification_service.dart';
 
 class OwnerRequestsPage extends ConsumerWidget {
   const OwnerRequestsPage({super.key});
@@ -37,6 +38,8 @@ class OwnerRequestsPage extends ConsumerWidget {
           debugPrint("OwnerRequestsPage: Loaded ${requests.length} requests");
           if (requests.isEmpty) {
             return Center(
+              child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -44,6 +47,7 @@ class OwnerRequestsPage extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(
                     'No visit requests yet',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                       fontSize: 18,
@@ -51,6 +55,7 @@ class OwnerRequestsPage extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
             );
           }
 
@@ -70,8 +75,8 @@ class OwnerRequestsPage extends ConsumerWidget {
         error: (err, stack) {
           debugPrint("OwnerRequestsPage: Error - $err\nStack: $stack");
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -119,18 +124,24 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
             Row(
               children: [
                 // Listing Image
-                SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: CachedNetworkImage(
-                    imageUrl: request.listingImage,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Theme.of(context).colorScheme.surfaceVariant),
-                    errorWidget: (context, url, error) => Container(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                      child: Icon(Icons.home_work, color: Theme.of(context).colorScheme.outline),
-                    ),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isVerySmall = MediaQuery.of(context).size.width < 360;
+                    final imgSize = isVerySmall ? 80.0 : 100.0;
+                    return SizedBox(
+                      width: imgSize,
+                      height: imgSize,
+                      child: CachedNetworkImage(
+                        imageUrl: request.listingImage,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(color: Theme.of(context).colorScheme.surfaceVariant),
+                        errorWidget: (context, url, error) => Container(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: Icon(Icons.home_work, color: Theme.of(context).colorScheme.outline),
+                        ),
+                      ),
+                    );
+                  }
                 ),
                 
                 // Info
@@ -216,45 +227,99 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
             if (request.status == 'pending')
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          foregroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isVerySmall = MediaQuery.of(context).size.width < 380;
+                    final btnStyle = OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    );
+                    
+                    if (isVerySmall) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: btnStyle.copyWith(
+                                    side: const WidgetStatePropertyAll(BorderSide(color: Colors.red)),
+                                    foregroundColor: const WidgetStatePropertyAll(Colors.red),
+                                  ),
+                                  onPressed: () => _updateStatus(ref, request, 'rejected'),
+                                  child: const Text('Reject', style: TextStyle(fontSize: 12)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () => _approveRequest(context, ref, request),
+                                  child: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton(
+                            style: btnStyle.copyWith(
+                              side: WidgetStatePropertyAll(BorderSide(color: Theme.of(context).colorScheme.primary)),
+                              foregroundColor: WidgetStatePropertyAll(Theme.of(context).colorScheme.primary),
+                            ),
+                            onPressed: () => _rescheduleRequest(context, ref),
+                            child: const Text('Reschedule Visit', style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: btnStyle.copyWith(
+                              side: const WidgetStatePropertyAll(BorderSide(color: Colors.red)),
+                              foregroundColor: const WidgetStatePropertyAll(Colors.red),
+                            ),
+                            onPressed: () => _updateStatus(ref, request, 'rejected'),
+                            child: const Text('Reject', style: TextStyle(fontSize: 11)),
+                          ),
                         ),
-                        onPressed: () => _updateStatus(ref, request, 'rejected'),
-                        child: const Text('Reject'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Theme.of(context).colorScheme.primary),
-                          foregroundColor: Theme.of(context).colorScheme.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: OutlinedButton(
+                            style: btnStyle.copyWith(
+                              side: WidgetStatePropertyAll(BorderSide(color: Theme.of(context).colorScheme.primary)),
+                              foregroundColor: WidgetStatePropertyAll(Theme.of(context).colorScheme.primary),
+                            ),
+                            onPressed: () => _rescheduleRequest(context, ref),
+                            child: const Text('Reschedule', style: TextStyle(fontSize: 11)),
+                          ),
                         ),
-                        onPressed: () => _rescheduleRequest(context, ref),
-                        child: const Text('Reschedule'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () => _approveRequest(context, ref, request),
+                            child: const Text('Approve', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
                         ),
-                        onPressed: () => _approveRequest(context, ref, request),
-                        child: const Text('Approve'),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  }
                 ),
               )
             else if (request.status == 'approved')
@@ -320,6 +385,12 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
 
     await ref.read(rescheduleVisitUseCaseProvider)(request, pickedDate, formattedTime);
     
+    // Trigger notification for tenant
+    await ref.read(notificationServiceProvider).notifyVisitScheduled(
+      propertyTitle: request.listingTitle,
+      date: '${DateFormat('MMM dd').format(pickedDate)} at $formattedTime',
+    );
+    
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Visit rescheduled successfully')),
@@ -358,7 +429,13 @@ class _OwnerVisitRequestCard extends ConsumerWidget {
     // 1. Update status
     await ref.read(updateVisitStatusUseCaseProvider)(request, 'approved');
 
-    // 2. Open chat
+    // 2. Trigger notification for tenant
+    await ref.read(notificationServiceProvider).notifyVisitScheduled(
+      propertyTitle: request.listingTitle,
+      date: '${DateFormat('MMM dd').format(request.date)} at ${request.time}',
+    );
+
+    // 3. Open chat
     _openChat(context, ref);
   }
 

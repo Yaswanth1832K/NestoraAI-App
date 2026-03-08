@@ -9,14 +9,13 @@ import 'package:house_rental/features/chat/presentation/providers/chat_providers
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 
 // ── Filter tab enum ──────────────────────────────────────────────
-enum _ChatFilter { all, property, direct, unread }
+enum _ChatFilter { all, property, unread }
 
 extension _ChatFilterLabel on _ChatFilter {
   String get label {
     switch (this) {
       case _ChatFilter.all:      return 'All';
       case _ChatFilter.property: return 'Property';
-      case _ChatFilter.direct:   return 'Direct';
       case _ChatFilter.unread:   return 'Unread';
     }
   }
@@ -51,9 +50,6 @@ class _ChatInboxPageState extends ConsumerState<ChatInboxPage> {
         break;
       case _ChatFilter.property:
         list = list.where((r) => r.type != 'roommate').toList();
-        break;
-      case _ChatFilter.direct:
-        list = list.where((r) => r.type == 'roommate').toList();
         break;
       case _ChatFilter.unread:
         list = list
@@ -136,9 +132,9 @@ class _ChatInboxPageState extends ConsumerState<ChatInboxPage> {
               ),
             ),
           ),
-          // Mark-all-read / Settings icon
+          // Mark-all-read icon
           Container(
-            margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+            margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
             child: GlassContainer.standard(
               context: context,
               borderRadius: 15,
@@ -146,13 +142,66 @@ class _ChatInboxPageState extends ConsumerState<ChatInboxPage> {
               child: IconButton(
                 icon: const Icon(Icons.done_all_rounded, size: 22),
                 tooltip: 'Mark all as read',
-                onPressed: () {
+                onPressed: () async {
+                  final user = ref.read(authStateProvider).value;
+                  if (user == null) return;
+                  
+                  final rooms = ref.read(userChatRoomsProvider(user.uid)).value ?? [];
+                  final markAsRead = ref.read(markAsReadUseCaseProvider);
+                  
+                  int marked = 0;
+                  for (final room in rooms) {
+                    if (room.lastMessageSenderId != null && room.lastMessageSenderId != user.uid) {
+                      await markAsRead(chatId: room.id, userId: user.uid);
+                      marked++;
+                    }
+                  }
+                  
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All conversations marked as read'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(content: Text(marked > 0 ? 'Marked $marked as read' : 'No unread messages')),
+                  );
+                },
+              ),
+            ),
+          ),
+          // Clear-all messages icon
+          Container(
+            margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+            child: GlassContainer.standard(
+              context: context,
+              borderRadius: 15,
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.delete_sweep_rounded, size: 22, color: Colors.redAccent),
+                tooltip: 'Clear all messages',
+                onPressed: () async {
+                  final user = ref.read(authStateProvider).value;
+                  if (user == null) return;
+
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      title: const Text('Clear All Messages?', style: TextStyle(fontWeight: FontWeight.w900)),
+                      content: const Text('This will permanently delete all your conversations. This action cannot be undone.'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Clear All', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   );
+
+                  if (confirmed == true) {
+                    await ref.read(deleteAllChatsUseCaseProvider)(user.uid);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('All messages cleared')),
+                    );
+                  }
                 },
               ),
             ),

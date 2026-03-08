@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
-import 'package:house_rental/features/ai_services/data/property_chat_service.dart';
+import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
 
-class AIAssistantSheet extends StatefulWidget {
+class AIAssistantSheet extends ConsumerStatefulWidget {
   final ListingEntity listing;
   final ScrollController? scrollController;
 
@@ -14,14 +15,13 @@ class AIAssistantSheet extends StatefulWidget {
   });
 
   @override
-  State<AIAssistantSheet> createState() => _AIAssistantSheetState();
+  ConsumerState<AIAssistantSheet> createState() => _AIAssistantSheetState();
 }
 
-class _AIAssistantSheetState extends State<AIAssistantSheet> {
+class _AIAssistantSheetState extends ConsumerState<AIAssistantSheet> {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, String>> _messages = [];
   bool _loading = false;
-  final _chatService = PropertyChatService();
 
   @override
   void dispose() {
@@ -41,7 +41,8 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
     });
 
     try {
-      final reply = await _chatService.askAboutProperty(
+      final chatService = ref.read(propertyChatServiceProvider);
+      final reply = await chatService.askAboutProperty(
         question: question,
         title: widget.listing.title,
         description: widget.listing.description,
@@ -69,13 +70,24 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
-    return GlassContainer.standard(
-      context: context,
-      borderRadius: 30, // Higher top radius in implementation maybe, but let's keep it consistent
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
+    final bgColor = isDark ? const Color(0xFF0D0D10) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, -4)),
+          ],
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // Handle bar
           Container(
             width: 40,
@@ -243,8 +255,9 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -274,14 +287,25 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 10),
           ],
           Flexible(
-            child: GlassContainer.standard(
-              context: context,
+            child: Container( // Changed from GlassContainer.standard to Container
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              borderRadius: 20,
+              decoration: BoxDecoration(
+                color: isUser ? primaryColor : Theme.of(context).scaffoldBackgroundColor, // Solid background color
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                  bottomLeft: isUser ? Radius.circular(20) : Radius.circular(0),
+                  bottomRight: isUser ? Radius.circular(0) : Radius.circular(20),
+                ),
+              ),
               child: Text(
                 text,
                 style: TextStyle(
-                  color: isUser ? primaryColor : null,
+                  color: isUser
+                      ? Colors.white
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : const Color(0xFF1E293B)),
                   fontWeight: isUser ? FontWeight.w900 : FontWeight.w600,
                   fontSize: 15,
                   height: 1.4,

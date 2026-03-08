@@ -9,12 +9,36 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   return NotificationRepositoryImpl(ref.read(firestoreProvider));
 });
 
-final userNotificationsProvider = StreamProvider<List<NotificationEntity>>((ref) {
+final _rawUserNotificationsProvider = StreamProvider<List<NotificationEntity>>((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) {
     return Stream.value([]);
   }
   return ref.watch(notificationRepositoryProvider).getNotifications(user.uid);
+});
+
+final _locallyReadNotificationsProvider = StateProvider<Set<String>>((ref) => {});
+
+final userNotificationsProvider = Provider<AsyncValue<List<NotificationEntity>>>((ref) {
+  final rawAsync = ref.watch(_rawUserNotificationsProvider);
+  final locallyRead = ref.watch(_locallyReadNotificationsProvider);
+
+  return rawAsync.whenData((notifications) {
+    return notifications.map((n) {
+      if (locallyRead.contains(n.id)) {
+        return NotificationEntity(
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          timestamp: n.timestamp,
+          type: n.type,
+          isRead: true,
+          data: n.data,
+        );
+      }
+      return n;
+    }).toList();
+  });
 });
 
 final addNotificationUseCaseProvider = Provider((ref) {
@@ -24,7 +48,9 @@ final addNotificationUseCaseProvider = Provider((ref) {
 });
 
 final markNotificationReadUseCaseProvider = Provider((ref) {
-  return (String userId, String notificationId) {
+  return (String userId, String notificationId) async {
+    ref.read(_locallyReadNotificationsProvider.notifier).update((set) => {...set, notificationId});
     return ref.read(notificationRepositoryProvider).markAsRead(userId, notificationId);
   };
 });
+

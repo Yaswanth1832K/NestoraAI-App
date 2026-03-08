@@ -34,6 +34,8 @@ class ListingEntity extends Equatable {
   final String? safety;
   final String? allowedTenants; // Bachelors, Family, etc.
   final bool isVerified;
+  /// Transient field: Distance from user location (not persisted in DB)
+  final double? distanceInKm;
 
   List<String> get allImages => imageUrls.isNotEmpty ? imageUrls : images;
   bool get isSuspicious => safety == 'suspicious' || (fraudRiskScore != null && fraudRiskScore! > 0.5);
@@ -76,6 +78,7 @@ class ListingEntity extends Equatable {
     this.safety,
     this.allowedTenants,
     this.isVerified = false,
+    this.distanceInKm,
   });
 
   ListingEntity copyWith({
@@ -110,6 +113,7 @@ class ListingEntity extends Equatable {
     String? safety,
     String? allowedTenants,
     bool? isVerified,
+    double? distanceInKm,
   }) {
     return ListingEntity(
       id: id ?? this.id,
@@ -143,6 +147,7 @@ class ListingEntity extends Equatable {
       safety: safety ?? this.safety,
       allowedTenants: allowedTenants ?? this.allowedTenants,
       isVerified: isVerified ?? this.isVerified,
+      distanceInKm: distanceInKm ?? this.distanceInKm,
     );
   }
 

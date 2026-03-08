@@ -14,9 +14,14 @@ import 'package:house_rental/features/listings/domain/usecases/get_nearby_listin
 import 'package:house_rental/features/listings/domain/usecases/update_listing_usecase.dart';
 import 'package:house_rental/features/listings/domain/usecases/get_my_listings_usecase.dart';
 
+import 'package:house_rental/core/providers/network_provider.dart';
+
 // Data Layer Providers
 final listingRemoteDataSourceProvider = Provider<ListingRemoteDataSource>((ref) {
-  return ListingRemoteDataSourceImpl(ref.read(firestoreProvider));
+  return ListingRemoteDataSourceImpl(
+    ref.read(firestoreProvider),
+    ref.read(apiClientProvider),
+  );
 });
 
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {

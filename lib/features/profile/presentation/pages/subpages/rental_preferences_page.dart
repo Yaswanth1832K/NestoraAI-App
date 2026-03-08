@@ -66,8 +66,8 @@ class _RentalPreferencesPageState extends ConsumerState<RentalPreferencesPage> {
           _instantBook = prefs['instantBook'] ?? false;
           _propertyType = prefs['propertyType'] ?? 'Apartment';
           
-          final double budgetMin = (prefs['budgetMin'] ?? 500).toDouble();
-          final double budgetMax = (prefs['budgetMax'] ?? 3000).toDouble();
+          final double budgetMin = (prefs['budgetMin'] ?? 500).toDouble().clamp(0.0, 10000.0);
+          final double budgetMax = (prefs['budgetMax'] ?? 3000).toDouble().clamp(budgetMin, 10000.0);
           _budgetRange = RangeValues(budgetMin, budgetMax);
           
           _locationController.text = prefs['location'] ?? '';

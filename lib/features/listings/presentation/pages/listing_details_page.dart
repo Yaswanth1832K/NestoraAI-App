@@ -25,13 +25,17 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/core/theme/app_spacing.dart'; // Added import
+import 'package:house_rental/core/widgets/nestora_image.dart'; // Added import
 
 class ListingDetailsPage extends ConsumerStatefulWidget {
   final ListingEntity listing;
+  final String heroPrefix;
 
   const ListingDetailsPage({
     super.key,
     required this.listing,
+    this.heroPrefix = 'listing',
   });
 
   @override
@@ -95,113 +99,129 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final colorScheme = Theme.of(context).colorScheme;
+          final bgColor = isDark ? const Color(0xFF0D0D10) : Colors.white;
           
-          return GlassContainer.standard(
-            context: context,
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: 24,
-              right: 24,
-              top: 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Schedule a Visit',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
-                ),
-                const SizedBox(height: 24),
-                
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: Container(
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, -4)),
+                ],
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40, height: 4,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : Colors.black).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                    child: Icon(Icons.calendar_today, color: AppColors.primary),
-                  ),
-                  title: Text('Select Date', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                  subtitle: Text(
-                    DateFormat('EEEE, MMM dd, yyyy').format(selectedDate),
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                  onTap: () async {
-                    final DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 90)),
-                    );
-                    if (picked != null) {
-                      setModalState(() => selectedDate = picked);
-                    }
-                  },
-                ),
-                
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                    Text(
+                      'Schedule a Visit',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
                     ),
-                    child: Icon(Icons.access_time, color: AppColors.primary),
-                  ),
-                  title: Text('Select Time', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                  subtitle: Text(
-                    selectedTime.format(context),
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                  onTap: () async {
-                    final TimeOfDay? picked = await showTimePicker(
-                      context: context,
-                      initialTime: selectedTime,
-                    );
-                    if (picked != null) {
-                      setModalState(() => selectedTime = picked);
-                    }
-                  },
-                ),
-                const SizedBox(height: 24),
-                
-                TextField(
-                  controller: messageController,
-                  maxLines: 3,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                  decoration: InputDecoration(
-                    hintText: 'Any specific questions or requirements?',
-                    hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
-                    filled: true,
-                    fillColor: isDark ? AppColors.surfaceDark2 : Colors.grey.shade100,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
+                    const SizedBox(height: 24),
+                    
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.calendar_today, color: AppColors.primary),
+                      ),
+                      title: Text('Select Date', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                      subtitle: Text(
+                        DateFormat('EEEE, MMM dd, yyyy').format(selectedDate),
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 90)),
+                        );
+                        if (picked != null) {
+                          setModalState(() => selectedDate = picked);
+                        }
+                      },
                     ),
-                    onPressed: () => _confirmVisit(selectedDate, selectedTime, messageController.text),
-                    child: const Text('Confirm Schedule', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
+                    
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.access_time, color: AppColors.primary),
+                      ),
+                      title: Text('Select Time', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                      subtitle: Text(
+                        selectedTime.format(context),
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                      onTap: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          setModalState(() => selectedTime = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    TextField(
+                      controller: messageController,
+                      maxLines: 3,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Any specific questions or requirements?',
+                        hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceDark2 : Colors.grey.shade100,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        onPressed: () => _confirmVisit(selectedDate, selectedTime, messageController.text),
+                        child: const Text('Confirm Schedule', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
           );
         },
@@ -306,7 +326,7 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
         slivers: [
           // ── App Bar ──
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: MediaQuery.of(context).size.height * 0.45,
             pinned: true,
             stretch: true,
             backgroundColor: bgColor,
@@ -370,41 +390,75 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Price & Predicted Price Row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isNarrow = constraints.maxWidth < 360;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('₹${NumberFormat('#,##,###').format(widget.listing.price)}', 
-                                   style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.primary, letterSpacing: -1.5)),
-                              Text('per month', style: TextStyle(fontSize: 12, color: subTextColor, fontWeight: FontWeight.w600)),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Hero(
+                                    tag: '${widget.heroPrefix}_price_${widget.listing.id}',
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: Text('₹${NumberFormat('#,##,###').format(widget.listing.price)}', 
+                                           style: TextStyle(fontSize: isNarrow ? 28 : 34, fontWeight: FontWeight.w900, color: AppColors.primary, letterSpacing: -1.5)),
+                                    ),
+                                  ),
+                                  Text('per month', style: TextStyle(fontSize: 12, color: subTextColor, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              
+                              if (_isLoadingPrediction)
+                                 Shimmer.fromColors(
+                                   baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                                   highlightColor: isDark ? Colors.grey.shade600 : Colors.grey.shade100,
+                                   child: Container(
+                                     width: 80, height: 24,
+                                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                                   ),
+                                 )
+                              else if (predictedPrice != null)
+                                Builder(
+                                  builder: (context) {
+                                    final isFair = widget.listing.price <= predictedPrice! * 1.1;
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: isFair ? Colors.orange.shade300 : Colors.red.shade300, width: 1.5),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(isFair ? 'FAIR PRICE' : 'HIGH PRICE', 
+                                          style: TextStyle(color: isFair ? Colors.orange : Colors.red, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                                    );
+                                  }
+                                ),
                             ],
-                          ),
-                          
-                          if (!_isLoadingPrediction && predictedPrice != null)
-                             Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                               decoration: BoxDecoration(
-                                 border: Border.all(color: Colors.orange.shade300, width: 1.5),
-                                 borderRadius: BorderRadius.circular(20),
-                               ),
-                               child: const Text('FAIR PRICE', 
-                                    style: TextStyle(color: Colors.orange, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                             ),
-                        ],
+                          );
+                        }
                       ),
                       
                       const SizedBox(height: 16),
-                      Text(widget.listing.title, 
-                           style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: textColor, letterSpacing: -0.5)),
+                      Hero(
+                        tag: '${widget.heroPrefix}_title_${widget.listing.id}',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Text(widget.listing.title, 
+                               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: textColor, letterSpacing: -0.5)),
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           const Icon(Icons.location_on, size: 16, color: AppColors.primary),
                           const SizedBox(width: 6),
-                          Text(widget.listing.city, 
-                               style: TextStyle(fontSize: 15, color: subTextColor, fontWeight: FontWeight.w600)),
+                          Expanded(
+                            child: Text(widget.listing.city, 
+                                 style: TextStyle(fontSize: 15, color: subTextColor, fontWeight: FontWeight.w600),
+                                 maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ),
                         ],
                       ),
                       
@@ -413,7 +467,7 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                       // Horizontal Spec Bar (Matches image)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.white.withOpacity(0.04) : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(16),
@@ -421,11 +475,57 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildSpec(Icons.bed_rounded, '${widget.listing.bedrooms} Beds', textColor),
-                            _buildSpec(Icons.bathtub_rounded, '${widget.listing.bathrooms} Baths', textColor),
-                            _buildSpec(Icons.architecture_rounded, '${widget.listing.sqft.toInt()} sqft', textColor),
+                            Expanded(child: _buildSpec(Icons.bed_rounded, '${widget.listing.bedrooms} Beds', textColor)),
+                            Expanded(child: _buildSpec(Icons.bathtub_rounded, '${widget.listing.bathrooms} Baths', textColor)),
+                            Expanded(child: _buildSpec(Icons.architecture_rounded, '${widget.listing.sqft.toInt()} sqft', textColor)),
                           ],
                         ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Smart Visualization Tools', 
+                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor, letterSpacing: 0.5)),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildToolButton(
+                                  context: context,
+                                  onPressed: () => context.push(AppRouter.arMeasurement),
+                                  icon: Icons.straighten_rounded,
+                                  label: 'Measure Room',
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildToolButton(
+                                  context: context,
+                                  onPressed: () => context.push(AppRouter.virtualFurniture),
+                                  icon: Icons.view_in_ar_rounded,
+                                  label: 'Preview Furniture',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildToolButton(
+                            context: context,
+                            onPressed: () => context.push(
+                              AppRouter.moveInCalculator,
+                              extra: {
+                                'rent': widget.listing.price.toDouble(),
+                                'deposit': (widget.listing.price * 2).toDouble(), // 2 months deposit assumption
+                              },
+                            ),
+                            icon: Icons.calculate_rounded,
+                            label: 'Calculate Move-in Cost',
+                            isFullWidth: true,
+                            color: AppColors.accentOrange,
+                          ),
+                        ],
                       ),
                       
                       // Commute Info (Kept as integrated feature)
@@ -485,16 +585,21 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
                             data: (host) => Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Hosted by ${host?.displayName ?? "Host"}', 
-                                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: textColor)),
-                                    const SizedBox(height: 4),
-                                    Text('${host?.role == "owner" ? "Superhost" : "Verified Host"} · Joined ${host != null ? "recently" : "in 2019"}', 
-                                         style: TextStyle(fontSize: 14, color: subTextColor)),
-                                  ],
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Hosted by ${host?.displayName ?? "Host"}', 
+                                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: textColor),
+                                           maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      const SizedBox(height: 4),
+                                      Text('${host?.role == "owner" ? "Superhost" : "Verified Host"} · Joined ${host != null ? "recently" : "in 2019"}', 
+                                           style: TextStyle(fontSize: 14, color: subTextColor),
+                                           maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 16),
                                 CircleAvatar(
                                   radius: 28,
                                   backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
@@ -545,17 +650,43 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
     return PageView.builder(
       itemCount: images.length,
       itemBuilder: (context, index) {
-        return CachedNetworkImage(
-          imageUrl: images[index],
-          fit: BoxFit.cover,
-          width: double.infinity,
-          placeholder: (ctx, url) => Container(color: Colors.grey.shade100),
-          errorWidget: (ctx, url, err) => Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image)),
+        return Hero(
+          tag: index == 0 ? '${widget.heroPrefix}_image_${widget.listing.id}' : 'gallery_$index',
+          child: NestoraImage(
+            imageUrl: images[index],
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
         );
       },
     );
   }
 
+
+  Widget _buildToolButton({
+    required BuildContext context,
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    bool isFullWidth = false,
+    Color? color,
+  }) {
+    final themeColor = color ?? AppColors.primary;
+    return SizedBox(
+      width: isFullWidth ? double.infinity : null,
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        style: TextButton.styleFrom(
+          foregroundColor: themeColor,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          backgroundColor: themeColor.withOpacity(0.05),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
 
   Widget _buildSpec(IconData icon, String label, Color color) {
     return Column(
@@ -610,57 +741,88 @@ class _ListingDetailsPageState extends ConsumerState<ListingDetailsPage> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.backgroundDark : Colors.white,
         border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
+        boxShadow: AppColors.softShadow,
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            // AI FAB Button
-            GestureDetector(
-              onTap: _openAIAssistant,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(12),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmall = constraints.maxWidth < 360;
+            return Row(
+              children: [
+                // AI FAB Button
+                GestureDetector(
+                  onTap: _openAIAssistant,
+                  child: Container(
+                    padding: EdgeInsets.all(isSmall ? 8 : 12),
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.auto_awesome_rounded, color: Colors.white, size: isSmall ? 20 : 24),
+                  ),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
-              ),
-            ),
-            const SizedBox(width: 12),
-            
-            // Contact Button
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: _contactOwner,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.surfaceDark2 : Colors.grey.shade50,
-                  foregroundColor: textColor,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                SizedBox(width: isSmall ? 6 : 8),
+
+                // Contact Owner Button
+                GestureDetector(
+                  onTap: _contactOwner,
+                  child: Container(
+                    padding: EdgeInsets.all(isSmall ? 8 : 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceDark2 : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: primaryColor.withOpacity(0.3)),
+                    ),
+                    child: Icon(Icons.chat_bubble_outline_rounded, color: primaryColor, size: isSmall ? 20 : 24),
+                  ),
                 ),
-                child: const Text('Contact', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            
-            // Schedule Visit Button
-            Expanded(
-              flex: 4,
-              child: ElevatedButton(
-                onPressed: _scheduleVisit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                SizedBox(width: isSmall ? 6 : 8),
+                
+                // Schedule Visit Button
+                Flexible(
+                  flex: 3,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _scheduleVisit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? AppColors.surfaceDark2 : Colors.grey.shade200,
+                        foregroundColor: textColor,
+                        padding: EdgeInsets.symmetric(vertical: isSmall ? 12 : 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text(isSmall ? 'Visit' : 'Schedule Visit', 
+                        style: TextStyle(fontSize: isSmall ? 12 : 14, fontWeight: FontWeight.w900, letterSpacing: 0.1)),
+                    ),
+                  ),
                 ),
-                child: const Text('Schedule Visit', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.2)),
-              ),
-            ),
-          ],
+                SizedBox(width: isSmall ? 8 : 12),
+                
+                // Book Now Button
+                Flexible(
+                  flex: 3,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                         context.push('/book/${widget.listing.id}', extra: widget.listing);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: isSmall ? 12 : 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text(isSmall ? 'Book' : 'Book Now', 
+                        style: TextStyle(fontSize: isSmall ? 12 : 14, fontWeight: FontWeight.w900, letterSpacing: 0.1)),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
         ),
       ),
     );

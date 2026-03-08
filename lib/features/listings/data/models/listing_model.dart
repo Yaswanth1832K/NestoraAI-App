@@ -34,6 +34,7 @@ class ListingModel extends ListingEntity {
     super.safety,
     super.allowedTenants,
     super.isVerified,
+    super.distanceInKm,
   });
 
   factory ListingModel.fromJson(Map<String, dynamic> json) {
@@ -135,6 +136,7 @@ class ListingModel extends ListingEntity {
       safety: entity.safety,
       allowedTenants: entity.allowedTenants,
       isVerified: entity.isVerified,
+      distanceInKm: entity.distanceInKm,
     );
   }
 

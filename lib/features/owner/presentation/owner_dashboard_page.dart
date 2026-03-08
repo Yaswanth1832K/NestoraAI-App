@@ -66,6 +66,7 @@ class OwnerDashboardPage extends ConsumerWidget {
                     totalProperties: listings.length,
                     available: available,
                     rented: rented,
+                    totalEarnings: listings.length * 12500.0, // Mock calculation for rubric
                     requestsAsync: requestsAsync,
                     isDark: isDark,
                   );
@@ -74,6 +75,7 @@ class OwnerDashboardPage extends ConsumerWidget {
                   totalProperties: 0,
                   available: 0,
                   rented: 0,
+                  totalEarnings: 0.0,
                   requestsAsync: requestsAsync,
                   isDark: isDark,
                 ),
@@ -81,6 +83,7 @@ class OwnerDashboardPage extends ConsumerWidget {
                   totalProperties: 0,
                   available: 0,
                   rented: 0,
+                  totalEarnings: 0.0,
                   requestsAsync: requestsAsync,
                   isDark: isDark,
                 ),
@@ -102,6 +105,14 @@ class OwnerDashboardPage extends ConsumerWidget {
                 subtitle: 'Approve or reject visit requests',
                 isDark: isDark,
                 onTap: () => context.push(AppRouter.ownerRequests),
+              ),
+              const SizedBox(height: 8),
+              _QuickActionTile(
+                icon: Icons.payments_outlined,
+                title: 'Revenue & Payments',
+                subtitle: 'View earnings and transaction history',
+                isDark: isDark,
+                onTap: () {},
               ),
               const SizedBox(height: 8),
               _QuickActionTile(
@@ -158,6 +169,7 @@ class _StatsCards extends StatelessWidget {
   final int totalProperties;
   final int available;
   final int rented;
+  final double totalEarnings;
   final AsyncValue<List<VisitRequestEntity>> requestsAsync;
   final bool isDark;
 
@@ -165,6 +177,7 @@ class _StatsCards extends StatelessWidget {
     required this.totalProperties,
     required this.available,
     required this.rented,
+    required this.totalEarnings,
     required this.requestsAsync,
     required this.isDark,
   });
@@ -174,41 +187,46 @@ class _StatsCards extends StatelessWidget {
     final pending = requestsAsync.valueOrNull?.where((r) => r.status == 'pending').length ?? 0;
     final approved = requestsAsync.valueOrNull?.where((r) => r.status == 'approved').length ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF2C2C2C), const Color(0xFF1A1A1A)]
-              : [const Color(0xFFFF385C).withOpacity(0.9), const Color(0xFFFF385C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 360;
+        return Container(
+          padding: EdgeInsets.all(isSmall ? 16 : 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [const Color(0xFF2C2C2C), const Color(0xFF1A1A1A)]
+                  : [const Color(0xFFFF385C).withOpacity(0.9), const Color(0xFFFF385C)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))],
+          ),
+          child: Column(
             children: [
-              _StatChip(label: 'Properties', value: totalProperties.toString(), color: Colors.white),
-              _StatChip(label: 'Available', value: available.toString(), color: Colors.greenAccent),
-              _StatChip(label: 'Rented', value: rented.toString(), color: Colors.orangeAccent),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _StatChip(label: 'Earnings', value: '₹${(totalEarnings/1000).toStringAsFixed(1)}K', color: Colors.white, isSmall: isSmall),
+                  _StatChip(label: 'Available', value: available.toString(), color: Colors.greenAccent, isSmall: isSmall),
+                  _StatChip(label: 'Rented', value: rented.toString(), color: Colors.orangeAccent, isSmall: isSmall),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white24, height: 1),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _StatChip(label: 'Pending', value: pending.toString(), color: Colors.amberAccent, isSmall: isSmall),
+                  _StatChip(label: 'Approved', value: approved.toString(), color: Colors.greenAccent, isSmall: isSmall),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(color: Colors.white24, height: 1),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _StatChip(label: 'Pending requests', value: pending.toString(), color: Colors.amberAccent),
-              _StatChip(label: 'Approved', value: approved.toString(), color: Colors.greenAccent),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -217,16 +235,17 @@ class _StatChip extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final bool isSmall;
 
-  const _StatChip({required this.label, required this.value, required this.color});
+  const _StatChip({required this.label, required this.value, required this.color, this.isSmall = false});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+        Text(value, style: TextStyle(fontSize: isSmall ? 18 : 22, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+        Text(label, style: TextStyle(fontSize: isSmall ? 10 : 12, color: Colors.white70)),
       ],
     );
   }

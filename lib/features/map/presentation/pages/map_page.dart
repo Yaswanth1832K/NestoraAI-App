@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,6 +15,8 @@ import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:house_rental/features/location/location_provider.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
 
 class MapPage extends ConsumerStatefulWidget {
   const MapPage({super.key});
@@ -36,75 +39,40 @@ class _MapPageState extends ConsumerState<MapPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchInitialListings();
-      _locateUser(shouldMove: false);
     });
   }
 
-  Future<void> _locateUser({bool shouldMove = true}) async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  // Removed local _locateUser logic in favor of global userLocationProvider
+  
+  Timer? _moveTimer;
 
-    // Check if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location services are disabled. Please enable them to see your location.')),
-        );
-      }
-      return;
-    }
+  void _onCameraMove(LatLngBounds? bounds) {
+    if (bounds == null) return;
+    _moveTimer?.cancel();
+    _moveTimer = Timer(const Duration(milliseconds: 1000), () => _fetchListingsInBounds(bounds));
+  }
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permissions are denied.')),
-          );
+  Future<void> _fetchListingsInBounds(LatLngBounds bounds) async {
+    final result = await ref.read(getListingsInBoundsUseCaseProvider)(
+      bounds.southWest.latitude,
+      bounds.northEast.latitude,
+      bounds.southWest.longitude,
+      bounds.northEast.longitude,
+    );
+
+    result.fold(
+      (failure) => null, // Ignore errors on move
+      (listings) {
+        if (!mounted) return;
+        // Merge with existing unique listings to avoid flickering
+        final current = ref.read(mapSearchResultsProvider);
+        final existingIds = current.map((e) => e.id).toSet();
+        final newListings = listings.where((l) => !existingIds.contains(l.id)).toList();
+        if (newListings.isNotEmpty) {
+           ref.read(mapSearchResultsProvider.notifier).state = [...current, ...newListings];
         }
-        return;
-      }
-    }
-    
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permissions are permanently denied, we cannot request permissions.')),
-        );
-      }
-      return;
-    } 
-
-    try {
-      if (shouldMove && mounted) {
-        setState(() => _isLoading = true);
-      }
-      
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _userPosition = position;
-        if (shouldMove) _isLoading = false;
-      });
-
-      if (shouldMove) {
-        _mapController.move(LatLng(position.latitude, position.longitude), 15);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error locating user: $e')),
-        );
-      }
-    }
+      },
+    );
   }
 
   Future<void> _fetchInitialListings() async {
@@ -125,6 +93,8 @@ class _MapPageState extends ConsumerState<MapPage> {
   @override
   Widget build(BuildContext context) {
     final listings = ref.watch(mapSearchResultsProvider);
+    final locState = ref.watch(userLocationProvider);
+    final userPos = locState.position;
     
     // Auto-refresh when filters change
     ref.listen(searchFilterProvider, (_, _) {
@@ -134,10 +104,10 @@ class _MapPageState extends ConsumerState<MapPage> {
     final markers = _buildMarkers(listings);
     
     // Add User Location Marker
-    if (_userPosition != null) {
+    if (userPos != null) {
       markers.add(
         Marker(
-          point: LatLng(_userPosition!.latitude, _userPosition!.longitude),
+          point: LatLng(userPos.latitude, userPos.longitude),
           width: 60,
           height: 60,
           child: Column(
@@ -174,8 +144,8 @@ class _MapPageState extends ConsumerState<MapPage> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: _userPosition != null 
-                  ? LatLng(_userPosition!.latitude, _userPosition!.longitude) 
+              initialCenter: userPos != null 
+                  ? LatLng(userPos.latitude, userPos.longitude) 
                   : _coimbatoreCenter,
               initialZoom: 12,
               interactionOptions: const InteractionOptions(
@@ -185,6 +155,11 @@ class _MapPageState extends ConsumerState<MapPage> {
                 setState(() {
                   _selectedListing = null;
                 });
+              },
+              onPositionChanged: (position, hasGesture) {
+                if (hasGesture) {
+                  _onCameraMove(position.visibleBounds);
+                }
               },
             ),
             children: [
@@ -270,7 +245,14 @@ class _MapPageState extends ConsumerState<MapPage> {
             bottom: _selectedListing != null ? 180 : 100,
             child: Column(
               children: [
-                _buildMapActionIcon(Icons.my_location_rounded, () => _locateUser(shouldMove: true)),
+                _buildMapActionIcon(Icons.my_location_rounded, () {
+                  final pos = ref.read(userLocationProvider).position;
+                  if (pos != null) {
+                    _mapController.move(LatLng(pos.latitude, pos.longitude), 15);
+                  } else {
+                    ref.read(userLocationProvider.notifier).updateLocation();
+                  }
+                }),
                 const SizedBox(height: 12),
                 _buildMapActionIcon(Icons.add_rounded, () {
                   final zoom = _mapController.camera.zoom + 1;
@@ -334,10 +316,12 @@ class _MapPageState extends ConsumerState<MapPage> {
   Widget _buildPremiumListingPreview(ListingEntity listing) {
     return InkWell(
       onTap: () => context.push(AppRouter.listingDetails, extra: listing),
-      child: GlassContainer.standard(
-        context: context,
-        borderRadius: 30,
+      child: GlassContainer(
+        opacity: 0.9,
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(30),
         padding: const EdgeInsets.all(12),
+        border: Border.all(color: Colors.white24, width: 1),
         child: Row(
           children: [
             ClipRRect(
@@ -350,7 +334,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                         listing.allImages.first,
                         fit: BoxFit.cover,
                       )
-                    : Container(color: Theme.of(context).primaryColor.withOpacity(0.1)),
+                    : Container(color: AppColors.primary.withOpacity(0.1)),
               ),
             ),
             const SizedBox(width: 20),
@@ -361,30 +345,39 @@ class _MapPageState extends ConsumerState<MapPage> {
                 children: [
                   Text(
                     listing.title,
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.5),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900, 
+                      fontSize: 16, 
+                      letterSpacing: -0.5,
+                      color: Colors.white,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '₹${listing.price.toInt()}',
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
+                    style: const TextStyle(
+                      color: AppColors.primaryLight,
                       fontWeight: FontWeight.w900,
-                      fontSize: 18,
+                      fontSize: 20,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.location_on_rounded, size: 14, color: Theme.of(context).primaryColor.withOpacity(0.5)),
+                      Icon(Icons.location_on_rounded, size: 14, color: Colors.white70),
                       const SizedBox(width: 4),
-                      Text(
-                        '${listing.city}, ${listing.propertyType}',
-                        style: TextStyle(
-                          color: Theme.of(context).hintColor.withOpacity(0.6), 
-                          fontSize: 12, 
-                          fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Text(
+                          '${listing.city}, ${listing.propertyType}',
+                          style: const TextStyle(
+                            color: Colors.white60, 
+                            fontSize: 12, 
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -395,10 +388,10 @@ class _MapPageState extends ConsumerState<MapPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Colors.white10,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.chevron_right_rounded, color: Theme.of(context).primaryColor),
+              child: const Icon(Icons.chevron_right_rounded, color: Colors.white),
             ),
             const SizedBox(width: 10),
           ],

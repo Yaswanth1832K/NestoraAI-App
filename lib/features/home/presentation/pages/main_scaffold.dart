@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:house_rental/core/router/app_router.dart';
+import 'package:house_rental/core/navigation/nestora_bottom_nav.dart';
 
 class MainScaffold extends ConsumerWidget {
   final Widget child;
@@ -26,9 +27,11 @@ class MainScaffold extends ConsumerWidget {
     }
 
     return Scaffold(
+      extendBody: true,
       body: child,
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: NestoraBottomNav(
         currentIndex: getSelectedIndex(),
+        isDark: Theme.of(context).brightness == Brightness.dark,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -48,32 +51,6 @@ class MainScaffold extends ConsumerWidget {
               break;
           }
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_rounded),
-            label: 'Explore',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border_rounded),
-            activeIcon: Icon(Icons.favorite_rounded),
-            label: 'Wishlists',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.luggage_outlined),
-            activeIcon: Icon(Icons.luggage_rounded),
-            label: 'Trips',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            activeIcon: Icon(Icons.chat_bubble_rounded),
-            label: 'Inbox',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

@@ -65,4 +65,24 @@ class ChatRepositoryImpl implements ChatRepository {
   Stream<List<ChatRoomEntity>> getUserChatRooms(String userId) {
     return _remoteDataSource.userChatRoomsStream(userId);
   }
+
+  @override
+  Future<Either<Failure, void>> markAsRead(String chatId, String userId) async {
+    try {
+      await _remoteDataSource.markAsRead(chatId, userId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteAllChats(String userId) async {
+    try {
+      await _remoteDataSource.deleteAllChats(userId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 }

@@ -12,6 +12,7 @@ import 'package:house_rental/features/notifications/domain/entities/notification
 import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:house_rental/l10n/generated/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:house_rental/features/location/location_provider.dart';
 
 // ── Brand colors ──────────────────────────────────────────────
 const _kPurple     = Color(0xFF7C5CBF);
@@ -125,7 +126,19 @@ class _AuthPageState extends ConsumerState<AuthPage>
           NotificationEntity(id: const Uuid().v4(), title: 'New Login',
               body: 'A new login was detected on your account.',
               timestamp: DateTime.now(), type: 'alert', isRead: false));
-        if (mounted) context.go(AppRouter.home);
+        
+        // Trigger location fetch
+        ref.read(userLocationProvider.notifier).updateLocation();
+        
+        // CRITICAL: Wait a moment for the Firestore document creation/sync to propagate 
+        // to the refreshListenable or the local cache before manually navigating.
+        // Actually, let the GoRouter's refreshListenable handle the redirect to ensure state is ready.
+        // If we must navigate manually, we should wait for the user document to exist.
+        if (mounted) {
+          // Give Firestore a tiny breath to sync the new user doc locally
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) context.go(AppRouter.home);
+        }
       },
     );
   }
@@ -154,7 +167,14 @@ class _AuthPageState extends ConsumerState<AuthPage>
           NotificationEntity(id: const Uuid().v4(), title: 'Welcome to Nestora!',
               body: 'Explore properties or list your own today!',
               timestamp: DateTime.now(), type: 'system', isRead: false));
-        context.go(AppRouter.home);
+        
+        // Trigger location fetch
+        ref.read(userLocationProvider.notifier).updateLocation();
+        
+        // Wait for profile propagation
+        Future.delayed(const Duration(milliseconds: 800)).then((_) {
+          if (mounted) context.go(AppRouter.home);
+        });
       },
     );
   }
@@ -226,7 +246,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
     result.fold(
       (failure) => setState(() => _error = failure.message),
       (user) {
-        if (mounted) context.go(AppRouter.home);
+        // Redirection handled by GoRouter's refreshListenable
       },
     );
   }
@@ -241,7 +261,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
     result.fold(
       (failure) => setState(() => _error = failure.message),
       (user) {
-        if (mounted) context.go(AppRouter.home);
+        // Redirection handled by GoRouter's refreshListenable
       },
     );
   }
@@ -256,7 +276,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
     result.fold(
       (failure) => setState(() => _error = failure.message),
       (user) {
-        if (mounted) context.go(AppRouter.home);
+        // Redirection handled by GoRouter's refreshListenable
       },
     );
   }
@@ -281,18 +301,16 @@ class _AuthPageState extends ConsumerState<AuthPage>
             _HeroSection(size: size),
 
             // ── Bottom form card ──
-            Transform.translate(
-              offset: const Offset(0, -30),
-              child: Container(
-                width: double.infinity,
-                constraints: BoxConstraints(minHeight: size.height * 0.65),
-                decoration: const BoxDecoration(
-                  color: _kDarkBg,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black54, blurRadius: 40, offset: Offset(0, -10))
-                  ],
-                ),
+            Container(
+              width: double.infinity,
+              transform: Matrix4.translationValues(0, -30, 0),
+              decoration: const BoxDecoration(
+                color: _kDarkBg,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black54, blurRadius: 40, offset: Offset(0, -10))
+                ],
+              ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(28, 32, 28, 48),
                   child: Column(children: [
@@ -371,7 +389,6 @@ class _AuthPageState extends ConsumerState<AuthPage>
                   ]),
                 ),
               ),
-            ),
           ]),
         ),
       ),
@@ -386,100 +403,109 @@ class _HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: size.height * 0.45,
-      decoration: const BoxDecoration(
-        color: _kDarkBg,
-        image: DecorationImage(
-          image: AssetImage('assets/images/auth_bg.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Stack(children: [
-        // Gradient & Glass Overlay
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _kDarkBg.withOpacity(0.3),
-                  _kDarkBg.withOpacity(0.7),
-                  _kDarkBg,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isSmall = screenWidth < 360;
+        final heroHeight = (size.height * 0.45).clamp(280.0, 500.0);
+        final titleSize = isSmall ? 36.0 : 48.0;
+
+        return Container(
+          width: double.infinity,
+          height: heroHeight,
+          decoration: const BoxDecoration(
+            color: _kDarkBg,
+            image: DecorationImage(
+              image: AssetImage('assets/images/auth_bg.png'),
+              fit: BoxFit.cover,
             ),
           ),
-        ),
-
-        // Content
-        Positioned(
-          bottom: 60, left: 32, right: 32,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Glass Box for Logo
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.contain,
+          child: Stack(children: [
+            // Gradient & Glass Overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _kDarkBg.withOpacity(0.3),
+                      _kDarkBg.withOpacity(0.7),
+                      _kDarkBg,
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: AppLocalizations.of(context)!.authTitle,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 48,
-                      letterSpacing: -2,
-                    ),
-                  ),
-                  TextSpan(
-                    text: '.',
-                    style: TextStyle(
-                      color: _kPurpleGlow,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 48,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              AppLocalizations.of(context)!.authTagline,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ]),
-        ),
 
-        // Status bar
-        const Positioned(top: 0, left: 0, right: 0,
-          child: SafeArea(child: SizedBox())),
-      ]),
+            // Content
+            Positioned(
+              bottom: 60, left: isSmall ? 24 : 32, right: isSmall ? 24 : 32,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Glass Box for Logo
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: EdgeInsets.all(isSmall ? 12 : 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: isSmall ? 40 : 60,
+                        height: isSmall ? 40 : 60,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: AppLocalizations.of(context)!.authTitle,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: titleSize,
+                          letterSpacing: -2,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '.',
+                        style: TextStyle(
+                          color: _kPurpleGlow,
+                          fontWeight: FontWeight.w900,
+                          fontSize: titleSize,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!.authTagline,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: isSmall ? 14 : 16,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ]),
+            ),
+
+            // Status bar
+            const Positioned(top: 0, left: 0, right: 0,
+              child: SafeArea(child: SizedBox())),
+          ]),
+        );
+      }
     );
   }
 }

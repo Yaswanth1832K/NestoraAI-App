@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
+import 'package:house_rental/core/providers/network_provider.dart';
 import 'package:house_rental/features/rent_payments/data/repositories/rent_payment_repository_impl.dart';
 import 'package:house_rental/features/rent_payments/domain/entities/rent_payment_entity.dart';
 import 'package:house_rental/features/rent_payments/domain/repositories/rent_payment_repository.dart';
@@ -7,7 +8,10 @@ import 'package:house_rental/features/visit_requests/domain/entities/visit_reque
 import 'package:house_rental/features/visit_requests/presentation/providers/visit_request_providers.dart';
 
 final rentPaymentRepositoryProvider = Provider<RentPaymentRepository>((ref) {
-  return RentPaymentRepositoryImpl(ref.read(firestoreProvider));
+  return RentPaymentRepositoryImpl(
+    ref.read(firestoreProvider),
+    ref.read(apiClientProvider),
+  );
 });
 
 final rentPaymentsProvider = StreamProvider.family<List<RentPaymentEntity>, String>((ref, tenantId) {

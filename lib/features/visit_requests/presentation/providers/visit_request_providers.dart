@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/core/providers/firebase_provider.dart';
+import 'package:house_rental/core/providers/network_provider.dart';
 import 'package:house_rental/features/visit_requests/data/datasources/visit_request_remote_datasource.dart';
 import 'package:house_rental/features/visit_requests/domain/entities/visit_request_entity.dart';
 import 'package:house_rental/features/visit_requests/domain/repositories/visit_request_repository.dart';
@@ -8,7 +9,10 @@ import 'package:house_rental/features/notifications/domain/services/notification
 import 'package:house_rental/features/visit_requests/data/repositories/visit_request_repository_impl.dart';
 
 final visitRequestRemoteDataSourceProvider = Provider<VisitRequestRemoteDataSource>((ref) {
-  return VisitRequestRemoteDataSourceImpl(ref.read(firestoreProvider));
+  return VisitRequestRemoteDataSourceImpl(
+    ref.read(firestoreProvider),
+    ref.read(apiClientProvider),
+  );
 });
 
 final visitRequestRepositoryProvider = Provider<VisitRequestRepository>((ref) {
@@ -80,19 +84,21 @@ final rescheduleVisitUseCaseProvider = Provider((ref) {
 
 final cancelVisitUseCaseProvider = Provider((ref) {
   return (VisitRequestEntity request, String userId) async {
-    // 1. Update Status to cancelled
-    await ref.read(visitRequestRepositoryProvider).updateVisitRequestStatus(request.id, 'cancelled');
+    final result = await ref.read(visitRequestRepositoryProvider).updateVisitRequestStatus(request.id, 'cancelled');
     
-    // 2. Notify other party via NotificationService
-    final otherId = userId == request.ownerId ? request.tenantId : request.ownerId;
-    final role = userId == request.ownerId ? "Owner" : "Tenant";
-    
-    await ref.read(notificationServiceProvider).sendNotification(
-      userId: otherId,
-      title: "Visit Cancelled",
-      body: "The visit for ${request.listingTitle} has been cancelled by the $role.",
-      type: 'alert',
-      data: {'requestId': request.id, 'listingId': request.listingId},
-    );
+    if (result.isRight()) {
+      // 2. Notify other party via NotificationService
+      final otherId = userId == request.ownerId ? request.tenantId : request.ownerId;
+      final role = userId == request.ownerId ? "Owner" : "Tenant";
+      
+      await ref.read(notificationServiceProvider).sendNotification(
+        userId: otherId,
+        title: "Visit Cancelled",
+        body: "The visit for ${request.listingTitle} has been cancelled by the $role.",
+        type: 'alert',
+        data: {'requestId': request.id, 'listingId': request.listingId},
+      );
+    }
+    return result;
   };
 });

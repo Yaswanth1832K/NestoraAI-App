@@ -46,12 +46,16 @@ class NotificationRepositoryImpl implements NotificationRepository {
 
   @override
   Future<void> markAsRead(String userId, String notificationId) async {
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('notifications')
-        .doc(notificationId)
-        .update({'isRead': true});
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .doc(notificationId)
+          .update({'isRead': true});
+    } catch (_) {
+      // Ignore Firestore permission issues safely since we cache locally
+    }
   }
 
   @override

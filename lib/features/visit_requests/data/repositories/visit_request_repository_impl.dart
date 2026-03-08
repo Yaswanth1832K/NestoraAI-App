@@ -42,6 +42,9 @@ class VisitRequestRepositoryImpl implements VisitRequestRepository {
   @override
   Future<Either<Failure, void>> createBookingFromChat({
     required String listingId,
+    required String listingTitle,
+    required String listingImage,
+    required String tenantName,
     required String ownerId,
     required String renterId,
     required String chatId,
@@ -50,6 +53,9 @@ class VisitRequestRepositoryImpl implements VisitRequestRepository {
     try {
       await _remoteDataSource.createBookingFromChat(
         listingId: listingId,
+        listingTitle: listingTitle,
+        listingImage: listingImage,
+        tenantName: tenantName,
         ownerId: ownerId,
         renterId: renterId,
         chatId: chatId,

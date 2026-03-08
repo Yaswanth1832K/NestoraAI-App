@@ -30,8 +30,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     super.initState();
     final currentFilter = ref.read(searchFilterProvider);
     _priceRange = RangeValues(
-      currentFilter.minPrice ?? 0,
-      currentFilter.maxPrice ?? 200000,
+      (currentFilter.minPrice ?? 0).toDouble().clamp(0.0, 200000.0),
+      (currentFilter.maxPrice ?? 200000).toDouble().clamp(0.0, 200000.0),
     );
     _bedrooms = currentFilter.bedrooms;
     _bathrooms = currentFilter.bathrooms;
@@ -48,236 +48,241 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
 
-    return GlassContainer.standard(
-      context: context,
-      borderRadius: 40,
+    return GlassContainer(
+      blur: 30, // Extra blur for bottom sheet
+      opacity: isDark ? 0.95 : 0.85, // Highly opaque as requested
+      color: isDark ? const Color(0xFF0F0F12) : Colors.white, // Very dark base
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 50,
-              height: 5,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black12,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Filters',
-                style: TextStyle(
-                  fontSize: 24, 
-                  fontWeight: FontWeight.w900,
-                  color: isDark ? Colors.white : Colors.black,
-                  letterSpacing: -0.5,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              TextButton(
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filters',
+                  style: TextStyle(
+                    fontSize: 24, 
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : Colors.black,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    ref.read(searchFilterProvider.notifier).state = ListingFilter();
+                    Navigator.pop(context);
+                  },
+                  child: Text('Reset', style: TextStyle(color: primaryColor, fontWeight: FontWeight.w800)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Price Range
+            Text(
+              'Price Range',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '₹${_priceRange.start.toInt()} - ₹${_priceRange.end.toInt()}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: primaryColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            RangeSlider(
+              values: _priceRange,
+              min: 0,
+              max: 200000,
+              divisions: 40,
+              activeColor: primaryColor,
+              inactiveColor: primaryColor.withOpacity(0.1),
+              onChanged: (values) {
+                setState(() => _priceRange = values);
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // Bedrooms & Bathrooms
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDropdownField<int>(
+                    label: 'Bedrooms',
+                    value: _bedrooms,
+                    items: [1, 2, 3, 4, 5],
+                    hint: 'Any',
+                    onChanged: (v) => setState(() => _bedrooms = v),
+                    itemLabel: (v) => '$v BHK',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDropdownField<int>(
+                    label: 'Bathrooms',
+                    value: _bathrooms,
+                    items: [1, 2, 3, 4],
+                    hint: 'Any',
+                    onChanged: (v) => setState(() => _bathrooms = v),
+                    itemLabel: (v) => '$v Bath',
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Furnishing
+            Text(
+              'Furnishing', 
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _furnishingOptions.map((e) => _buildChoiceChip(e, _furnishing == e, (selected) {
+                setState(() => _furnishing = selected ? e : null);
+              })).toList(),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Preferred Tenants
+            Text(
+              'Preferred Tenants', 
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _tenantOptions.map((e) => _buildChoiceChip(e, _allowedTenants == e, (selected) {
+                setState(() => _allowedTenants = selected ? e : null);
+              })).toList(),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Verified Toggle
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Verified Properties Only',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    Text(
+                      'Show only properties verified by Nestora',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white38 : Colors.black38,
+                      ),
+                    ),
+                  ],
+                ),
+                Switch.adaptive(
+                  value: _isVerified,
+                  activeColor: primaryColor,
+                  onChanged: (v) => setState(() => _isVerified = v),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Amenities
+            Text(
+              'Amenities', 
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _amenityOptions.map((e) => _buildChoiceChip(e, _selectedAmenities.contains(e), (selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedAmenities.add(e);
+                  } else {
+                    _selectedAmenities.remove(e);
+                  }
+                });
+              })).toList(),
+            ),
+
+            const SizedBox(height: 48),
+
+            // Apply Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
+                ),
                 onPressed: () {
-                  ref.read(searchFilterProvider.notifier).state = ListingFilter();
+                  final filter = ListingFilter(
+                    minPrice: _priceRange.start,
+                    maxPrice: _priceRange.end,
+                    bedrooms: _bedrooms,
+                    bathrooms: _bathrooms,
+                    furnishing: _furnishing,
+                    allowedTenants: _allowedTenants,
+                    isVerified: _isVerified ? true : null,
+                    amenities: _selectedAmenities.isEmpty ? null : _selectedAmenities,
+                  );
+                  ref.read(searchFilterProvider.notifier).state = filter;
                   Navigator.pop(context);
                 },
-                child: Text('Reset', style: TextStyle(color: primaryColor, fontWeight: FontWeight.w800)),
+                child: const Text('Search Properties', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          
-          // Price Range
-          Text(
-            'Price Range',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : Colors.black,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '₹${_priceRange.start.toInt()} - ₹${_priceRange.end.toInt()}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          RangeSlider(
-            values: _priceRange,
-            min: 0,
-            max: 200000,
-            divisions: 40,
-            activeColor: primaryColor,
-            inactiveColor: primaryColor.withOpacity(0.1),
-            onChanged: (values) {
-              setState(() => _priceRange = values);
-            },
-          ),
-
-          const SizedBox(height: 32),
-
-          // Bedrooms & Bathrooms
-          Row(
-            children: [
-              Expanded(
-                child: _buildDropdownField<int>(
-                  label: 'Bedrooms',
-                  value: _bedrooms,
-                  items: [1, 2, 3, 4, 5],
-                  hint: 'Any',
-                  onChanged: (v) => setState(() => _bedrooms = v),
-                  itemLabel: (v) => '$v BHK',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildDropdownField<int>(
-                  label: 'Bathrooms',
-                  value: _bathrooms,
-                  items: [1, 2, 3, 4],
-                  hint: 'Any',
-                  onChanged: (v) => setState(() => _bathrooms = v),
-                  itemLabel: (v) => '$v Bath',
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 32),
-
-          // Furnishing
-          Text(
-            'Furnishing', 
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _furnishingOptions.map((e) => _buildChoiceChip(e, _furnishing == e, (selected) {
-              setState(() => _furnishing = selected ? e : null);
-            })).toList(),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Preferred Tenants
-          Text(
-            'Preferred Tenants', 
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _tenantOptions.map((e) => _buildChoiceChip(e, _allowedTenants == e, (selected) {
-              setState(() => _allowedTenants = selected ? e : null);
-            })).toList(),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Verified Toggle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Verified Properties Only',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  Text(
-                    'Show only properties verified by Nestora',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white38 : Colors.black38,
-                    ),
-                  ),
-                ],
-              ),
-              Switch.adaptive(
-                value: _isVerified,
-                activeColor: primaryColor,
-                onChanged: (v) => setState(() => _isVerified = v),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 32),
-
-          // Amenities
-          Text(
-            'Amenities', 
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _amenityOptions.map((e) => _buildChoiceChip(e, _selectedAmenities.contains(e), (selected) {
-              setState(() {
-                if (selected) {
-                  _selectedAmenities.add(e);
-                } else {
-                  _selectedAmenities.remove(e);
-                }
-              });
-            })).toList(),
-          ),
-
-          const SizedBox(height: 48),
-
-          // Apply Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                elevation: 0,
-              ),
-              onPressed: () {
-                final filter = ListingFilter(
-                  minPrice: _priceRange.start,
-                  maxPrice: _priceRange.end,
-                  bedrooms: _bedrooms,
-                  bathrooms: _bathrooms,
-                  furnishing: _furnishing,
-                  allowedTenants: _allowedTenants,
-                  isVerified: _isVerified ? true : null,
-                  amenities: _selectedAmenities.isEmpty ? null : _selectedAmenities,
-                );
-                ref.read(searchFilterProvider.notifier).state = filter;
-                Navigator.pop(context);
-              },
-              child: const Text('Search Properties', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

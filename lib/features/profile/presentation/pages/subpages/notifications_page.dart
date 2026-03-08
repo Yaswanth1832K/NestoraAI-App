@@ -4,6 +4,7 @@ import 'package:house_rental/core/theme/app_colors.dart';
 import 'package:house_rental/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:intl/intl.dart';
+import 'package:house_rental/core/widgets/list_skeleton.dart';
 
 class NotificationsPage extends ConsumerWidget {
   const NotificationsPage({super.key});
@@ -164,7 +165,7 @@ class NotificationsPage extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ListSkeleton(),
         error: (err, stack) {
           final isPermissionError = err.toString().contains('permission-denied');
           

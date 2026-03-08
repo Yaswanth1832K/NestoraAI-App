@@ -29,8 +29,32 @@ final getMessagesStreamUseCaseProvider = Provider<GetMessagesStreamUseCase>((ref
   return GetMessagesStreamUseCase(ref.watch(chatRepositoryProvider));
 });
 
+class MarkAsReadUseCase {
+  final ChatRepository _repository;
+  const MarkAsReadUseCase(this._repository);
+  Future<void> call({required String chatId, required String userId}) async {
+    await _repository.markAsRead(chatId, userId);
+  }
+}
+
+final markAsReadUseCaseProvider = Provider<MarkAsReadUseCase>((ref) {
+  return MarkAsReadUseCase(ref.watch(chatRepositoryProvider));
+});
+
 final sendMessageUseCaseProvider = Provider<SendMessageUseCase>((ref) {
   return SendMessageUseCase(ref.watch(chatRepositoryProvider));
+});
+
+class DeleteAllChatsUseCase {
+  final ChatRepository _repository;
+  const DeleteAllChatsUseCase(this._repository);
+  Future<void> call(String userId) async {
+    await _repository.deleteAllChats(userId);
+  }
+}
+
+final deleteAllChatsUseCaseProvider = Provider<DeleteAllChatsUseCase>((ref) {
+  return DeleteAllChatsUseCase(ref.watch(chatRepositoryProvider));
 });
 
 final getOrCreateRoommateChatUseCaseProvider = Provider<GetOrCreateChatRoomUseCase>((ref) {

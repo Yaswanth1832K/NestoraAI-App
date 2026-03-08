@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
 import 'package:house_rental/features/rent_payments/domain/entities/rent_payment_entity.dart';
@@ -7,6 +8,7 @@ import 'package:house_rental/features/rent_payments/presentation/providers/rent_
 import 'package:house_rental/features/listings/presentation/providers/listings_providers.dart';
 import 'package:house_rental/features/notifications/domain/services/notification_service.dart';
 import 'package:house_rental/features/rent_payments/data/services/stripe_service.dart';
+import 'package:house_rental/features/rent_payments/presentation/pages/qr_payment_page.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -44,11 +46,10 @@ class RentPaymentsPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: _kDark,
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Payments',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: -0.5)),
-        backgroundColor: Colors.transparent,
+        backgroundColor: _kDark,
         elevation: 0,
         centerTitle: false,
         actions: [
@@ -63,26 +64,37 @@ class RentPaymentsPage extends ConsumerWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // ── Premium Hero Header ──────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 120, 24, 32),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_kDark, Color(0xFF1A1A1A)],
-                begin: Alignment.topCenter, end: Alignment.bottomCenter),
-            ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmall = constraints.maxWidth < 360;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _PromoBanner(),
-              const SizedBox(height: 32),
-              
-              const Text('Quick Actions', style: TextStyle(color: Colors.white,
-                  fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+              // ── Premium Hero Header ──────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 24.0, 24, 32),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_kDark, Color(0xFF1A1A1A)],
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _PromoBanner(),
+                  const SizedBox(height: 32),
+                  
+                  const Text('Quick Actions', style: TextStyle(color: Colors.white,
+                      fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
               const SizedBox(height: 16),
-              _QuickPayRow(userId: user.uid, isDark: isDark),
+              activeRentalAsync.when(
+                data: (activeRental) => _QuickPayRow(
+                  userId: user.uid,
+                  isDark: isDark,
+                  ownerId: activeRental?.ownerId ?? 'owner_demo',
+                ),
+                loading: () => const _LoadingBox(),
+                error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
+              ),
             ]),
           ),
 
@@ -106,10 +118,10 @@ class RentPaymentsPage extends ConsumerWidget {
                   final listingAsync = ref.watch(listingProvider(rental.listingId));
                   return listingAsync.when(
                     data: (l) => _RentCard(context: context, ref: ref,
-                        userId: user.uid, title: rental.listingTitle, amount: l.price),
+                        userId: user.uid, title: rental.listingTitle, amount: l.price, ownerId: rental.ownerId),
                     loading: () => const _LoadingBox(),
                     error: (_, __) => _RentCard(context: context, ref: ref,
-                        userId: user.uid, title: rental.listingTitle, amount: 1200),
+                        userId: user.uid, title: rental.listingTitle, amount: 1200, ownerId: rental.ownerId),
                   );
                 },
                 loading: () => const _LoadingBox(),
@@ -125,7 +137,14 @@ class RentPaymentsPage extends ConsumerWidget {
               const Text('Pay all your utilities securely via Nestora Pay',
                   style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 20),
-              _BillGrid(userId: user.uid),
+              activeRentalAsync.when(
+                data: (activeRental) => _BillGrid(
+                  userId: user.uid,
+                  ownerId: activeRental?.ownerId ?? 'owner_demo',
+                ),
+                loading: () => const _LoadingBox(),
+                error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
+              ),
 
               const SizedBox(height: 40),
 
@@ -153,12 +172,14 @@ class RentPaymentsPage extends ConsumerWidget {
                 loading: () => const _LoadingBox(),
                 error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
               ),
-              const SizedBox(height: 50),
             ]),
           ),
+          const SizedBox(height: 50),
         ]),
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 }
 
@@ -217,7 +238,8 @@ class _PromoBanner extends StatelessWidget {
 class _QuickPayRow extends StatelessWidget {
   final String userId;
   final bool isDark;
-  const _QuickPayRow({required this.userId, required this.isDark});
+  final String ownerId;
+  const _QuickPayRow({required this.userId, required this.isDark, required this.ownerId});
 
   @override
   Widget build(BuildContext context) {
@@ -232,30 +254,30 @@ class _QuickPayRow extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: methods.length,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        padding: EdgeInsets.zero,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (ctx, i) {
           final (label, icon, color) = methods[i];
           return GestureDetector(
-            onTap: () => _showStripeSheet(ctx, userId, 500, label),
+            onTap: () => _showStripeSheet(ctx, userId, 500, label, ownerId),
             child: Container(
-              width: 88,
+              width: 80,
               decoration: BoxDecoration(
                 color: _kCard,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withOpacity(0.05)),
               ),
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(color: color.withOpacity(0.1),
                       shape: BoxShape.circle),
-                  child: Icon(icon, size: 22, color: color),
+                  child: Icon(icon, size: 20, color: color),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(label, textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white38, fontSize: 10,
-                        fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10,
+                        fontWeight: FontWeight.w700, letterSpacing: 0.5)),
               ]),
             ),
           );
@@ -264,11 +286,27 @@ class _QuickPayRow extends StatelessWidget {
     );
   }
 
-  void _showStripeSheet(BuildContext ctx, String userId, double amount, String method) {
+  void _showStripeSheet(BuildContext ctx, String userId, double amount, String method, String ownerId) {
+    if (method.toLowerCase().contains('upi')) {
+      Navigator.push(
+        ctx,
+        MaterialPageRoute(
+          builder: (_) => QRPaymentPage(
+            propertyName: 'Rent Payment',
+            ownerName: 'Nestora Owner',
+            ownerUpi: 'nestora@upi',
+            ownerId: ownerId,
+            amount: amount,
+            userId: userId,
+          ),
+        ),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: ctx, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (_) => _StripeCheckoutSheet(
-        amount: amount, method: method, userId: userId),
+        amount: amount, method: method, userId: userId, ownerId: ownerId),
     );
   }
 }
@@ -277,10 +315,10 @@ class _QuickPayRow extends StatelessWidget {
 class _RentCard extends StatelessWidget {
   final BuildContext context;
   final WidgetRef ref;
-  final String userId, title;
+  final String userId, title, ownerId;
   final double amount;
   const _RentCard({required this.context, required this.ref,
-      required this.userId, required this.title, required this.amount});
+      required this.userId, required this.title, required this.amount, required this.ownerId});
 
   @override
   Widget build(BuildContext ctx) {
@@ -329,11 +367,19 @@ class _RentCard extends StatelessWidget {
           ]),
           const Spacer(),
           GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: ctx, isScrollControlled: true, backgroundColor: Colors.transparent,
-              builder: (_) => _StripeCheckoutSheet(
-                  amount: amount, method: 'Monthly Rent', userId: userId),
-            ),
+            onTap: () {
+              showModalBottomSheet(
+                context: ctx,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _PaymentOptionsSheet(
+                  amount: amount,
+                  title: title,
+                  userId: userId,
+                  ownerId: ownerId,
+                ),
+              );
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
@@ -343,7 +389,7 @@ class _RentCard extends StatelessWidget {
                     blurRadius: 20, offset: const Offset(0, 8))],
               ),
               child: const Row(children: [
-                Icon(Icons.lock_rounded, size: 16, color: Colors.white),
+                Icon(Icons.payment_rounded, size: 16, color: Colors.white),
                 SizedBox(width: 8),
                 Text('PAY RENT', style: TextStyle(color: Colors.white,
                     fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)),
@@ -352,6 +398,79 @@ class _RentCard extends StatelessWidget {
           ),
         ]),
       ]),
+    );
+  }
+}
+
+// ── Payment Options Sheet ──────────────────────────────────────
+class _PaymentOptionsSheet extends StatelessWidget {
+  final double amount;
+  final String title, userId, ownerId;
+
+  const _PaymentOptionsSheet({
+    required this.amount, required this.title, required this.userId, required this.ownerId
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: _kCard, 
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 24),
+            const Text('Choose Payment Method', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 24),
+            
+            // UPI Option
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.qr_code_rounded, color: Colors.blue),
+              ),
+              title: const Text('UPI / QR Code', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Pay instantly with GPay, PhonePe, Paytm', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => QRPaymentPage(
+                    propertyName: title, ownerName: 'Nestora Owner', ownerUpi: 'nestora@upi',
+                    ownerId: ownerId, amount: amount, userId: userId,
+                  ),
+                ));
+              },
+            ),
+            const Divider(color: Colors.white10, height: 24),
+            // Card Option
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: _kPurple.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.credit_card_rounded, color: _kPurpleG),
+              ),
+              title: const Text('Credit/Debit Card', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Secured by Stripe', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+              onTap: () {
+                Navigator.pop(context);
+                showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+                  builder: (_) => _StripeCheckoutSheet(amount: amount, method: 'Monthly Rent', userId: userId, ownerId: ownerId));
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -376,7 +495,8 @@ class _StatusChip extends StatelessWidget {
 // ── Bill grid ──────────────────────────────────────────────────
 class _BillGrid extends StatelessWidget {
   final String userId;
-  const _BillGrid({required this.userId});
+  final String ownerId;
+  const _BillGrid({required this.userId, required this.ownerId});
 
   @override
   Widget build(BuildContext context) {
@@ -390,39 +510,44 @@ class _BillGrid extends StatelessWidget {
       ('Society',     Icons.apartment_rounded,     const Color(0xFFEC407A)),
       ('Insurance',   Icons.shield_rounded,        const Color(0xFF26A69A)),
     ];
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          childAspectRatio: 0.85),
-      itemCount: bills.length,
-      itemBuilder: (ctx, i) {
-        final (name, icon, color) = bills[i];
-        return GestureDetector(
-          onTap: () => showModalBottomSheet(
-            context: ctx, isScrollControlled: true, backgroundColor: Colors.transparent,
-            builder: (_) => _StripeCheckoutSheet(
-                amount: 200, method: name, userId: userId),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: _kCard, 
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.04)),
-            ),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                child: Icon(icon, color: color, size: 24),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 360 ? 3 : 4;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount, mainAxisSpacing: 12, crossAxisSpacing: 12,
+              childAspectRatio: 0.85),
+          itemCount: bills.length,
+          itemBuilder: (ctx, i) {
+            final (name, icon, color) = bills[i];
+            return GestureDetector(
+              onTap: () => showModalBottomSheet(
+                context: ctx, isScrollControlled: true, backgroundColor: Colors.transparent,
+                builder: (_) => _StripeCheckoutSheet(
+                    amount: 200, method: name, userId: userId, ownerId: ownerId),
               ),
-              const SizedBox(height: 8),
-              Text(name, textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white38, fontSize: 10,
-                      fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-            ]),
-          ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _kCard, 
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.04)),
+                ),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(name, textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white38, fontSize: 10,
+                          fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                ]),
+              ),
+            );
+          },
         );
       },
     );
@@ -432,8 +557,8 @@ class _BillGrid extends StatelessWidget {
 // ── Stripe checkout bottom sheet ───────────────────────────────
 class _StripeCheckoutSheet extends ConsumerStatefulWidget {
   final double amount;
-  final String method, userId;
-  const _StripeCheckoutSheet({required this.amount, required this.method, required this.userId});
+  final String method, userId, ownerId;
+  const _StripeCheckoutSheet({required this.amount, required this.method, required this.userId, required this.ownerId});
 
   @override
   ConsumerState<_StripeCheckoutSheet> createState() => _StripeCheckoutSheetState();
@@ -471,6 +596,7 @@ class _StripeCheckoutSheetState extends ConsumerState<_StripeCheckoutSheet> {
           tenantId: widget.userId,
           propertyId: 'stripe-pay',
           propertyTitle: widget.method,
+          ownerId: widget.ownerId,
           amount: widget.amount,
           date: DateTime.now(),
           status: 'success',
@@ -500,10 +626,14 @@ class _StripeCheckoutSheetState extends ConsumerState<_StripeCheckoutSheet> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(color: Colors.green.withOpacity(0.15), shape: BoxShape.circle),
-          child: const Icon(Icons.check_rounded, color: Colors.greenAccent, size: 48),
+        SizedBox(
+          height: 120,
+          width: 120,
+          child: Lottie.network(
+            'https://assets10.lottiefiles.com/packages/lf20_s2lryxtd.json',
+            repeat: false,
+            errorBuilder: (context, error, stackTrace) => const Icon(Icons.check_rounded, color: Colors.greenAccent, size: 48),
+          ),
         ),
         const SizedBox(height: 20),
         const Text('Payment Successful!', style: TextStyle(color: Colors.white,

@@ -23,6 +23,9 @@ abstract interface class ChatRemoteDataSource {
   Future<void> setTyping(String chatId, String userId);
 
   Future<void> clearTyping(String chatId, String userId);
+
+  Future<void> markAsRead(String chatId, String userId);
+  Future<void> deleteAllChats(String userId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -163,46 +166,71 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Stream<List<MessageModel>> streamMessages(String chatId) {
-    return _firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .snapshots()
-        .map((snapshot) {
-      final messages = snapshot.docs.map((doc) => MessageModel.fromFirestore(doc)).toList();
-      messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      
-      if (messages.isEmpty && (chatId == 'mock_chat_1' || chatId == 'mock_chat_2')) {
-        // Fallback to static mock messages for demo
-        return [
-           MessageModel(id: 'm1', senderId: 'owner_demo', text: 'Hello! How can I help?', createdAt: DateTime.now().subtract(const Duration(hours: 1))),
-        ];
-      }
-      return messages;
-    });
+  Future<void> markAsRead(String chatId, String userId) async {
+    try {
+      await _firestore.collection('chats').doc(chatId).update({
+        'lastMessageSenderId': null,
+      });
+    } catch (_) {
+      // Ignore Firestore permission issues for demo
+    }
   }
 
   @override
-  Stream<List<ChatRoomModel>> userChatRoomsStream(String userId) {
-    return _firestore
-        .collection('chats')
-        .where('participants', arrayContains: userId)
-        .snapshots()
-        .map((snapshot) {
-      final firestoreRooms = snapshot.docs.map((doc) => ChatRoomModel.fromFirestore(doc)).toList();
-      final mockRooms = _getGeneratedRooms(userId);
+  Future<void> deleteAllChats(String userId) async {
+    try {
+      final query = await _firestore
+          .collection('chats')
+          .where('participants', arrayContains: userId)
+          .get();
       
-      // Merge: Keep all firestore rooms, add mock rooms if not present
-      final allRooms = [...firestoreRooms];
-      for (var mr in mockRooms) {
-        if (!allRooms.any((r) => r.listingId == mr.listingId)) {
-          allRooms.add(mr);
+      final batch = _firestore.batch();
+      for (var doc in query.docs) {
+        // Delete all messages in the room first (subcollection)
+        final messages = await doc.reference.collection('messages').get();
+        for (var msg in messages.docs) {
+          batch.delete(msg.reference);
         }
+        // Delete the room document
+        batch.delete(doc.reference);
       }
-      
-      allRooms.sort((a, b) => (b.lastTimestamp ?? DateTime(0)).compareTo(a.lastTimestamp ?? DateTime(0)));
-      return allRooms;
-    });
+      await batch.commit();
+    } catch (_) {}
+  }
+
+  @override
+  Stream<List<MessageModel>> streamMessages(String chatId) async* {
+    try {
+      await for (final snapshot in _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .snapshots()) {
+        final messages =
+            snapshot.docs.map((doc) => MessageModel.fromFirestore(doc)).toList();
+        messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        yield messages;
+      }
+    } catch (e) {
+      yield [];
+    }
+  }
+
+  @override
+  Stream<List<ChatRoomModel>> userChatRoomsStream(String userId) async* {
+    try {
+      await for (final snapshot in _firestore
+          .collection('chats')
+          .where('participants', arrayContains: userId)
+          .snapshots()) {
+        final firestoreRooms =
+            snapshot.docs.map((doc) => ChatRoomModel.fromFirestore(doc)).toList();
+        firestoreRooms.sort((a, b) => (b.lastTimestamp ?? DateTime(0))
+            .compareTo(a.lastTimestamp ?? DateTime(0)));
+        yield firestoreRooms;
+      }
+    } catch (e) {
+      yield [];
+    }
   }
 }

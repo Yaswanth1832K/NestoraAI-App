@@ -39,14 +39,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   /// Ensures user document exists in Firestore with role field
   Future<UserModel> _ensureUserDocument(User firebaseUser, {String? role}) async {
     final userDoc = _firestore.collection('users').doc(firebaseUser.uid);
+    debugPrint("AuthRemoteDS: Checking Firestore for user: ${firebaseUser.uid}");
     final snapshot = await userDoc.get();
 
     if (!snapshot.exists) {
+      debugPrint("AuthRemoteDS: User document NOT found. Creating new user with role: ${role ?? 'renter'}");
       // Create new user document with specified or default renter role
       final newUser = UserModel.fromFirebaseUser(firebaseUser, role: role ?? 'renter');
       await userDoc.set(newUser.toFirestore());
+      debugPrint("AuthRemoteDS: User document created successfully.");
       return newUser;
     } else {
+      debugPrint("AuthRemoteDS: User document FOUND in Firestore.");
       // User exists, fetch from Firestore to get role
       return UserModel.fromFirestore(snapshot);
     }
@@ -144,14 +148,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final user = _firebaseAuth.currentUser;
       if (user == null) throw const ServerException(message: 'User not logged in');
 
+      debugPrint("AuthRemoteDS: Updating Auth profile...");
       // Update Firebase Auth profile
       if (displayName != null) {
         await user.updateDisplayName(displayName);
+        debugPrint("AuthRemoteDS: Display name updated in Auth.");
       }
       if (photoURL != null) {
         await user.updatePhotoURL(photoURL);
+        debugPrint("AuthRemoteDS: Photo URL updated in Auth.");
       }
 
+      debugPrint("AuthRemoteDS: Updating Firestore user doc...");
       // Update Firestore user document
       final Map<String, dynamic> updates = {};
       if (displayName != null) updates['displayName'] = displayName;
@@ -160,10 +168,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       
       if (updates.isNotEmpty) {
         await _firestore.collection('users').doc(user.uid).set(updates, SetOptions(merge: true));
+        debugPrint("AuthRemoteDS: Firestore user doc updated.");
       }
       
-      await user.reload(); // Refresh user data
+      debugPrint("AuthRemoteDS: Reloading user...");
+      await user.reload().timeout(const Duration(seconds: 10)); // Prevent infinite hang
+      debugPrint("AuthRemoteDS: User reloaded successfully.");
     } catch (e) {
+      debugPrint("AuthRemoteDS: ERROR in updateProfile: $e");
       throw ServerException(message: e.toString());
     }
   }

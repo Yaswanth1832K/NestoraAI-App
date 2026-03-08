@@ -64,6 +64,7 @@ class DemoListingsData {
     'Chandigarh': [30.7333, 76.7794],
     'Patna': [25.5941, 85.1376],
     'Indore': [22.7196, 75.8577],
+    'Ettimadai': [10.9000, 76.8900],
   };
 
   static const Map<String, String> serviceImages = {
@@ -105,10 +106,14 @@ class DemoListingsData {
     return urls.toSet().toList(); // Ensure uniqueness
   }
 
-  static List<ListingEntity> generateDemoListings(String city, int count, {String? category, ListingFilter? filter, String? ownerId}) {
+  static List<ListingEntity> generateDemoListings(String cityInput, int count, {String? category, ListingFilter? filter, String? ownerId}) {
+    // Normalize city name to Title Case to match cityCenters keys
+    final city = cityInput.isEmpty ? 'Coimbatore' : 
+                 cityInput[0].toUpperCase() + cityInput.substring(1).toLowerCase();
+    
     final types = ['Apartment', 'Villa', 'House'];
-    final baseLat = (cityCenters[city]?[0] ?? 11.0168);
-    final baseLng = (cityCenters[city]?[1] ?? 76.9558);
+    final baseLat = (cityCenters[city]?[0] ?? cityCenters['Coimbatore']![0]);
+    final baseLng = (cityCenters[city]?[1] ?? cityCenters['Coimbatore']![1]);
 
     List<ListingEntity> allGenerated = List.generate(count * 2, (i) {
       String type = types[i % types.length];
@@ -125,8 +130,8 @@ class DemoListingsData {
       final rating = 3.5 + (Random(i).nextDouble() * 1.5);
       final isAvailableNow = i % 4 != 0; // Most are available
       
-      final lat = baseLat + (Random(i).nextDouble() - 0.5) * 0.05;
-      final lng = baseLng + (Random(i).nextDouble() - 0.5) * 0.05;
+      final lat = baseLat + (Random(i).nextDouble() - 0.5) * 0.3;
+      final lng = baseLng + (Random(i).nextDouble() - 0.5) * 0.3;
 
       final seed = (city.hashCode.abs() * 11 + i * 13) % 10000;
       final listingImages = _getUniqueImages(type, seed);

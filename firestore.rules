@@ -29,7 +29,10 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && getRole(request.auth.uid) == 'admin';
+      // Robust admin check including existence check for new users
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getRole(request.auth.uid) == 'admin';
     }
 
     // ==========================================
@@ -45,6 +48,11 @@ service cloud.firestore {
       
       // Admins can delete profiles
       allow delete: if isAdmin();
+
+      // Notifications sub-collection rules
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ==========================================
@@ -111,9 +119,13 @@ service cloud.firestore {
     // FAVORITES & SAVED PROPERTIES
     // ==========================================
     
-    match /favorites/{userId} {
+    match /favorites/{favoriteId} {
       // Users can only access their own favorites
-      allow read, write: if isOwner(userId);
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow write: if isSignedIn() && (
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
     }
 
     // ==========================================
@@ -121,22 +133,27 @@ service cloud.firestore {
     // ==========================================
     
     match /bookings/{bookingId} {
-      // Only the tenant or the owner can see the booking
+      // Tenant or owner (both stored in 'participants') can read the booking
       allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.userId || 
-        request.auth.uid == resource.data.ownerId
+        request.auth.uid in resource.data.participants ||
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == resource.data.renterId ||
+        request.auth.uid == resource.data.tenantId
       );
       
       allow create: if isSignedIn();
       
+      // Tenant can cancel (update status); owner can approve/reject
       allow update: if isSignedIn() && (
-        request.auth.uid == resource.data.userId || 
-        request.auth.uid == resource.data.ownerId
+        request.auth.uid in resource.data.participants ||
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == resource.data.renterId ||
+        request.auth.uid == resource.data.tenantId
       );
     }
 
     // ==========================================
-    // NOTIFICATIONS
+    // NOTIFICATIONS (Global collection)
     // ==========================================
     
     match /notifications/{userId} {
@@ -167,8 +184,3 @@ service cloud.firestore {
     }
   }
 }
-
-/**
- * END OF HOUSE RENTAL FIREBASE RULES
- * Total Lines: ~150 (including documentation and structure)
- */

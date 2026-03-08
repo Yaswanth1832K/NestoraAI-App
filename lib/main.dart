@@ -8,8 +8,16 @@ import 'package:go_router/go_router.dart';
 import 'package:house_rental/app.dart';
 import 'package:house_rental/firebase_options.dart';
 import 'package:house_rental/features/rent_payments/data/services/stripe_service.dart';
+import 'package:house_rental/features/notifications/domain/services/notification_service.dart';
+import 'package:go_router/go_router.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Handling a background message: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,28 +35,24 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  // Initialize FCM
-  final messaging = FirebaseMessaging.instance;
-  
-  // Request permissions (important for iOS/Web)
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Initialize FCM & Local Notifications via Provider
+  final container = ProviderContainer();
+  await container.read(notificationServiceProvider).initialize();
 
   // Handle background/terminated notifications when app is opened via tap
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     if (message.data.containsKey('chatId')) {
       final chatId = message.data['chatId'];
-      // Navigate to chat (requires rootNavigatorKey and proper route)
       rootNavigatorKey.currentContext?.push('/chat/$chatId');
     }
   });
 
   runApp(
-    const ProviderScope(
-      child: HouseRentalApp(),
+    UncontrolledProviderScope(
+      container: container,
+      child: const HouseRentalApp(),
     ),
   );
 }

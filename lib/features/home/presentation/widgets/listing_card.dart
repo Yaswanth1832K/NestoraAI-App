@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,11 +10,11 @@ import 'package:house_rental/features/auth/presentation/providers/auth_providers
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
 import 'package:house_rental/main.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
+import 'package:house_rental/core/widgets/nestora_image.dart';
+import 'package:house_rental/core/theme/app_spacing.dart';
 import 'package:intl/intl.dart';
 import 'package:house_rental/core/theme/app_colors.dart';
 import 'package:house_rental/features/ai_services/presentation/providers/ai_providers.dart';
-import 'package:house_rental/features/location/location_provider.dart';
-import 'package:geolocator/geolocator.dart';
 
 class ListingCard extends ConsumerStatefulWidget {
   final ListingEntity listing;
@@ -24,6 +25,7 @@ class ListingCard extends ConsumerStatefulWidget {
   final bool showFavoriteButton;
   final Widget? actionButton;
   final VoidCallback? onTap;
+  final String heroPrefix;
 
   const ListingCard({
     super.key,
@@ -35,6 +37,7 @@ class ListingCard extends ConsumerStatefulWidget {
     this.showFavoriteButton = true,
     this.actionButton,
     this.onTap,
+    this.heroPrefix = 'listing',
   });
 
   @override
@@ -77,99 +80,92 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
     final isFavorite = favorites.value?.contains(widget.listing.id) ?? false;
     
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final primaryColor = AppColors.primary;
     
     final textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
     final subTextColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    // Fetch owner details for avatar
+    // Fetch owner details
     final ownerProfile = ref.watch(userProfileProvider(widget.listing.ownerId));
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isVerySmall = screenWidth < 360;
+    
+    final cardWidth = widget.width ?? 
+        (widget.isVerticalFeed 
+            ? double.infinity 
+            : (widget.isCompact 
+                ? (isVerySmall ? 180.0 : 200.0) 
+                : (isVerySmall ? screenWidth * 0.8 : 300.0)));
 
     return GestureDetector(
       onTap: widget.onTap ?? () {
         rootNavigatorKey.currentState!.push(
           MaterialPageRoute(
-            builder: (_) => ListingDetailsPage(listing: widget.listing),
+            builder: (_) => ListingDetailsPage(
+              listing: widget.listing,
+              heroPrefix: widget.heroPrefix,
+            ),
           ),
         );
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        width: widget.width ?? (widget.isVerticalFeed ? double.infinity : (widget.isCompact ? 200 : 300)),
-        margin: widget.margin ?? EdgeInsets.only(right: AppColors.s24, bottom: AppColors.s32),
+        duration: 200.ms,
+        curve: Curves.easeOutCubic,
+        width: cardWidth,
+        margin: widget.margin ?? EdgeInsets.only(right: AppSpacing.s16, bottom: AppSpacing.s24),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          color: isDark ? AppColors.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: AppColors.cardShadow,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Stack
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            // Image Section
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: SizedBox(
-                    height: widget.isCompact ? 160 : 220,
-                    child: _buildImageGallery(isDark),
-                  ),
-                ),
-                // Dot indicators
-                Positioned(
-                  bottom: 8,
-                  right: 12,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(3, (i) {
-                      final active = _currentImageIndex == i;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.only(left: 4),
-                        width: active ? 16 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: active ? Colors.white : Colors.white54,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      );
-                    }),
+                  child: AspectRatio(
+                    aspectRatio: widget.isCompact ? 1.2 : 1.5,
+                    child: Hero(
+                      tag: '${widget.heroPrefix}_image_${widget.listing.id}',
+                      child: _buildImageGallery(isDark),
+                    ),
                   ),
                 ),
                 
-                // Top Gradient for contrast
-                Positioned(
-                  top: 0, left: 0, right: 0, height: 60,
+                // Overlay Gradient
+                Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.black.withOpacity(0.3), Colors.transparent],
+                        colors: [
+                          Colors.black.withOpacity(0.2),
+                          Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.5),
+                        ],
+                        stops: const [0.0, 0.3, 0.7, 1.0],
                       ),
                     ),
                   ),
                 ),
-                
-                // Favorite Button (Top Right)
+
+                // Favorite Button
                 Positioned(
-                  top: AppColors.s16,
-                  right: AppColors.s16,
+                  top: 12,
+                  right: 12,
                   child: GestureDetector(
                     onTap: _isToggling ? null : () => _toggleFavorite(context),
-                    child: Container(
-                      padding: EdgeInsets.all(AppColors.s8),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceLight2 : Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                      ),
+                    child: GlassContainer(
+                      padding: const EdgeInsets.all(8),
+                      borderRadius: BorderRadius.circular(50),
+                      opacity: 0.2,
+                      blur: 10,
                       child: AnimatedBuilder(
                         animation: _scaleAnimation,
                         builder: (context, child) {
@@ -177,8 +173,8 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                             scale: _scaleAnimation.value,
                             child: Icon(
                               isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
-                              color: isFavorite ? primaryColor : AppColors.textPrimaryLight,
-                              size: 20,
+                              color: isFavorite ? Colors.redAccent : Colors.white,
+                              size: 18,
                             ),
                           );
                         },
@@ -187,36 +183,28 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
                   ),
                 ),
 
-                // Availability Badge (Bottom Left)
+                // Bottom Left Badge (Status)
                 Positioned(
-                  bottom: AppColors.s16,
-                  left: AppColors.s16,
+                  bottom: 12,
+                  left: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.backgroundDark.withOpacity(0.8) : Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(50),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           width: 6, height: 6,
-                          decoration: BoxDecoration(
-                            color: widget.listing.status == ListingEntity.statusAvailable ? AppColors.success : Colors.grey,
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.s8),
                         Text(
                           widget.listing.status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                            letterSpacing: 0.5,
-                          ),
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: AppColors.textPrimaryLight, letterSpacing: 0.5),
                         ),
                       ],
                     ),
@@ -225,195 +213,178 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
               ],
             ),
             
-                  // Title, Location, and Price Section
-                  Padding(
-                    padding: EdgeInsets.all(AppColors.s16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                  // Title & Owner Row
+            // Info Section
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          widget.listing.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
-                            letterSpacing: -0.5,
+                        child: Hero(
+                          tag: '${widget.heroPrefix}_title_${widget.listing.id}',
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Text(
+                              widget.listing.title,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: textColor,
+                                letterSpacing: -0.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ),
-                      SizedBox(width: AppColors.s8),
-                      // Owner Avatar
-                      ownerProfile.when(
-                        data: (user) => CircleAvatar(
-                          radius: 12,
-                          backgroundColor: AppColors.surfaceLight2,
-                          backgroundImage: user?.photoUrl != null ? CachedNetworkImageProvider(user!.photoUrl!) : null,
-                          child: user?.photoUrl == null ? Icon(Icons.person, size: 14, color: AppColors.textSecondaryLight) : null,
+                      AppSpacing.h8,
+                      if (widget.listing.averageRating > 0)
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                            AppSpacing.h4,
+                            Text(
+                              widget.listing.averageRating.toStringAsFixed(1),
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textColor),
+                            ),
+                          ],
                         ),
-                        loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                        error: (_, __) => const SizedBox.shrink(),
+                    ],
+                  ),
+                  AppSpacing.v4,
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_rounded, size: 14, color: (primaryColor).withOpacity(0.6)),
+                      AppSpacing.h4,
+                      Expanded(
+                        child: Text(
+                          widget.listing.city,
+                          style: TextStyle(fontSize: 13, color: subTextColor, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
-                  
-                  SizedBox(height: AppColors.s8),
-                  
-                  // Location & Rating Row
+                  AppSpacing.v12,
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Icon(Icons.location_on_outlined, size: 14, color: subTextColor),
-                      const SizedBox(width: 4),
                       Expanded(
-                        child: Text(
-                          '${widget.listing.city}',
-                          style: TextStyle(
-                            color: subTextColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      
-                      // --- Distance Badge ---
-                      ref.watch(userLocationProvider).when(
-                        data: (pos) {
-                          if (pos == null) return const SizedBox.shrink();
-                          final distMeters = Geolocator.distanceBetween(
-                            pos.latitude, pos.longitude, 
-                            widget.listing.latitude, widget.listing.longitude
-                          );
-                          final distKm = distMeters / 1000;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.near_me_rounded, size: 10, color: primaryColor),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${distKm.toStringAsFixed(1)} km',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: subTextColor),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-
-                      if (widget.listing.averageRating > 0) ...[
-                        const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
-                        const SizedBox(width: 2),
-                        Text(
-                          widget.listing.averageRating.toStringAsFixed(1),
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  
-                  const SizedBox(height: AppColors.s12),
-                  Row(
-                    children: [
-                      // Price Tag (Dominant)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: RichText(
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            children: [
-                                TextSpan(
-                                  text: '₹${NumberFormat('#,##,###').format(widget.listing.price)}',
-                                  style: TextStyle(
-                                    color: primaryColor,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' /mo',
-                                  style: TextStyle(
-                                    color: primaryColor.withOpacity(0.7),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      
-                      const SizedBox(width: 8),
-
-                      // AI Price Prediction Badge
-                      ref.watch(listingPredictedPriceProvider(widget.listing)).when(
-                        data: (predictedPrice) {
-                          final isFair = widget.listing.price <= predictedPrice * 1.1;
-                          final priceStr = NumberFormat.compactCurrency(
-                            symbol: '₹',
-                            decimalDigits: 0,
-                            locale: 'en_IN',
-                          ).format(predictedPrice);
-                          
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isFair ? Colors.orange.shade300 : Colors.red.shade300,
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('MONTHLY RENT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: subTextColor.withOpacity(0.5), letterSpacing: 1)),
+                            AppSpacing.v4,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
                               children: [
-                                Text(
-                                  isFair ? 'FAIR' : 'HIGH',
-                                  style: TextStyle(
-                                    color: isFair ? Colors.orange : Colors.red,
-                                    fontSize: 7,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
+                                Hero(
+                                  tag: '${widget.heroPrefix}_price_${widget.listing.id}',
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: Text(
+                                      '₹${NumberFormat('#,##,###').format(widget.listing.price)}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        color: primaryColor,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  'AI: $priceStr',
-                                  style: TextStyle(
-                                    color: isFair ? Colors.orange.withOpacity(0.8) : Colors.red.withOpacity(0.8),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                const SizedBox(width: 8),
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final prediction = ref.watch(listingPredictedPriceProvider(widget.listing));
+                                    return prediction.when(
+                                      data: (predictedPrice) => Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.auto_awesome_rounded, size: 8, color: AppColors.primary),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '₹${NumberFormat('#,##,###').format(predictedPrice)}',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      loading: () => Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Shimmer.fromColors(
+                                          baseColor: Colors.grey.withOpacity(0.3),
+                                          highlightColor: Colors.grey.withOpacity(0.1),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.auto_awesome_rounded, size: 8),
+                                              const SizedBox(width: 4),
+                                              const Text(
+                                                'Refining...',
+                                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      error: (_, __) => const SizedBox.shrink(),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
-                          );
-                        },
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
+                          ],
+                        ),
+                      ),
+                      
+                      // Owner Mini Profile
+                      ownerProfile.maybeWhen(
+                        data: (user) => Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: (primaryColor).withOpacity(0.1)),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 10,
+                                backgroundImage: user?.photoUrl != null ? CachedNetworkImageProvider(user!.photoUrl!) : null,
+                                child: user?.photoUrl == null ? const Icon(Icons.person, size: 12) : null,
+                              ),
+                              AppSpacing.h8,
+                              Text(
+                                user?.displayName?.split(' ').first ?? 'Host',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor.withOpacity(0.7)),
+                              ),
+                              AppSpacing.h4,
+                            ],
+                          ),
+                        ),
+                        orElse: () => const SizedBox.shrink(),
                       ),
                     ],
                   ),
@@ -421,101 +392,72 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
               ),
             ),
           ],
-        ),
       ),
+    ).animate().fadeIn(duration: 400.ms, curve: Curves.easeOut)
+               .slideY(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
     );
   }
 
-  /// A large, diverse pool of curated Unsplash house/apartment photos.
+  Widget _buildImageGallery(bool isDark) {
+    final urls = widget.listing.allImages.isNotEmpty ? widget.listing.allImages : _fallbackPool;
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        PageView.builder(
+          controller: _pageController,
+          itemCount: urls.length.clamp(1, 4),
+          itemBuilder: (context, index) {
+            return NestoraImage(
+              imageUrl: urls[index],
+              width: double.infinity,
+              height: double.infinity,
+            );
+          },
+        ),
+        if (urls.length > 1)
+          Positioned(
+            bottom: 12,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                urls.length.clamp(1, 4),
+                (index) => AnimatedContainer(
+                  duration: 300.ms,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _currentImageIndex == index ? 16 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _currentImageIndex == index 
+                        ? Colors.white 
+                        : Colors.white.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   static const _fallbackPool = [
     'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80',
     'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
     'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
     'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
-    'https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=800&q=80',
-    'https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80',
-    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=80',
-    'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80',
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
-    'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?w=800&q=80',
-    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&q=80',
-    'https://images.unsplash.com/photo-1556020685-ae41abfc9365?w=800&q=80',
-    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
-    'https://images.unsplash.com/photo-1504615755583-2916b52192a3?w=800&q=80',
-    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
-    'https://images.unsplash.com/photo-1464146072230-91cabc968266?w=800&q=80',
-    'https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?w=800&q=80',
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-    'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&q=80',
-    'https://images.unsplash.com/photo-1559767949-0faa5c7e9992?w=800&q=80',
-    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80',
-    'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80',
-    'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800&q=80',
   ];
-
-  /// Returns exactly 3 unique image URLs for this card.
-  /// Starts from the listing's own images (de-duped), then fills gaps
-  /// from the fallback pool using a deterministic offset from the listing id
-  /// so every card gets a different set of fallbacks.
-  List<String> _buildThreeImages() {
-    // De-duplicate listing images while preserving order.
-    final seen = <String>{};
-    final unique = widget.listing.allImages.where((u) => u.isNotEmpty && seen.add(u)).toList();
-
-    final result = unique.take(3).toList();
-
-    if (result.length < 3) {
-      // Deterministic offset based on listing id hash so cards differ from each other.
-      final offset = widget.listing.id.hashCode.abs() % _fallbackPool.length;
-      var idx = offset;
-      while (result.length < 3) {
-        final candidate = _fallbackPool[idx % _fallbackPool.length];
-        if (!result.contains(candidate)) result.add(candidate);
-        idx++;
-      }
-    }
-
-    return result;
-  }
-
-  Widget _buildImageGallery(bool isDark) {
-    final urls = _buildThreeImages();
-    final placeholder = Shimmer.fromColors(
-      baseColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFEBEBEB),
-      highlightColor: isDark ? const Color(0xFF222222) : const Color(0xFFF5F5F5),
-      child: Container(color: Colors.white),
-    );
-
-    return PageView.builder(
-      controller: _pageController,
-      physics: const BouncingScrollPhysics(),
-      itemCount: urls.length,
-      itemBuilder: (context, index) {
-        return CachedNetworkImage(
-          imageUrl: urls[index],
-          fit: BoxFit.cover,
-          placeholder: (_, __) => placeholder,
-          errorWidget: (_, __, ___) => Container(
-            color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
-            child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
-          ),
-        );
-      },
-    );
-  }
 
   Future<void> _toggleFavorite(BuildContext context) async {
     final authState = ref.read(authStateProvider);
     if (authState.value == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to save favorites')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to save favorites')));
       return;
     }
 
-    HapticFeedback.mediumImpact();
+    HapticFeedback.lightImpact();
     _animationController.forward().then((_) => _animationController.reverse());
+    // Adding a secondary subtle "pop" for better tactile feel
+    Future.delayed(100.ms, () => HapticFeedback.selectionClick());
 
     setState(() => _isToggling = true);
     final result = await ref.read(favoritesNotifierProvider.notifier).toggleFavorite(widget.listing);
@@ -523,9 +465,7 @@ class _ListingCardState extends ConsumerState<ListingCard> with SingleTickerProv
     if (mounted) {
       setState(() => _isToggling = false);
       result.fold(
-        (failure) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Update failed: ${failure.message}')),
-        ),
+        (failure) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${failure.message}'))),
         (_) {},
       );
     }

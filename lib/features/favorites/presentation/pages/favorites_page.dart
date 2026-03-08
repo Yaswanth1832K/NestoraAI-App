@@ -89,13 +89,18 @@ class FavoritesPage extends ConsumerWidget {
                         ),
                       ),
 
-                      // ── Grid logic — one per row on small mobile ─
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final w = constraints.maxWidth.isFinite ? constraints.maxWidth : 800.0;
+                          final w = constraints.maxWidth;
+                          if (w <= 0) return const SizedBox.shrink(); // Guard against 0-width crashes
+
                           final cols = w > 700 ? 4 : (w > 450 ? 2 : 1);
                           final spacing = 12.0;
                           final cardWidth = (w - (cols - 1) * spacing) / cols;
+                          
+                          // Ensure childAspectRatio is valid
+                          final itemHeight = (cols == 1 ? 420.0 : 380.0);
+                          final aspectRatio = (cardWidth / itemHeight).clamp(0.1, 2.0);
 
                           return GridView.builder(
                             shrinkWrap: true,
@@ -104,14 +109,15 @@ class FavoritesPage extends ConsumerWidget {
                               crossAxisCount: cols,
                               crossAxisSpacing: spacing,
                               mainAxisSpacing: spacing,
-                              childAspectRatio: cardWidth / (cols == 1 ? 420 : 380),
+                              childAspectRatio: aspectRatio,
                             ),
                             itemCount: listings.length,
                             itemBuilder: (context, index) {
                               return ListingCard(
                                 listing: listings[index],
                                 isVerticalFeed: true,
-                                margin: EdgeInsets.zero,
+                                margin: const EdgeInsets.all(2), // Slight margin for shadow
+                                heroPrefix: 'favorites',
                               );
                             },
                           );

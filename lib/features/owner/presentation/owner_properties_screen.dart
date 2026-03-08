@@ -248,6 +248,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
             showFavoriteButton: false,
             margin: EdgeInsets.zero,
             isVerticalFeed: true,
+            heroPrefix: 'owner_properties',
             onTap: () {
               context.push(
                 AppRouter.propertyRequests,

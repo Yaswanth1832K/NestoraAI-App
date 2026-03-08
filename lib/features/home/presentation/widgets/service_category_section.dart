@@ -43,16 +43,24 @@ class ServiceCategorySection extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(
-          height: 340, // Height to accommodate the premium card
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: AppColors.s24),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: children.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, index) => children[index],
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isSmall = screenWidth < 360;
+            final listHeight = isSmall ? 300.0 : 340.0;
+            
+            return SizedBox(
+              height: listHeight,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: AppColors.s24),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: children.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 16),
+                itemBuilder: (context, index) => children[index],
+              ),
+            );
+          },
         ),
         const SizedBox(height: 8),
       ],

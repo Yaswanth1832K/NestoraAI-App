@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -20,6 +21,13 @@ import 'package:house_rental/features/listings/presentation/pages/post_property_
 import 'package:go_router/go_router.dart';
 import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
+import 'package:house_rental/core/theme/app_spacing.dart';
+import 'package:house_rental/core/widgets/nestora_empty_state.dart';
+import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
+import 'package:house_rental/features/listings/domain/repositories/listing_repository.dart';
+import 'package:house_rental/core/theme/app_colors.dart';
+import 'package:house_rental/features/home/domain/entities/home_service.dart';
+import 'package:house_rental/core/widgets/nestora_image.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -31,18 +39,23 @@ class SearchPage extends ConsumerStatefulWidget {
 /// Debounce delay before firing Firestore/API search (reduces reads).
 const Duration _kSearchDebounce = Duration(milliseconds: 300);
 
-class _SearchPageState extends ConsumerState<SearchPage> {
+class _SearchPageState extends ConsumerState<SearchPage> with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   late stt.SpeechToText _speech;
   bool _isListening = false;
   String _lastWords = '';
   Timer? _debounceTimer;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
     _searchController.addListener(_onSearchTextChanged);
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
   }
 
   void _onSearchTextChanged() {
@@ -131,6 +144,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     _debounceTimer?.cancel();
     _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -168,48 +182,57 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               children: [
                 Hero(
                   tag: 'search_bar',
-                  child: GlassContainer.standard(
-                    context: context,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    borderRadius: 20,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _isListening ? Icons.mic_rounded : Icons.search_rounded,
-                          color: _isListening ? Colors.red : Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                            decoration: InputDecoration(
-                              hintText: _isListening ? 'Listening...' : 'Search near you...',
-                              hintStyle: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.5), fontWeight: FontWeight.w500),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            onChanged: (val) => setState(() {}),
-                            onSubmitted: (_) => _performSearch(),
-                          ),
-                        ),
-                        if (_searchController.text.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 20),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(searchProvider.notifier).clearResults();
-                              setState(() {});
-                            },
-                          ),
-                        IconButton(
-                          icon: Icon(
-                            _isListening ? Icons.stop_circle_rounded : Icons.mic_none_rounded,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: GlassContainer.standard(
+                      context: context,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      borderRadius: 50,
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isListening ? Icons.mic_rounded : Icons.search_rounded,
                             color: _isListening ? Colors.red : Theme.of(context).primaryColor,
                           ),
-                          onPressed: _listen,
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                              decoration: InputDecoration(
+                                hintText: _isListening ? 'Listening...' : 'Search near you...',
+                                hintStyle: TextStyle(color: Theme.of(context).hintColor.withOpacity(0.5), fontWeight: FontWeight.w500),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onChanged: (val) => setState(() {}),
+                              onSubmitted: (_) => _performSearch(),
+                            ),
+                          ),
+                          if (_searchController.text.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              onPressed: () {
+                                _searchController.clear();
+                                ref.read(searchProvider.notifier).clearResults();
+                                setState(() {});
+                              },
+                            ),
+                          AnimatedBuilder(
+                            animation: _pulseController,
+                            builder: (context, child) {
+                              return IconButton(
+                                icon: Icon(
+                                  _isListening ? Icons.stop_circle_rounded : Icons.mic_none_rounded,
+                                  color: _isListening ? Colors.red.withOpacity((0.5 + (_pulseController.value * 0.5)).clamp(0.0, 1.0)) : Theme.of(context).primaryColor,
+                                  size: _isListening ? 24 + (_pulseController.value * 4) : 24,
+                                ),
+                                onPressed: _listen,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -275,7 +298,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 if (isFiltered && _searchController.text.isEmpty) {
                   return ref.watch(filteredListingsProvider).when(
                     data: (listings) {
-                      if (listings.isEmpty) return _buildInfoState(Icons.filter_list_off_rounded, 'No matches found');
+                      if (listings.isEmpty) return NestoraEmptyState(
+                        title: 'No matches found',
+                        description: 'Try adjusting your filters to find properties.',
+                        icon: Icons.filter_list_off_rounded,
+                        actionLabel: 'Reset Filters',
+                        onActionPressed: () => ref.read(searchFilterProvider.notifier).state = ListingFilter(),
+                      );
                       return _buildResultsList('Filtered Properties', listings);
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
@@ -290,7 +319,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       final recommendationsState = ref.watch(recommendationsProvider);
                       return recommendationsState.when(
                         data: (recListings) {
-                          if (recListings.isEmpty) return _buildInfoState(Icons.search_rounded, 'Discover your next home');
+                          if (recListings.isEmpty) return NestoraEmptyState(
+                            title: 'Discover your next home',
+                            description: 'Enter a city, area or property type to start searching.',
+                            icon: Icons.search_rounded,
+                          );
                           return _buildResultsList('Suggested for you', recListings);
                         },
                         loading: () => const Center(child: CircularProgressIndicator()),
@@ -298,7 +331,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       );
                     }
 
-                    if (listings.isEmpty) return _buildInfoState(Icons.search_off_rounded, 'No properties match your search');
+                    if (listings.isEmpty) return NestoraEmptyState(
+                      title: 'No properties found',
+                      description: 'We couldn\'t find anything matching your search.',
+                      icon: Icons.search_off_rounded,
+                      actionLabel: 'Clear Search',
+                      onActionPressed: () {
+                        _searchController.clear();
+                        ref.read(searchProvider.notifier).clearResults();
+                      },
+                    );
                     
                     return _buildResultsList('Search Results', listings);
                   },
@@ -364,11 +406,33 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            itemCount: listings.length,
-            itemBuilder: (context, index) => ListingCard(listing: listings[index], isVerticalFeed: true),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final effectiveWidth = constraints.maxWidth.clamp(0.0, 1100.0);
+              final cols = effectiveWidth > 700 ? 4 : (effectiveWidth > 450 ? 2 : 1);
+              return Center(
+                child: SizedBox(
+                   width: effectiveWidth,
+                   child: GridView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: AppSpacing.s8,
+                      mainAxisExtent: cols == 1 ? 520 : 500,
+                    ),
+                    itemCount: listings.length,
+                    itemBuilder: (context, index) => ListingCard(
+                      listing: listings[index], 
+                      isVerticalFeed: true,
+                      margin: EdgeInsets.zero,
+                      heroPrefix: 'search',
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],

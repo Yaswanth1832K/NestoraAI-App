@@ -10,6 +10,9 @@ abstract class VisitRequestRepository {
   Future<bool> hasApprovedBookingForDate(String listingId, DateTime date);
   Future<Either<Failure, void>> createBookingFromChat({
     required String listingId,
+    required String listingTitle,
+    required String listingImage,
+    required String tenantName,
     required String ownerId,
     required String renterId,
     required String chatId,

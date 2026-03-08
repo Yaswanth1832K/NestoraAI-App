@@ -40,6 +40,12 @@ abstract final class AppColors {
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [primary, primaryDark],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static const LinearGradient orangeGradient = LinearGradient(
     colors: [Color(0xFFFF8A00), Color(0xFFFD3D6E)],
     begin: Alignment.topLeft,
@@ -61,6 +67,41 @@ abstract final class AppColors {
   static const double s24 = 24.0;
   static const double s32 = 32.0;
   static const double s48 = 48.0;
+
+  // Premium Shadows
+  static List<BoxShadow> get softShadow => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.05),
+      blurRadius: 20,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> get premiumShadow => [
+    BoxShadow(
+      color: primary.withOpacity(0.15),
+      blurRadius: 30,
+      offset: const Offset(0, 15),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 10,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> get cardShadow => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 24,
+      offset: const Offset(0, 12),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.03),
+      blurRadius: 8,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   // Semantic
   static const Color success = Color(0xFF10B981);

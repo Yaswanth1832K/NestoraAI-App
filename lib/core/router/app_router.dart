@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
+import 'package:animations/animations.dart';
 
 import 'package:house_rental/features/trips/presentation/pages/trips_page.dart';
 import 'package:house_rental/features/chat/presentation/pages/chat_inbox_page.dart';
@@ -11,6 +12,10 @@ import 'package:house_rental/features/profile/presentation/pages/login_security_
 import 'package:house_rental/features/listings/domain/entities/listing_entity.dart';
 import 'package:house_rental/features/listings/presentation/pages/listing_details_page.dart';
 import 'package:house_rental/features/listings/presentation/pages/post_property_page.dart';
+import 'package:house_rental/features/bookings/presentation/pages/payment_screen.dart';
+import 'package:house_rental/features/bookings/presentation/pages/payment_success_page.dart';
+import 'package:house_rental/features/bookings/presentation/pages/reward_wheel_screen.dart';
+import 'package:house_rental/features/bookings/presentation/pages/booking_details_page.dart';
 import 'package:house_rental/core/router/splash_screen.dart';
 import 'package:house_rental/features/visit_requests/presentation/pages/owner_requests_page.dart';
 import 'package:house_rental/features/visit_requests/presentation/pages/my_visits_page.dart';
@@ -34,7 +39,9 @@ import 'package:house_rental/features/rent_payments/presentation/pages/home_loan
 import 'package:house_rental/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:house_rental/features/ai_services/presentation/recommendations_view.dart';
 import 'package:house_rental/features/profile/presentation/pages/subpages/rewards_page.dart';
+import 'package:house_rental/features/profile/presentation/pages/subpages/coupons_page.dart';
 import 'package:house_rental/core/navigation/main_navigation.dart';
+
 // import 'package:house_rental/features/chat/presentation/pages/inbox_page.dart'; // Removed old import to avoid conflict
 import 'package:flutter/material.dart';
 import 'package:house_rental/features/home/presentation/pages/home_page.dart';
@@ -46,6 +53,11 @@ import 'package:house_rental/features/auth/presentation/providers/auth_providers
 import 'package:house_rental/core/router/router_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:house_rental/main.dart';
+import 'package:house_rental/features/smart_tools/presentation/pages/emergency_help_page.dart';
+import 'package:house_rental/features/smart_tools/presentation/pages/lease_generator_page.dart';
+import 'package:house_rental/features/smart_tools/presentation/pages/ar_measurement_page.dart';
+import 'package:house_rental/features/smart_tools/presentation/pages/virtual_furniture_page.dart';
+import 'package:house_rental/features/smart_tools/presentation/pages/move_in_cost_page.dart';
 
 /// Application routing configuration using Riverpod.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -113,17 +125,71 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.listingDetails,
-        builder: (context, state) {
-          final listing = state.extra as ListingEntity;
-          return ListingDetailsPage(listing: listing);
+        pageBuilder: (context, state) {
+          final listing = state.extra as ListingEntity?;
+          // If listing is null (e.g. on web refresh), redirect home
+          if (listing == null) {
+            return const NoTransitionPage(child: MainNavigation());
+          }
+          return _fadeTransition(
+            state: state,
+            child: ListingDetailsPage(listing: listing),
+          );
         },
+      ),
+      GoRoute(
+        path: '/book/:id',
+        builder: (context, state) {
+          final listing = state.extra as ListingEntity?;
+          if (listing == null) return const MainNavigation();
+          return BookingDetailsPage(listing: listing);
+        },
+      ),
+      GoRoute(
+        path: '/payment',
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>?;
+          if (extras == null) return const MainNavigation();
+          
+          final listing = extras['listing'] as ListingEntity?;
+          final totalPayable = extras['totalPayable'] as double?;
+          final moveInDate = extras['moveInDate'] as DateTime?;
+
+          if (listing == null || totalPayable == null || moveInDate == null) {
+            return const MainNavigation();
+          }
+
+          return PaymentScreen(
+            listing: listing,
+            totalPayable: totalPayable,
+            moveInDate: moveInDate,
+            appliedCouponId: extras['appliedCouponId'] as String?,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/payment-success',
+        builder: (context, state) {
+          final listing = state.extra as ListingEntity?;
+          if (listing == null) return const MainNavigation();
+          return PaymentSuccessPage(listing: listing);
+        },
+      ),
+      GoRoute(
+        path: '/reward-wheel',
+        builder: (context, state) => const RewardWheelScreen(),
       ),
       GoRoute(
         path: '/chat-detail',
         builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
-          final chatRoomId = extras['chatRoomId'] as String;
-          final title = extras['title'] as String;
+          final extras = state.extra as Map<String, dynamic>?;
+          if (extras == null) return const MainNavigation();
+          
+          final chatRoomId = extras['chatRoomId'] as String?;
+          final title = extras['title'] as String?;
+          
+          if (chatRoomId == null || title == null) return const MainNavigation();
+          
           return ChatPage(chatRoomId: chatRoomId, title: title);
         },
       ),
@@ -137,7 +203,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.search,
-        builder: (context, state) => const SearchPage(),
+        pageBuilder: (context, state) => _fadeTransition(
+          state: state,
+          child: const SearchPage(),
+        ),
       ),
       GoRoute(
         path: AppRouter.ownerRequests,
@@ -149,7 +218,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.profile,
-        builder: (context, state) => const ProfilePage(),
+        pageBuilder: (context, state) => _fadeTransition(
+          state: state,
+          child: const ProfilePage(),
+        ),
       ),
       GoRoute(
         path: AppRouter.map,
@@ -169,7 +241,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.notifications,
-        builder: (context, state) => const NotificationsPage(),
+        pageBuilder: (context, state) => _fadeTransition(
+          state: state,
+          child: const NotificationsPage(),
+        ),
       ),
       GoRoute(
         path: AppRouter.paymentMethods,
@@ -228,7 +303,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRouter.propertyRequests,
         builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
+          final extras = state.extra as Map<String, dynamic>?;
+          if (extras == null) return const MainNavigation();
           return PropertyRequestsScreen(
             listingId: extras['listingId'],
             title: extras['title'],
@@ -259,13 +335,57 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRouter.roommateProfile,
         builder: (context, state) => const RoommateProfileScreen(),
       ),
-      GoRoute(
+       GoRoute(
         path: AppRouter.rewards,
-        builder: (context, state) => const RewardsPage(),
+        builder: (context, state) => const CouponsPage(),
+      ),
+      GoRoute(
+        path: AppRouter.emergencyHelp,
+        builder: (context, state) => const EmergencyHelpPage(),
+      ),
+      GoRoute(
+        path: AppRouter.leaseGenerator,
+        builder: (context, state) => const LeaseGeneratorPage(),
+      ),
+      GoRoute(
+        path: AppRouter.arMeasurement,
+        builder: (context, state) => const ArMeasurementPage(),
+      ),
+      GoRoute(
+        path: AppRouter.virtualFurniture,
+        builder: (context, state) => const VirtualFurniturePage(),
+      ),
+      GoRoute(
+        path: AppRouter.moveInCalculator,
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>?;
+          return MoveInCostCalculatorPage(
+            initialRent: extras?['rent'],
+            initialDeposit: extras?['deposit'],
+          );
+        },
       ),
     ],
   );
 });
+
+Page _fadeTransition({required GoRouterState state, required Widget child}) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SharedAxisTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        transitionType: SharedAxisTransitionType.scaled,
+        child: Material(
+          type: MaterialType.transparency,
+          child: child,
+        ),
+      );
+    },
+  );
+}
 
 final class AppRouter {
   AppRouter._();
@@ -307,4 +427,9 @@ final class AppRouter {
   static const String roommateFeed = '/roommate-feed';
   static const String roommateProfile = '/roommate-profile';
   static const String rewards = '/rewards';
+  static const String emergencyHelp = '/emergency-help';
+  static const String leaseGenerator = '/lease-generator';
+  static const String arMeasurement = '/ar-measurement';
+  static const String virtualFurniture = '/virtual-furniture';
+  static const String moveInCalculator = '/move-in-calculator';
 }

@@ -189,6 +189,7 @@ class _CityResultsPageState extends ConsumerState<CityResultsPage> {
                         listing: _listings[index - 2],
                         isVerticalFeed: true,
                         margin: const EdgeInsets.only(bottom: 24),
+                        heroPrefix: 'city_results',
                       ),
                     );
                   },

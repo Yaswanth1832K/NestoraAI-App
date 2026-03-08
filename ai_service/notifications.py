@@ -9,6 +9,8 @@ class NotificationWatcher:
         self.db = None
         self.initialized = False
         self.service_account_path = service_account_path
+        self.listing_price_cache = {}
+        self.is_listings_initialized = False
         
         # Try to initialize
         self.try_initialize()
@@ -44,6 +46,14 @@ class NotificationWatcher:
         # 2. Listen for new bookings
         self.db.collection('bookings').on_snapshot(self.on_booking_snapshot)
 
+        # 3. Listen for new payments
+        self.db.collection('rent_payments').on_snapshot(self.on_payment_snapshot)
+
+        # 4. Listen for listings (Price changes, new matches)
+        self.db.collection('listings').on_snapshot(self.on_listing_snapshot)
+
+        print("👀 NotificationWatcher: Started watching collections...")
+
     def send_push_notification(self, token, title, body, data=None):
         if not token:
             return
@@ -61,6 +71,71 @@ class NotificationWatcher:
             print(f"🚀 Successfully sent notification: {response}")
         except Exception as e:
             print(f"❌ Error sending notification: {str(e)}")
+
+    def broadcast_notification(self, title, body, data=None):
+        try:
+            users_ref = self.db.collection('users').stream()
+            for user_doc in users_ref:
+                token = user_doc.to_dict().get('fcmToken')
+                if token:
+                    self.send_push_notification(token, title, body, data)
+        except Exception as e:
+            print(f"❌ Error broadcasting notification: {str(e)}")
+
+    def on_listing_snapshot(self, col_snapshot, changes, read_time):
+        for change in changes:
+            data = change.document.to_dict()
+            listing_id = change.document.id
+            title = data.get('title', 'A property')
+            city = data.get('city', 'your area')
+            current_price = data.get('price')
+
+            if change.type.name == 'ADDED':
+                self.listing_price_cache[listing_id] = current_price
+                if self.is_listings_initialized:
+                    print(f"🏠 New Listing Added: {title}")
+                    self.broadcast_notification(
+                        "New Property Match",
+                        f"Check out this new property in {city}: {title}",
+                        {"type": "alert", "click_action": "SEARCH"}
+                    )
+            
+            elif change.type.name == 'MODIFIED':
+                old_price = self.listing_price_cache.get(listing_id)
+                self.listing_price_cache[listing_id] = current_price
+                
+                if old_price is not None and current_price is not None and current_price < old_price:
+                    print(f"💰 Price dropped for {title}: {old_price} -> {current_price}")
+                    self.broadcast_notification(
+                        "Price Drop Alert",
+                        f"The price for '{title}' just dropped to ₹{current_price}!",
+                        {"type": "alert", "click_action": "SAVED_PROPERTIES"}
+                    )
+        
+        self.is_listings_initialized = True
+
+    def on_payment_snapshot(self, col_snapshot, changes, read_time):
+        for change in changes:
+            if change.type.name == 'ADDED':
+                data = change.document.to_dict()
+                tenant_id = data.get('tenantId')
+                owner_id = data.get('ownerId')
+                amount = data.get('amount')
+                title = data.get('propertyTitle', 'Property')
+
+                # Notify tenant
+                tenant_doc = self.db.collection('users').document(tenant_id).get()
+                if tenant_doc.exists:
+                    token = tenant_doc.to_dict().get('fcmToken')
+                    if token:
+                        self.send_push_notification(token, "Payment Successful", f"Your payment of ₹{amount} for {title} was processed.", {"type": "success"})
+
+                # Notify owner
+                owner_doc = self.db.collection('users').document(owner_id).get()
+                if owner_doc.exists:
+                    token = owner_doc.to_dict().get('fcmToken')
+                    if token:
+                        self.send_push_notification(token, "Payment Received", f"You received ₹{amount} for {title}.", {"type": "success"})
 
     def on_chat_snapshot(self, col_snapshot, changes, read_time):
         for change in changes:

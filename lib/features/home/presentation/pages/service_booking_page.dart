@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:house_rental/core/theme/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -336,7 +337,15 @@ class _ServiceBookingPageState extends ConsumerState<ServiceBookingPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 16),
-            const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+            SizedBox( // Replaced Icon with SizedBox containing Lottie.network
+              height: 120,
+              width: 120,
+              child: Lottie.network(
+                'https://assets10.lottiefiles.com/packages/lf20_s2lryxtd.json',
+                repeat: false,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+              ),
+            ),
             const SizedBox(height: 24),
             const Text(
               'Booking Requested!',

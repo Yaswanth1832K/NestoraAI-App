@@ -13,6 +13,7 @@ import 'package:house_rental/core/router/app_router.dart';
 import 'package:house_rental/core/theme/app_colors.dart';
 import 'package:house_rental/core/widgets/glass_container.dart';
 import 'package:house_rental/features/auth/presentation/providers/auth_providers.dart';
+import 'package:house_rental/features/location/location_provider.dart';
 
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
@@ -27,6 +28,10 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   void initState() {
     super.initState();
     NotificationService().initNotifications(context);
+    // Fetch location silently on app start to refresh coordinates/city
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(userLocationProvider.notifier).updateLocation(silent: true);
+    });
   }
 
   void _onItemTapped(int index) => setState(() => _selectedIndex = index);
@@ -64,39 +69,39 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 800),
-                child: GlassContainer.standard(
-                  context: context,
-                  borderRadius: 32,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _NavItem(icon: Icons.grid_view_rounded, activeIcon: Icons.grid_view_rounded, label: 'Home', selected: _selectedIndex == 0, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(0)),
-                      _NavItem(icon: Icons.favorite_border_rounded, activeIcon: Icons.favorite_rounded, label: 'Saved', selected: _selectedIndex == 1, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(1)),
-                      
-                      if (isOwner)
-                        GestureDetector(
-                          onTap: () => context.push(AppRouter.postProperty),
-                          child: Container(
-                            height: 48, width: 48,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.purpleGradient,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.4),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
-                                )
-                              ],
-                            ),
-                            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-                          ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark 
+                        ? const Color(0xFF1A1A1A).withOpacity(0.95) 
+                        : Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(36),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                      if (isDark)
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
                         ),
-
-                      _NavItem(icon: Icons.luggage_outlined, activeIcon: Icons.luggage_rounded, label: 'Trips', selected: _selectedIndex == 2, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(2)),
-                      _NavItem(icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Inbox', selected: _selectedIndex == 3, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(3)),
-                      _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile', selected: _selectedIndex == 4, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(4)),
+                    ],
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : Colors.black12,
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(child: _NavItem(icon: Icons.grid_view_rounded, activeIcon: Icons.grid_view_rounded, label: 'Home', selected: _selectedIndex == 0, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(0))),
+                      Expanded(child: _NavItem(icon: Icons.favorite_border_rounded, activeIcon: Icons.favorite_rounded, label: 'Saved', selected: _selectedIndex == 1, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(1))),
+                      Expanded(child: _NavItem(icon: Icons.luggage_outlined, activeIcon: Icons.luggage_rounded, label: 'Trips', selected: _selectedIndex == 2, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(2))),
+                      Expanded(child: _NavItem(icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Inbox', selected: _selectedIndex == 3, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(3))),
+                      Expanded(child: _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile', selected: _selectedIndex == 4, activeColor: AppColors.primary, isDark: isDark, onTap: () => _onItemTapped(4))),
                     ],
                   ),
                 ),
@@ -135,11 +140,19 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? activeColor.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          color: selected ? activeColor.withOpacity(0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: selected ? [
+            BoxShadow(
+              color: activeColor.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -153,16 +166,22 @@ class _NavItem extends StatelessWidget {
                 color: selected ? activeColor : inactiveColor,
               ),
             ),
-            if (selected) ...[
-              const SizedBox(height: 2),
-              Container(
-                width: 4, height: 4,
-                decoration: BoxDecoration(
-                  color: activeColor,
-                  shape: BoxShape.circle,
-                ),
+            const SizedBox(height: 4),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: selected ? 4 : 0,
+              height: 4,
+              decoration: BoxDecoration(
+                color: activeColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: activeColor.withOpacity(0.6),
+                    blurRadius: 4,
+                  )
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),

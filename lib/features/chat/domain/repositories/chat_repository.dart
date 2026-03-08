@@ -22,4 +22,7 @@ abstract class ChatRepository {
   Future<void> clearTyping(String chatId, String userId);
 
   Stream<List<ChatRoomEntity>> getUserChatRooms(String userId);
+
+  Future<Either<Failure, void>> markAsRead(String chatId, String userId);
+  Future<Either<Failure, void>> deleteAllChats(String userId);
 }

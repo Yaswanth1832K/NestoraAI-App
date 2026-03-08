@@ -23,6 +23,9 @@ class ListingFilter extends Equatable {
   final double? maxSqft;
   final bool? availableNow;
 
+  final double? userLat;
+  final double? userLng;
+
   ListingFilter({
     this.searchQuery,
     this.city,
@@ -42,6 +45,8 @@ class ListingFilter extends Equatable {
     this.minSqft,
     this.maxSqft,
     this.availableNow,
+    this.userLat,
+    this.userLng,
   });
 
   ListingFilter copyWith({
@@ -61,6 +66,8 @@ class ListingFilter extends Equatable {
     double? minSqft,
     double? maxSqft,
     bool? availableNow,
+    double? userLat,
+    double? userLng,
   }) {
     return ListingFilter(
       searchQuery: searchQuery ?? this.searchQuery,
@@ -81,6 +88,8 @@ class ListingFilter extends Equatable {
       minSqft: minSqft ?? this.minSqft,
       maxSqft: maxSqft ?? this.maxSqft,
       availableNow: availableNow ?? this.availableNow,
+      userLat: userLat ?? this.userLat,
+      userLng: userLng ?? this.userLng,
     );
   }
 
@@ -104,6 +113,8 @@ class ListingFilter extends Equatable {
         minSqft,
         maxSqft,
         availableNow,
+        userLat,
+        userLng,
       ];
 }
 
