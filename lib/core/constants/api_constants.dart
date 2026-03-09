@@ -5,7 +5,7 @@ abstract final class ApiConstants {
   ApiConstants._();
 
   /// Base URL for the AI microservice.
-  static const String baseUrl = ApiConfig.baseUrl;
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // Endpoints
   static const String naturalLanguageSearch = '/search/natural-language';
