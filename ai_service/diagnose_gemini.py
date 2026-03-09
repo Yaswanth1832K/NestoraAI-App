@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import sys
 
-API_KEY = "AIzaSyCzWqmVkAd_BTlEhQRZypVulcCtMr5uaog"
+API_KEY = "Write api key here"
 genai.configure(api_key=API_KEY)
 
 print(f"Python version: {sys.version}")
