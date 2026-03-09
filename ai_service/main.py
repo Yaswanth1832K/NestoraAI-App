@@ -65,7 +65,7 @@ def health_check():
     }
 
 # Configure Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB1YL5hTHr2I3Fpys1Jr4rDW2CkP8nwdbQ")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCzWqmVkAd_BTlEhQRZypVulcCtMr5uaog")
 is_gemini_ready = False
 try:
     genai.configure(api_key=GEMINI_API_KEY)

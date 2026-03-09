@@ -3,7 +3,7 @@ importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // Initialize the Firebase app in the service worker
 const firebaseConfig = {
-    apiKey: "AIzaSyB1YL5hTHr2I3Fpys1Jr4rDW2CkP8nwdbQ",
+    apiKey: "AIzaSyCzWqmVkAd_BTlEhQRZypVulcCtMr5uaog",
     authDomain: "nestora-demo.firebaseapp.com",
     projectId: "nestora-demo",
     storageBucket: "nestora-demo.appspot.com",

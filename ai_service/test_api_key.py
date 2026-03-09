@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import sys
 
-API_KEY = "Enter API Key here"
+API_KEY = "AIzaSyCzWqmVkAd_BTlEhQRZypVulcCtMr5uaog"
 
 print("Testing Gemini API Key...")
 print("=" * 60)
